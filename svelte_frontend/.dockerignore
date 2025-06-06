@@ -1,0 +1,19 @@
+# Ignore version control and editor configs
+.git
+.gitignore
+.vscode
+*.swp
+*.log
+
+# Node modules - will be reinstalled in Docker
+node_modules
+
+# Local build output (Vite outputs to dist/)
+dist
+
+# Env and config files not needed for build
+.env
+*.env.*
+Dockerfile
+docker-compose.yml
+README.md

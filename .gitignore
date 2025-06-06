@@ -1,0 +1,39 @@
+# ----------------------
+# Python / FastAPI
+# ----------------------
+*.pyc
+__pycache__/
+.venv/
+env/
+venv/
+instance/
+*.sqlite3
+
+# ----------------------
+# Node.js / Svelte
+# ----------------------
+node_modules/
+dist/
+.build/
+.npm/
+.vite/
+.svelte-kit/
+package-lock.json
+
+# ----------------------
+# Docker
+# ----------------------
+*.env
+*.env.*
+pgdata/
+*.log
+
+# ----------------------
+# OS / Editor stuff
+# ----------------------
+.DS_Store
+Thumbs.db
+.vscode/
+*.swp
+*.swo
+*.bak
