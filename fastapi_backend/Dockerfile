@@ -9,7 +9,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
 # Copy app files
-COPY ./app /app
+COPY ./src /app
 
 # Run the app using uvicorn
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

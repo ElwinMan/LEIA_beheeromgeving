@@ -16,6 +16,10 @@ services:
     restart: unless-stopped
     depends_on:
       - db
+    env_file:
+      - ./fastapi_backend/.env.docker
+    environment:
+    - RUNNING_IN_DOCKER=true
 
   db:
     image: postgres
