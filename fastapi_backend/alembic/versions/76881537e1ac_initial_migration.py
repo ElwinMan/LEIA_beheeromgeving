@@ -1,8 +1,8 @@
-"""create all tables
+"""Initial migration
 
-Revision ID: 40b6ddbe4855
-Revises: 8f6f88cc5711
-Create Date: 2025-06-17 13:14:49.485574
+Revision ID: 76881537e1ac
+Revises: 
+Create Date: 2025-06-18 13:58:55.075784
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '40b6ddbe4855'
-down_revision: Union[str, None] = '8f6f88cc5711'
+revision: str = '76881537e1ac'
+down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -31,7 +31,7 @@ def upgrade() -> None:
     sa.UniqueConstraint('name')
     )
     op.create_index(op.f('ix_digital_twin_id'), 'digital_twin', ['id'], unique=False)
-    op.create_table('layer_snippet',
+    op.create_table('layer',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('type', sa.String(), nullable=False),
     sa.Column('title', sa.String(), nullable=False),
@@ -43,14 +43,14 @@ def upgrade() -> None:
     sa.Column('content', sa.JSON(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_layer_snippet_id'), 'layer_snippet', ['id'], unique=False)
-    op.create_table('tool_snippet',
+    op.create_index(op.f('ix_layer_id'), 'layer', ['id'], unique=False)
+    op.create_table('tool',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('content', sa.JSON(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_tool_snippet_id'), 'tool_snippet', ['id'], unique=False)
+    op.create_index(op.f('ix_tool_id'), 'tool', ['id'], unique=False)
     op.create_table('users',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
@@ -60,33 +60,26 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
     op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
-    op.create_table('digital_twin_layer_association',
-    sa.Column('digital_twin_id', sa.Integer(), nullable=False),
-    sa.Column('layer_snippet_id', sa.Integer(), nullable=False),
-    sa.Column('sort_order', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['digital_twin_id'], ['digital_twin.id'], ),
-    sa.ForeignKeyConstraint(['layer_snippet_id'], ['layer_snippet.id'], ),
-    sa.PrimaryKeyConstraint('digital_twin_id', 'layer_snippet_id')
-    )
     op.create_table('digital_twin_tool_association',
     sa.Column('digital_twin_id', sa.Integer(), nullable=False),
-    sa.Column('tool_snippet_id', sa.Integer(), nullable=False),
+    sa.Column('tool_id', sa.Integer(), nullable=False),
     sa.Column('sort_order', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['digital_twin_id'], ['digital_twin.id'], ),
-    sa.ForeignKeyConstraint(['tool_snippet_id'], ['tool_snippet.id'], ),
-    sa.PrimaryKeyConstraint('digital_twin_id', 'tool_snippet_id')
+    sa.ForeignKeyConstraint(['tool_id'], ['tool.id'], ),
+    sa.PrimaryKeyConstraint('digital_twin_id', 'tool_id')
     )
-    op.create_table('group_snippet',
+    op.create_table('group',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('title', sa.String(), nullable=False),
     sa.Column('digital_twin_id', sa.Integer(), nullable=False),
     sa.Column('parent_id', sa.Integer(), nullable=True),
+    sa.Column('sort_order', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['digital_twin_id'], ['digital_twin.id'], ),
-    sa.ForeignKeyConstraint(['parent_id'], ['group_snippet.id'], ),
+    sa.ForeignKeyConstraint(['parent_id'], ['group.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_group_snippet_id'), 'group_snippet', ['id'], unique=False)
-    op.create_table('viewer_snippet',
+    op.create_index(op.f('ix_group_id'), 'group', ['id'], unique=False)
+    op.create_table('viewer',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('content', sa.String(), nullable=True),
     sa.Column('digital_twin_id', sa.Integer(), nullable=True),
@@ -94,26 +87,36 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('digital_twin_id')
     )
-    op.create_index(op.f('ix_viewer_snippet_id'), 'viewer_snippet', ['id'], unique=False)
+    op.create_index(op.f('ix_viewer_id'), 'viewer', ['id'], unique=False)
+    op.create_table('digital_twin_layer_association',
+    sa.Column('digital_twin_id', sa.Integer(), nullable=False),
+    sa.Column('layer_id', sa.Integer(), nullable=False),
+    sa.Column('group_id', sa.Integer(), nullable=True),
+    sa.Column('sort_order', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['digital_twin_id'], ['digital_twin.id'], ),
+    sa.ForeignKeyConstraint(['group_id'], ['group.id'], ),
+    sa.ForeignKeyConstraint(['layer_id'], ['layer.id'], ),
+    sa.PrimaryKeyConstraint('digital_twin_id', 'layer_id')
+    )
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     """Downgrade schema."""
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_index(op.f('ix_viewer_snippet_id'), table_name='viewer_snippet')
-    op.drop_table('viewer_snippet')
-    op.drop_index(op.f('ix_group_snippet_id'), table_name='group_snippet')
-    op.drop_table('group_snippet')
-    op.drop_table('digital_twin_tool_association')
     op.drop_table('digital_twin_layer_association')
+    op.drop_index(op.f('ix_viewer_id'), table_name='viewer')
+    op.drop_table('viewer')
+    op.drop_index(op.f('ix_group_id'), table_name='group')
+    op.drop_table('group')
+    op.drop_table('digital_twin_tool_association')
     op.drop_index(op.f('ix_users_id'), table_name='users')
     op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_table('users')
-    op.drop_index(op.f('ix_tool_snippet_id'), table_name='tool_snippet')
-    op.drop_table('tool_snippet')
-    op.drop_index(op.f('ix_layer_snippet_id'), table_name='layer_snippet')
-    op.drop_table('layer_snippet')
+    op.drop_index(op.f('ix_tool_id'), table_name='tool')
+    op.drop_table('tool')
+    op.drop_index(op.f('ix_layer_id'), table_name='layer')
+    op.drop_table('layer')
     op.drop_index(op.f('ix_digital_twin_id'), table_name='digital_twin')
     op.drop_table('digital_twin')
     # ### end Alembic commands ###

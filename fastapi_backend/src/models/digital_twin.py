@@ -21,7 +21,9 @@ class DigitalTwin(Base):
     groups = relationship(
         "Group",
         back_populates="digital_twin",
-        order_by="Group.sort_order"
+        order_by="Group.sort_order",
+        cascade="all, delete-orphan",
+        passive_deletes=True
     )
 
     layer_associations = relationship(

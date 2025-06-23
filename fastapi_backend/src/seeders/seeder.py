@@ -5,6 +5,7 @@ from .digital_twin_layer_association_seeder import seed as seed_digital_twin_lay
 from .digital_twin_seeder import seed as seed_digital_twin
 from .layer_seeder import seed as seed_layer
 from .user_seeder import seed as seed_user
+from .group_seeder import seed as seed_group
 from db.database import get_db  # Adjust if path differs
 
 # Load environment variables
@@ -20,11 +21,14 @@ def main():
         seed_user(db)
         print("Seeded users.")
 
+        seed_digital_twin(db)
+        print("Seeded digital twins.")
+
         seed_layer(db)
         print("Seeded layers.")
 
-        seed_digital_twin(db)
-        print("Seeded digital twins.")
+        seed_group(db)
+        print("Seeded groups.")
 
         seed_digital_twin_layer_association(db)
         print("Seeded digital twin-layer associations.")

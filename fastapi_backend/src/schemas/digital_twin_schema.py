@@ -11,6 +11,18 @@ class DigitalTwinBase(BaseModel):
 class DigitalTwinCreate(DigitalTwinBase):
     pass
 
+class DigitalTwinUpdate(BaseModel):
+    name: Optional[str]
+    title: Optional[str]
+    subtitle: Optional[str]
+    thumbnail: Optional[str]
+
+class DigitalTwinListResponse(DigitalTwinBase):
+    id: int
+
+    class Config:
+        orm_mode = True
+
 class DigitalTwinResponse(DigitalTwinBase):
     id: int
     layer_associations: Optional[List[DigitalTwinLayerAssociationSchema]] = []

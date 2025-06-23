@@ -1,43 +1,39 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from db.database import get_db
-from services import layer_service
-from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from schemas.layer_schema import LayerCreate, LayerUpdate, LayerResponse
+import services.layer_service as service
 
 router = APIRouter(prefix="/layers", tags=["Layers"])
 
-class layer_Create(BaseModel):
-    type: str
-    title: str
-    beschrijving: str
-    url: str
-    featureName: str
-    isBackground: bool
-    defaultOn: bool
-    content: Optional[Dict[str, Any]] = None
+@router.get("/", response_model=list[LayerResponse])
+def get_layers(db: Session = Depends(get_db)):
+    return service.list_layers(db)
 
-@router.get("/{layer_id}")
+@router.get("/{layer_id}", response_model=LayerResponse)
 def read_layer(layer_id: int, db: Session = Depends(get_db)):
-    layer_ = layer_service.get_layer(layer_id, db)
-    if not layer_:
-        raise HTTPException(status_code=404, detail="Layer_ not found")
-    return layer_
+    layer = service.get_layer(layer_id, db)
+    if not layer:
+        raise HTTPException(status_code=404, detail="Layer not found")
+    return layer
 
-@router.get("/")
-def read_all_layer(db: Session = Depends(get_db)):
-    return layer_service.list_layers(db)
+@router.post("/", response_model=LayerResponse)
+def create_layer(layer: LayerCreate, db: Session = Depends(get_db)):
+    return service.create_layer(layer, db)
 
-@router.post("/")
-def create_layer(layer: layer_Create, db: Session = Depends(get_db)):
-    return layer_service.register_layer(
-        layer.type,
-        layer.title,
-        layer.beschrijving,
-        layer.url,
-        layer.featureName,
-        layer.isBackground,
-        layer.defaultOn,
-        layer.content,
-        db
-    )
+@router.put("/{layer_id}", response_model=LayerResponse)
+def update_layer(layer_id: int, layer_update: LayerUpdate, db: Session = Depends(get_db)):
+    existing_layer = service.get_layer(layer_id, db)
+    if not existing_layer:
+        raise HTTPException(status_code=404, detail="Layer not found")
+
+    return service.update_layer(existing_layer, layer_update, db)
+
+
+@router.delete("/{layer_id}", status_code=204)
+def delete_layer(layer_id: int, db: Session = Depends(get_db)):
+    existing_layer = service.get_layer(layer_id, db)
+    if not existing_layer:
+        raise HTTPException(status_code=404, detail="Layer not found")
+
+    service.delete_layer(existing_layer, db)

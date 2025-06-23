@@ -7,9 +7,19 @@ def get_digital_twin_by_id(db: Session, digital_twin_id: int):
 def get_all_digital_twins(db: Session):
     return db.query(DigitalTwin).all()
 
-def create_digital_twin(db: Session, name: str, title: str, subtitle: str, thumbnail: str):
-    digital_twin = digital_twin(name=name, title=title, subtitle=subtitle, thumbnail=thumbnail)
+def insert_digital_twin(db: Session, digital_twin: DigitalTwin):
     db.add(digital_twin)
     db.commit()
     db.refresh(digital_twin)
     return digital_twin
+
+def update_digital_twin(db: Session, digital_twin: DigitalTwin, updates: dict):
+    for field, value in updates.items():
+        setattr(digital_twin, field, value)
+    db.commit()
+    db.refresh(digital_twin)
+    return digital_twin
+
+def delete_digital_twin(db: Session, digital_twin: DigitalTwin):
+    db.delete(digital_twin)
+    db.commit()

@@ -8,26 +8,20 @@ def get_layer_by_id(db: Session, layer_id: int):
 def get_all_layers(db: Session):
     return db.query(Layer).all()
 
-def create_layer(
-    db: Session,
-    type: str,
-    title: str,
-    url: str,
-    featureName: str,
-    isBackground: bool,
-    defaultOn: bool,
-    content: Optional[Dict[str, Any]] = None,
-):
-    layer = Layer(
-        type=type,
-        title=title,
-        url=url,
-        featureName=featureName,
-        isBackground=isBackground,
-        defaultOn=defaultOn,
-        content=content,
-    )
+def insert_layer(db: Session, layer_data: Dict[str, Any]) -> Layer:
+    layer = Layer(**layer_data)
     db.add(layer)
     db.commit()
     db.refresh(layer)
     return layer
+
+def update_layer(db: Session, layer, updates: dict):
+    for key, value in updates.items():
+        setattr(layer, key, value)
+    db.commit()
+    db.refresh(layer)
+    return layer
+
+def delete_layer(db: Session, layer):
+    db.delete(layer)
+    db.commit()

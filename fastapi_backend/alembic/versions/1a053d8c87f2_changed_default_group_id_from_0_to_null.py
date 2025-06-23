@@ -1,8 +1,8 @@
-"""create all tables
+"""Changed default group_id from 0 to null
 
-Revision ID: 8f6f88cc5711
-Revises: 
-Create Date: 2025-06-12 11:05:56.709353
+Revision ID: 1a053d8c87f2
+Revises: 205eaf63890b
+Create Date: 2025-06-20 11:50:15.277397
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '8f6f88cc5711'
-down_revision: Union[str, None] = None
+revision: str = '1a053d8c87f2'
+down_revision: Union[str, None] = '205eaf63890b'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
