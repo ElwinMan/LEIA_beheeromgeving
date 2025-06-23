@@ -41,7 +41,6 @@ def seed(db: Session):
             print(f"Digital twin '{twin_name}' not found!")
             continue
 
-        # Replace the old loop here with this new one:
         for sort_order, (layer_title, group_id) in enumerate(layer_titles):
             layer = db.query(Layer).filter_by(title=layer_title).first()
             if not layer:
@@ -55,7 +54,7 @@ def seed(db: Session):
                     continue
                 group_id_to_use = group.id
             else:
-                group_id_to_use = None  # or a default group id
+                group_id_to_use = None
 
             assoc = DigitalTwinLayerAssociation(
                 digital_twin_id=digital_twin.id,

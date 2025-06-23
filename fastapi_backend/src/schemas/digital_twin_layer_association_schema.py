@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import Optional
 
 class DigitalTwinLayerAssociationSchema(BaseModel):
@@ -14,7 +14,7 @@ class DigitalTwinLayerAssociationCreate(BaseModel):
     sort_order: int
     group_id: Optional[int] = None
 
-class DigitalTwinRelationUpdate(BaseModel):
+class DigitalTwinLayerRelationUpdate(BaseModel):
     layer_id: int
     sort_order: Optional[int] = None
     group_id: Optional[int] = None

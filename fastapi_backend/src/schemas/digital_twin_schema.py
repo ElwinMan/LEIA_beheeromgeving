@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional, List
 from schemas.digital_twin_layer_association_schema import DigitalTwinLayerAssociationSchema
+from schemas.digital_twin_tool_association_schema import DigitalTwinToolAssociationSchema
 
 class DigitalTwinBase(BaseModel):
     name: str
@@ -26,6 +27,7 @@ class DigitalTwinListResponse(DigitalTwinBase):
 class DigitalTwinResponse(DigitalTwinBase):
     id: int
     layer_associations: Optional[List[DigitalTwinLayerAssociationSchema]] = []
+    tool_associations: Optional[List[DigitalTwinToolAssociationSchema]] = []
 
     class Config:
         orm_mode = True

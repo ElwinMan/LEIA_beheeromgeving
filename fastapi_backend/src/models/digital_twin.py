@@ -39,6 +39,7 @@ class DigitalTwin(Base):
 
     tool_associations = relationship(
         "DigitalTwinToolAssociation",
+        order_by="DigitalTwinToolAssociation.tool_id",
         back_populates="digital_twin",
         cascade="all, delete-orphan"
     )

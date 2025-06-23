@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
-import repositories.digital_twin_relation_repository as repo
+import repositories.digital_twin_layer_relation_repository as repo
 from models.associations import DigitalTwinLayerAssociation
-from schemas.digital_twin_layer_association_schema import DigitalTwinLayerAssociationCreate, DigitalTwinRelationUpdate
+from schemas.digital_twin_layer_association_schema import DigitalTwinLayerAssociationCreate, DigitalTwinLayerRelationUpdate
 
 def add_layer_association(digital_twin_id: int, layer_data: DigitalTwinLayerAssociationCreate, db: Session):
     association = DigitalTwinLayerAssociation(
@@ -12,7 +12,7 @@ def add_layer_association(digital_twin_id: int, layer_data: DigitalTwinLayerAsso
     )
     return repo.add_layer_association(db, association)
 
-def update_relation(digital_twin_id: int, layer_id: int, update_data: DigitalTwinRelationUpdate, db: Session):
+def update_relation(digital_twin_id: int, layer_id: int, update_data: DigitalTwinLayerRelationUpdate, db: Session):
     assoc = repo.get_layer_association(db, digital_twin_id, layer_id)
     if not assoc:
         return None

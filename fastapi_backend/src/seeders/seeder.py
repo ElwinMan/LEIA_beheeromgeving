@@ -1,13 +1,14 @@
 import os
 from dotenv import load_dotenv
 
-from .digital_twin_layer_association_seeder import seed as seed_digital_twin_layer_association
+from .user_seeder import seed as seed_user
 from .digital_twin_seeder import seed as seed_digital_twin
 from .viewer_seeder import seed as seed_viewer
 from .layer_seeder import seed as seed_layer
-from .user_seeder import seed as seed_user
 from .group_seeder import seed as seed_group
+from .digital_twin_layer_association_seeder import seed as seed_digital_twin_layer_association
 from .tool_seeder import seed as seed_tool
+from .digital_twin_tool_association_seeder import seed as seed_digital_twin_tool_association
 from db.database import get_db
 
 # Load environment variables
@@ -40,6 +41,9 @@ def main():
 
         seed_tool(db)
         print("Seeded tools.")
+
+        seed_digital_twin_tool_association(db)
+        print("Seeded digital twin-tool associations.")
 
         print("Database seeding completed!")
 
