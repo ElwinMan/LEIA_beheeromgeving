@@ -10,7 +10,6 @@ class DigitalTwin(Base):
     name = Column(String, unique=True, nullable=False)
     title = Column(String, nullable=False)
     subtitle = Column(String, nullable=True)
-    thumbnail = Column(String, nullable=True)
 
     viewer = relationship(
         "Viewer",

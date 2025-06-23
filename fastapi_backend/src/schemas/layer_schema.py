@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 
-
 class LayerBase(BaseModel):
     type: str
     title: str
@@ -15,13 +14,13 @@ class LayerCreate(LayerBase):
     pass
 
 class LayerUpdate(BaseModel):
-    type: Optional[str]
-    title: Optional[str]
-    url: Optional[str]
-    featureName: Optional[str]
-    isBackground: Optional[bool]
-    defaultOn: Optional[bool]
-    content: Optional[Dict[str, Any]]
+    type: Optional[str] = None
+    title: Optional[str] = None
+    url: Optional[str] = None
+    featureName: Optional[str] = None
+    isBackground: Optional[bool] = None
+    defaultOn: Optional[bool] = None
+    content: Optional[Dict[str, Any]] = None
 
 class LayerResponse(LayerBase):
     id: int

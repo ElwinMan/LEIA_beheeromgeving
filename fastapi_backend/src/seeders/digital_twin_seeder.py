@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 
 def seed(db: Session):
     digital_twins = [
-        DigitalTwin(name="bodem", title="Klimaat Scenario", subtitle="Bodem", thumbnail="/assets/previews/preview-klimaat-bodem.png"),
-        DigitalTwin(name="fier", title="Leia viewer", subtitle="Overstroming en mobiliteit", thumbnail="/assets/previews/preview-klimaat-overstroming.png"),
+        DigitalTwin(name="bodem", title="Klimaat Scenario", subtitle="Bodem"),
+        DigitalTwin(name="fier", title="Leia viewer", subtitle="Overstroming en mobiliteit"),
     ]
 
     for digital_twin in digital_twins:

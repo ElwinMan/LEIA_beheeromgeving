@@ -3,12 +3,11 @@ from typing import Optional
 
 class GroupBase(BaseModel):
     title: str
-    digital_twin_id: int
     parent_id: Optional[int] = None
-    sort_order: int = 0
+    sort_order: Optional[int] = None
 
 class GroupCreate(GroupBase):
-    pass
+    digital_twin_id: int
 
 class GroupUpdate(BaseModel):
     title: Optional[str] = None

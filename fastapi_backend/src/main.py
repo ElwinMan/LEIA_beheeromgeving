@@ -11,4 +11,3 @@ app.include_router(user_router.router)
 app.include_router(digital_twin_router.router)
 app.include_router(layer_router.router)
 app.include_router(group_router.router)
-

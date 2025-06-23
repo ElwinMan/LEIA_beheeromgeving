@@ -2,12 +2,18 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from db.database import get_db
 import services.digital_twin_service as service
+import services.viewer_service as viewer_service
 import services.digital_twin_relation_service as relation_service
 from schemas.digital_twin_schema import (
     DigitalTwinCreate,
     DigitalTwinUpdate,
     DigitalTwinResponse,
     DigitalTwinListResponse
+)
+from schemas.viewer_schema import (
+    ViewerCreate,
+    ViewerUpdate,
+    ViewerResponse
 )
 from schemas.digital_twin_layer_association_schema import (
     DigitalTwinLayerAssociationCreate,
@@ -44,6 +50,31 @@ def delete_digital_twin(digital_twin_id: int, db: Session = Depends(get_db)):
     if not db_twin:
         raise HTTPException(status_code=404, detail="Digital twin not found")
     service.delete_digital_twin(db_twin, db)
+
+# Viewer routes
+@router.get("/{digital_twin_id}/viewer", response_model=ViewerResponse)
+def get_viewer(digital_twin_id: int, db: Session = Depends(get_db)):
+    viewer = viewer_service.get_viewer_by_digital_twin_id(digital_twin_id, db)
+    if not viewer:
+        raise HTTPException(status_code=404, detail="Viewer not found")
+    return viewer
+
+@router.post("/{digital_twin_id}/viewer", response_model=ViewerResponse)
+def create_viewer(digital_twin_id: int, viewer: ViewerCreate, db: Session = Depends(get_db)):
+    return viewer_service.create_viewer_with_digital_twin_id(viewer, digital_twin_id, db)
+
+@router.put("/{digital_twin_id}/viewer", response_model=ViewerResponse)
+def update_viewer(digital_twin_id: int, viewer_update: ViewerUpdate, db: Session = Depends(get_db)):
+    updated = viewer_service.update_viewer_by_digital_twin_id(digital_twin_id, viewer_update, db)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Viewer not found")
+    return updated
+
+@router.delete("/{digital_twin_id}/viewer", status_code=204)
+def delete_viewer(digital_twin_id: int, db: Session = Depends(get_db)):
+    success = viewer_service.delete_viewer_by_digital_twin_id(digital_twin_id, db)
+    if not success:
+        raise HTTPException(status_code=404, detail="Viewer not found")
 
 # Relation junction table routes for adding layers, groups and sorting order
 @router.post("/{digital_twin_id}/relation")

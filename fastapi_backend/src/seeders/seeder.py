@@ -3,10 +3,11 @@ from dotenv import load_dotenv
 
 from .digital_twin_layer_association_seeder import seed as seed_digital_twin_layer_association
 from .digital_twin_seeder import seed as seed_digital_twin
+from .viewer_seeder import seed as seed_viewer
 from .layer_seeder import seed as seed_layer
 from .user_seeder import seed as seed_user
 from .group_seeder import seed as seed_group
-from db.database import get_db  # Adjust if path differs
+from db.database import get_db
 
 # Load environment variables
 load_dotenv()
@@ -23,6 +24,9 @@ def main():
 
         seed_digital_twin(db)
         print("Seeded digital twins.")
+
+        seed_viewer(db)
+        print("Seeded viewers.")
 
         seed_layer(db)
         print("Seeded layers.")

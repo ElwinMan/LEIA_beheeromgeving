@@ -12,10 +12,10 @@ class DigitalTwinCreate(DigitalTwinBase):
     pass
 
 class DigitalTwinUpdate(BaseModel):
-    name: Optional[str]
-    title: Optional[str]
-    subtitle: Optional[str]
-    thumbnail: Optional[str]
+    name: Optional[str] = None
+    title: Optional[str] = None
+    subtitle: Optional[str] = None
+    thumbnail: Optional[str] = None
 
 class DigitalTwinListResponse(DigitalTwinBase):
     id: int
