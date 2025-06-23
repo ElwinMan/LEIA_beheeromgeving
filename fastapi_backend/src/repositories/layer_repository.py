@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from models.layer import Layer
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 
 def get_layer_by_id(db: Session, layer_id: int):
     return db.query(Layer).filter(Layer.id == layer_id).first()

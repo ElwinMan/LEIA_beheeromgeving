@@ -9,7 +9,6 @@ class Tool(Base):
     name = Column(String, nullable=False)
     content = Column(JSON, nullable=True)
 
-
     tool_associations = relationship(
         "DigitalTwinToolAssociation",
         back_populates="tool",

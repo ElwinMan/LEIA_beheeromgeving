@@ -7,6 +7,7 @@ from .viewer_seeder import seed as seed_viewer
 from .layer_seeder import seed as seed_layer
 from .user_seeder import seed as seed_user
 from .group_seeder import seed as seed_group
+from .tool_seeder import seed as seed_tool
 from db.database import get_db
 
 # Load environment variables
@@ -36,6 +37,9 @@ def main():
 
         seed_digital_twin_layer_association(db)
         print("Seeded digital twin-layer associations.")
+
+        seed_tool(db)
+        print("Seeded tools.")
 
         print("Database seeding completed!")
 
