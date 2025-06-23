@@ -7,7 +7,6 @@ class LayerBase(BaseModel):
     url: str
     featureName: Optional[str]
     isBackground: bool
-    defaultOn: bool
     content: Optional[Dict[str, Any]] = None
 
 class LayerCreate(LayerBase):
@@ -19,7 +18,6 @@ class LayerUpdate(BaseModel):
     url: Optional[str] = None
     featureName: Optional[str] = None
     isBackground: Optional[bool] = None
-    defaultOn: Optional[bool] = None
     content: Optional[Dict[str, Any]] = None
 
 class LayerResponse(LayerBase):

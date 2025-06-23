@@ -7,7 +7,6 @@ class DigitalTwinBase(BaseModel):
     name: str
     title: str
     subtitle: Optional[str] = None
-    thumbnail: Optional[str] = None
 
 class DigitalTwinCreate(DigitalTwinBase):
     pass
@@ -16,7 +15,6 @@ class DigitalTwinUpdate(BaseModel):
     name: Optional[str] = None
     title: Optional[str] = None
     subtitle: Optional[str] = None
-    thumbnail: Optional[str] = None
 
 class DigitalTwinListResponse(DigitalTwinBase):
     id: int

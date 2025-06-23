@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from db.database import get_db
 import services.digital_twin_service as service
 import services.viewer_service as viewer_service
-import services.digital_twin_layer_relation_service as relation_service
+import services.digital_twin_layer_relation_service as layer_service
 import services.digital_twin_tool_relation_service as tool_service
 from schemas.digital_twin_schema import (
     DigitalTwinCreate,
@@ -80,7 +80,7 @@ def delete_viewer(digital_twin_id: int, db: Session = Depends(get_db)):
     if not success:
         raise HTTPException(status_code=404, detail="Viewer not found")
 
-# Relation junction table routes for adding layers, groups and sorting order
+# Layer relation junction table routes for adding layers, groups and sorting order
 @router.post("/{digital_twin_id}/layer")
 def add_layer_to_digital_twin(
     digital_twin_id: int,
@@ -91,7 +91,7 @@ def add_layer_to_digital_twin(
     if not db_twin:
         raise HTTPException(status_code=404, detail="Digital twin not found")
 
-    relation_service.add_layer_association(digital_twin_id, layer_data, db)
+    layer_service.add_layer_association(digital_twin_id, layer_data, db)
     return {"message": "Layer association created"}
 
 @router.put("/{digital_twin_id}/layer/{layer_id}")
@@ -105,7 +105,7 @@ def update_relation_to_digital_twin(
     if not db_twin:
         raise HTTPException(status_code=404, detail="Digital twin not found")
 
-    updated = relation_service.update_relation(digital_twin_id, layer_id, update_data, db)
+    updated = layer_service.update_layer_relation(digital_twin_id, layer_id, update_data, db)
     if not updated:
         raise HTTPException(status_code=404, detail="Layer relation not found")
 
@@ -117,7 +117,7 @@ def delete_relation_from_digital_twin(
     layer_id: int,
     db: Session = Depends(get_db)
 ):
-    deleted = relation_service.delete_relation(digital_twin_id, layer_id, db)
+    deleted = layer_service.delete_layer_relation(digital_twin_id, layer_id, db)
     if not deleted:
         raise HTTPException(status_code=404, detail="Relation not found")
     
@@ -141,6 +141,6 @@ def delete_tool_from_digital_twin(
     tool_id: int,
     db: Session = Depends(get_db)
 ):
-    deleted = tool_service.delete_relation(digital_twin_id, tool_id, db)
+    deleted = tool_service.delete_tool_relation(digital_twin_id, tool_id, db)
     if not deleted:
         raise HTTPException(status_code=404, detail="Relation not found")

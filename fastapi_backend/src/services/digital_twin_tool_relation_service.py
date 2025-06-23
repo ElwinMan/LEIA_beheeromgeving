@@ -10,7 +10,7 @@ def add_tool_association(digital_twin_id: int, tool_data: DigitalTwinToolAssocia
     )
     return repo.add_tool_association(db, association)
 
-def delete_relation(digital_twin_id: int, tool_id: int, db: Session):
+def delete_tool_relation(digital_twin_id: int, tool_id: int, db: Session):
     assoc = repo.get_tool_association(db, digital_twin_id, tool_id)
     if not assoc:
         return False

@@ -12,7 +12,6 @@ class Layer(Base):
     url = Column(String, nullable=False)
     featureName = Column(String, nullable=True)
     isBackground= Column(Boolean, default=False)
-    defaultOn= Column(Boolean, default=False)
     content = Column(JSON, nullable=True)
 
     digital_twin_associations = relationship("DigitalTwinLayerAssociation", back_populates="layer")

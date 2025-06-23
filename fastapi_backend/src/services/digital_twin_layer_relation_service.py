@@ -9,14 +9,17 @@ def add_layer_association(digital_twin_id: int, layer_data: DigitalTwinLayerAsso
         layer_id=layer_data.layer_id,
         group_id=layer_data.group_id,
         sort_order=layer_data.sort_order,
+        is_default=layer_data.is_default
     )
     return repo.add_layer_association(db, association)
 
-def update_relation(digital_twin_id: int, layer_id: int, update_data: DigitalTwinLayerRelationUpdate, db: Session):
+def update_layer_relation(digital_twin_id: int, layer_id: int, update_data: DigitalTwinLayerRelationUpdate, db: Session):
     assoc = repo.get_layer_association(db, digital_twin_id, layer_id)
     if not assoc:
         return None
 
+    if update_data.is_default is not None:
+        assoc.is_default = update_data.is_default
     if update_data.sort_order is not None:
         assoc.sort_order = update_data.sort_order
     if update_data.group_id is not None:
@@ -24,7 +27,7 @@ def update_relation(digital_twin_id: int, layer_id: int, update_data: DigitalTwi
 
     return repo.update_layer_association(db, assoc)
 
-def delete_relation(digital_twin_id: int, layer_id: int, db: Session):
+def delete_layer_relation(digital_twin_id: int, layer_id: int, db: Session):
     assoc = repo.get_layer_association(db, digital_twin_id, layer_id)
     if not assoc:
         return False

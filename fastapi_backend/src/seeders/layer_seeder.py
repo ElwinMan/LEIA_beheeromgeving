@@ -10,7 +10,6 @@ def seed(db: Session):
             url="https://service.pdok.nl/brt/achtergrondkaart/wmts/v2_0?",
             featureName="standaard",
             isBackground=True,
-            defaultOn=True,
             content={
                 "imageURL": "",
                 "legendURL": "",
@@ -25,7 +24,6 @@ def seed(db: Session):
             url="https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0",
             featureName="Actueel_orthoHR",
             isBackground=True,
-            defaultOn=True,
             content={
                 "imageURL": "",
                 "legendURL": "",
@@ -39,7 +37,6 @@ def seed(db: Session):
             type='3dtiles',
             title='3D BAG',
             isBackground=False,
-            defaultOn=False,
             url='https://api.pdok.nl/kadaster/3d-basisvoorziening/ogc/v1_0/collections/gebouwen/3dtiles',
             featureName=None,
             content={
@@ -54,7 +51,6 @@ def seed(db: Session):
             type='geojson',
             title='Bestuurlijke grens Middelburg',
             isBackground=False,
-            defaultOn=False,
             url='https://virtueel.zeeland.nl/tiles_other/middelburg_bestuurlijkegrens_line_4326.geojson',
             featureName=None,
             content={
@@ -70,7 +66,6 @@ def seed(db: Session):
             type='wms',
             title='AHN',
             isBackground=False,
-            defaultOn=False,
             url='https://zldlufow3.zeeland.nl/geoserver/AHN4/wms?transparent=true&format=image%2Fpng&styles=&service=WMS&version=1.1.1',
             featureName='AHN4_DTM_0.5mtr',
             content={
@@ -86,7 +81,6 @@ def seed(db: Session):
             type='wms',
             title='Bodemhoogte',
             isBackground=False,
-            defaultOn=False,
             url='https://projectgeodata.zeeland.nl/geoserver/digitaltwin/wms?transparent=true&format=image%2Fpng&styles=&service=WMS&version=1.1.1&request=GetMap&layers=digitaltwin%3Azeeland_1m',
             featureName=None,
             content={
@@ -102,7 +96,6 @@ def seed(db: Session):
             type='wmts',
             title='1850',
             isBackground=False,
-            defaultOn=False,
             url='https://s.map5.nl/map/prze.zu1952/service?service=WMTS&request=GetCapabilities&version=1.0.0',
             featureName='tmk_1850',
             content={
@@ -120,7 +113,6 @@ def seed(db: Session):
             type='wms',
             title='Riolering',
             isBackground=False,
-            defaultOn=False,
             url='https://opengeodata.zeeland.nl/geoserver/gemeenten/wms?transparent=true&format=image%2Fpng&styles=&service=WMS&version=1.1.1&request=GetMap&layers=gemeente%3Ariolering_middelburg',
             featureName=None,
             content={
@@ -136,7 +128,6 @@ def seed(db: Session):
             type='3dtiles',
             title='BHR',
             isBackground=False,
-            defaultOn=False,
             url='https://virtueel.zeeland.nl/tiles_other/BHR_Cesium_Tileset_Zeeland/tileset.json',
             featureName=None,
             content={
@@ -152,7 +143,6 @@ def seed(db: Session):
             type='wms',
             title='Bodemvlakken (BRO)',
             isBackground=False,
-            defaultOn=False,
             url='https://service.pdok.nl/bzk/bro-bodemkaart/wms/v1_0?transparent=true&format=image%2Fpng&styles=&service=WMS&version=1.1.1',
             featureName='soilarea',
             content={
@@ -168,7 +158,6 @@ def seed(db: Session):
             type='wms',
             title='Vlakken van bodemkundig belang (BRO)',
             isBackground=False,
-            defaultOn=False,
             url='https://service.pdok.nl/bzk/bro-bodemkaart/wms/v1_0?transparent=true&format=image%2Fpng&styles=&service=WMS&version=1.1.1',
             featureName='areaofpedologicalinterest',
             content={
@@ -184,7 +173,6 @@ def seed(db: Session):
             type='wms',
             title='Dieptemetingen (BRO)',
             isBackground=False,
-            defaultOn=False,
             url='https://service.pdok.nl/bzk/bro-grondwaterspiegeldiepte/wms/v1_0?service=WMS&version=1.1.1',
             featureName='bro-grondwaterspiegeldieptemetingen',
             content={
@@ -200,7 +188,6 @@ def seed(db: Session):
             type='wms',
             title='GHG - gemiddeld kleinste diepte (BRO)',
             isBackground=False,
-            defaultOn=False,
             url='https://service.pdok.nl/bzk/bro-grondwaterspiegeldiepte/wms/v1_0?service=WMS&version=1.1.1',
             featureName='bro-grondwaterspiegeldieptemetingen-GHG',
             content={
@@ -216,7 +203,6 @@ def seed(db: Session):
             type='wms',
             title='GLG - gemiddeld grootste diepte (BRO)',
             isBackground=False,
-            defaultOn=False,
             url='https://service.pdok.nl/bzk/bro-grondwaterspiegeldiepte/wms/v1_0?service=WMS&version=1.1.1',
             featureName='bro-grondwaterspiegeldieptemetingen-GLG',
             content={
@@ -232,7 +218,6 @@ def seed(db: Session):
             type='wms',
             title='GVG - gemiddelde diepte voorjaar (BRO)',
             isBackground=False,
-            defaultOn=False,
             url='https://service.pdok.nl/bzk/bro-grondwaterspiegeldiepte/wms/v1_0?service=WMS&version=1.1.1',
             featureName='bro-grondwaterspiegeldieptemetingen-GVG',
             content={
@@ -248,7 +233,6 @@ def seed(db: Session):
             type='wms',
             title='GT - Grondwatertrappen (BRO)',
             isBackground=False,
-            defaultOn=False,
             url='https://service.pdok.nl/bzk/bro-grondwaterspiegeldiepte/wms/v1_0?service=WMS&version=1.1.1',
             featureName='bro-grondwaterspiegeldieptemetingen-GT',
             content={
@@ -264,7 +248,6 @@ def seed(db: Session):
             type='3dtiles',
             title='GeoTOP',
             isBackground=False,
-            defaultOn=False,
             url='https://virtueel.zeeland.nl/tiles_other/geotop_middelburg/tileset.json',
             featureName=None,
             content={
@@ -297,7 +280,6 @@ def seed(db: Session):
             type='3dtiles',
             title='FRESHEM',
             isBackground=False,
-            defaultOn=False,
             url='https://virtueel.zeeland.nl/tiles_other/freshem_middelburg/tileset.json',
             featureName=None,
             content={
@@ -335,7 +317,6 @@ def seed(db: Session):
             type='wms',
             title='Luchtfoto 2024 Ortho 8cm RGB',
             isBackground=False,
-            defaultOn=False,
             url='https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0',
             featureName='2024_orthoHR',
             content={
@@ -351,7 +332,6 @@ def seed(db: Session):
             type='wms',
             title='Luchtfoto 2023 Ortho 8cm RGB',
             isBackground=False,
-            defaultOn=False,
             url='https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0',
             featureName='2023_orthoHR',
             content={

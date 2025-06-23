@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey
+from sqlalchemy import Column, Integer, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from db.database import Base
 
@@ -7,6 +7,7 @@ class DigitalTwinLayerAssociation(Base):
     digital_twin_id = Column(Integer, ForeignKey("digital_twin.id"), primary_key=True)
     layer_id = Column(Integer, ForeignKey("layer.id"), primary_key=True)
     group_id = Column(Integer, ForeignKey("group.id"), nullable=True, default=None)
+    is_default = Column(Boolean, default=False, nullable=False)
     sort_order = Column(Integer, nullable=False)
 
     digital_twin = relationship("DigitalTwin", back_populates="layer_associations")
