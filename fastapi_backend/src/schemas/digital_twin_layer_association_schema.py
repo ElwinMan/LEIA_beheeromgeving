@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import List, Literal, Optional
 
 class DigitalTwinLayerAssociationSchema(BaseModel):
     layer_id: int
@@ -21,3 +21,13 @@ class DigitalTwinLayerRelationUpdate(BaseModel):
     is_default: bool
     sort_order: Optional[int] = None
     group_id: Optional[int] = None
+
+class DigitalTwinLayerBulkItem(BaseModel):
+    layer_id: int
+    action: Literal["create", "update", "delete"]
+    is_default: Optional[bool] = None
+    sort_order: Optional[int] = None
+    group_id: Optional[int] = None
+
+class DigitalTwinLayerBulkOperation(BaseModel):
+    operations: List[DigitalTwinLayerBulkItem]

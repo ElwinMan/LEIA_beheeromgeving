@@ -18,7 +18,8 @@ from schemas.viewer_schema import (
 )
 from schemas.digital_twin_layer_association_schema import (
     DigitalTwinLayerAssociationCreate,
-    DigitalTwinLayerRelationUpdate
+    DigitalTwinLayerRelationUpdate,
+    DigitalTwinLayerBulkOperation
 )
 from schemas.digital_twin_tool_association_schema import (
     DigitalTwinToolAssociationCreate
@@ -120,7 +121,21 @@ def delete_relation_from_digital_twin(
     deleted = layer_service.delete_layer_relation(digital_twin_id, layer_id, db)
     if not deleted:
         raise HTTPException(status_code=404, detail="Relation not found")
-    
+
+# Layer junction table bulk edit
+@router.put("/{digital_twin_id}/layer-associations/bulk")
+def bulk_modify_layer_associations(
+    digital_twin_id: int,
+    payload: DigitalTwinLayerBulkOperation,
+    db: Session = Depends(get_db)
+):
+    db_twin = service.get_digital_twin(digital_twin_id, db)
+    if not db_twin:
+        raise HTTPException(status_code=404, detail="Digital twin not found")
+
+    results = layer_service.handle_bulk_layer_operations(digital_twin_id, payload.operations, db)
+    return results
+
 # Tool junction table routes
 @router.post("/{digital_twin_id}/tool")
 def add_tool_to_digital_twin(
