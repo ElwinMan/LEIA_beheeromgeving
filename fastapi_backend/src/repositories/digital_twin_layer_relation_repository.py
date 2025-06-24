@@ -23,3 +23,15 @@ def update_layer_association(db: Session, assoc: DigitalTwinLayerAssociation):
 def delete_layer_association(db: Session, association: DigitalTwinLayerAssociation):
     db.delete(association)
     db.commit()
+
+# Query for bulk edits without commiting till all operations are successful
+def bulk_create_layer_association(db: Session, association: DigitalTwinLayerAssociation):
+    db.add(association)
+
+def bulk_update_layer_fields(assoc: DigitalTwinLayerAssociation, updates: dict):
+    for field, value in updates.items():
+        if value is not None:
+            setattr(assoc, field, value)
+
+def bulk_delete_layer_association(db: Session, assoc: DigitalTwinLayerAssociation):
+    db.delete(assoc)

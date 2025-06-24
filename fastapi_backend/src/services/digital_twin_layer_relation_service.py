@@ -47,43 +47,41 @@ def handle_bulk_layer_operations(digital_twin_id: int, operations: List[DigitalT
             sort_order=op.sort_order or 0,
             is_default=op.is_default or False
         )
-        db.add(assoc)
+        repo.bulk_create_layer_association(db, assoc)
         result_counter["created"] += 1
 
     def handle_update(op: DigitalTwinLayerBulkItem):
         assoc = repo.get_layer_association(db, digital_twin_id, op.layer_id)
-        if not assoc:
-            return
-
-        update_fields = {
-            "sort_order": op.sort_order,
-            "group_id": op.group_id,
-            "is_default": op.is_default,
-        }
-
-        # Only update attributes that are not None
-        for field, value in update_fields.items():
-            if value is not None:
-                setattr(assoc, field, value)
-
-        result_counter["updated"] += 1
+        if assoc:
+            updates = {
+                "sort_order": op.sort_order,
+                "group_id": op.group_id,
+                "is_default": op.is_default,
+            }
+            repo.bulk_update_layer_fields(assoc, updates)
+            result_counter["updated"] += 1
 
     def handle_delete(op: DigitalTwinLayerBulkItem):
         assoc = repo.get_layer_association(db, digital_twin_id, op.layer_id)
         if assoc:
-            db.delete(assoc)
+            repo.bulk_delete_layer_association(db, assoc)
             result_counter["deleted"] += 1
 
-    dispatch_map = {
+    dispatch = {
         "create": handle_create,
         "update": handle_update,
         "delete": handle_delete
     }
 
-    for op in operations:
-        handler = dispatch_map.get(op.action)
-        if handler:
-            handler(op)
+    try:
+        for op in operations:
+            handler = dispatch.get(op.action)
+            if handler:
+                handler(op)
 
-    db.commit()
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
     return result_counter
