@@ -1,29 +1,19 @@
-# Use official Node.js image as the base image
-FROM node:22 AS build
+FROM node:lts-slim AS build
 
-# Set the working directory in the container
 WORKDIR /app
 
-# Copy package.json and package-lock.json
 COPY package*.json ./
-
-# Install project dependencies
-RUN npm install
-
-# Copy the rest of the application code
+RUN rm -rf node_modules
+RUN rm -rf build
 COPY . .
-
-# Build the Vite app (Svelte)
+RUN npm install
 RUN npm run build
 
-# Use Nginx to serve the built files
-FROM nginx:alpine
+FROM node:lts-slim as RUN
 
-# Copy built app from previous stage
-COPY --from=build /app/dist /usr/share/nginx/html
+WORKDIR /app
+COPY --from=build /app/package.json ./package.json
+COPY --from=build /app/build ./build
+RUN npm install --production
 
-# Expose the default port Nginx listens on
-EXPOSE 80
-
-# Run Nginx in the foreground
-CMD ["nginx", "-g", "daemon off;"]
+ENTRYPOINT [ "node", "build" ]
