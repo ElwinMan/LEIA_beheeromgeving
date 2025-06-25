@@ -1,2 +1,13 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
+<script>
+  export let data;
+</script>
+
+<h1>Digital Twins</h1>
+<ul>
+  {#each data.digitalTwins as twin}
+    <li>Name: {twin.name}</li>
+    <li>Title: {twin.title}</li>
+    <li>Subtitle: {twin.subtitle}</li>
+    <br>
+  {/each}
+</ul>

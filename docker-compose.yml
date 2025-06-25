@@ -5,6 +5,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
+    env_file:
+      - ./svelte_frontend/.env.docker
     restart: unless-stopped
 
   backend:
