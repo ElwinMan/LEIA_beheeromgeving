@@ -22,6 +22,16 @@ API docs: http://localhost:8000/docs
 
 PostgreSQL: http://localhost:5432/
 
+### Run local
+```sh
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+cd src
+python -m src.scripts.manage fresh
+uvicorn main:app --reload
+```
+
 ## Backend manage tool
 This manage.py script provides a simple command-line interface to manage your database. It supports dropping tables, creating tables, running migrations, seeding data, and running a full reset (fresh) combining all steps.
 

@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 from db.database import Base
 from models.associations import DigitalTwinLayerAssociation, DigitalTwinToolAssociation
 
@@ -10,6 +11,9 @@ class DigitalTwin(Base):
     name = Column(String, unique=True, nullable=False)
     title = Column(String, nullable=False)
     subtitle = Column(String, nullable=True)
+    owner = Column(String, nullable=True)
+    private = Column(Boolean, default=False)
+    last_updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
 
     viewer = relationship(
         "Viewer",

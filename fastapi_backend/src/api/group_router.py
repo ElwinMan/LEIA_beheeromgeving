@@ -4,7 +4,7 @@ from db.database import get_db
 from schemas.group_schema import GroupCreate, GroupUpdate, GroupResponse
 import services.group_service as service
 
-router = APIRouter(prefix="/digital_twins/{digital_twin_id}/groups", tags=["Digital Twin Groups"])
+router = APIRouter(prefix="/digital-twins/{digital_twin_id}/groups", tags=["Digital Twin Groups"])
 
 @router.get("/", response_model=list[GroupResponse])
 def list_groups(digital_twin_id: int, db: Session = Depends(get_db)):

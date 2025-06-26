@@ -5,14 +5,12 @@ export async function load() {
     const digitalTwins = await fetchDigitalTwins()
     return {
       digitalTwins,
-      loading: false,
       error: null,
     }
   } catch (error) {
     console.error("Failed to load digital twins:", error)
     return {
       digitalTwins: [],
-      loading: false,
       error: "Kon digital twins niet laden. Controleer of de API server draait op localhost:8000.",
     }
   }

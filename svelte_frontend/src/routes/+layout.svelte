@@ -1,7 +1,14 @@
 <script lang="ts">
 	import '../app.css';
+	import Navigation from '$lib/components/Navigation.svelte';
+	
+	interface Props {
+		children?: import('svelte').Snippet;
+	}
 
-	let { children } = $props();
+	let { children }: Props = $props();
 </script>
 
-{@render children()}
+<Navigation>
+	{@render children?.()}
+</Navigation>

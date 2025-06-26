@@ -1,5 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer
 from typing import Optional, List
+from datetime import datetime
 from schemas.digital_twin_layer_association_schema import DigitalTwinLayerAssociationSchema
 from schemas.digital_twin_tool_association_schema import DigitalTwinToolAssociationSchema
 
@@ -7,6 +8,13 @@ class DigitalTwinBase(BaseModel):
     name: str
     title: str
     subtitle: Optional[str] = None
+    owner: Optional[str] = None
+    private: bool
+    last_updated: datetime
+
+    @field_serializer("last_updated")
+    def format_last_updated(self, value: datetime) -> str:
+        return value.strftime("%Y-%m-%d %H:%M")
 
 class DigitalTwinCreate(DigitalTwinBase):
     pass
@@ -15,6 +23,8 @@ class DigitalTwinUpdate(BaseModel):
     name: Optional[str] = None
     title: Optional[str] = None
     subtitle: Optional[str] = None
+    owner: Optional[str] = None
+    private: Optional[bool] = None
 
 class DigitalTwinListResponse(DigitalTwinBase):
     id: int

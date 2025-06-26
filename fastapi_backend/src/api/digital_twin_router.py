@@ -25,7 +25,7 @@ from schemas.digital_twin_tool_association_schema import (
     DigitalTwinToolAssociationCreate
 )
 
-router = APIRouter(prefix="/digital_twins", tags=["Digital Twins"])
+router = APIRouter(prefix="/digital-twins", tags=["Digital Twins"])
 
 @router.get("/", response_model=list[DigitalTwinListResponse])
 def read_all_digital_twins(db: Session = Depends(get_db)):
