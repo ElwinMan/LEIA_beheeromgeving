@@ -1,8 +1,9 @@
 from pydantic import BaseModel, field_serializer
 from typing import Optional, List
 from datetime import datetime
-from schemas.digital_twin_layer_association_schema import DigitalTwinLayerAssociationSchema
+from schemas.digital_twin_layer_association_schema import DigitalTwinLayerAssociationSchema, DigitalTwinLayerBulkOperation
 from schemas.digital_twin_tool_association_schema import DigitalTwinToolAssociationSchema
+from schemas.group_schema import DigitalTwinGroupBulkOperation
 
 class DigitalTwinBase(BaseModel):
     name: str
@@ -39,3 +40,8 @@ class DigitalTwinResponse(DigitalTwinBase):
 
     class Config:
         orm_mode = True
+
+
+class BulkAssociationsPayload(BaseModel):
+    layer_payload: DigitalTwinLayerBulkOperation
+    group_payload: DigitalTwinGroupBulkOperation

@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { Folder, FolderOpen, File, Eye, EyeOff, ChevronDown, ChevronRight, Save, RotateCcw, GripVertical } from 'lucide-svelte';
-  import { fetchLayers, fetchGroups, bulkUpdateDigitalTwinLayers } from '$lib/api';
-  import type { DigitalTwin, Layer, LayerWithAssociation, Group, GroupWithLayers, LayerBulkOperation } from '$lib/types/digitalTwin';
+  import { fetchLayers, fetchGroups, bulkUpdateDigitalTwinAssociations } from '$lib/api';
+  import type { DigitalTwin, Layer, LayerWithAssociation, Group, GroupWithLayers, LayerBulkOperation, GroupBulkOperation, BulkAssociationsPayload } from '$lib/types/digitalTwin';
 
   interface Props {
     digitalTwin: DigitalTwin | null;
@@ -221,6 +221,8 @@
 
     if (draggedItem.type === 'layer') {
       handleLayerDrop(dropType, dropId, dropGroupId, zone);
+    } else if (draggedItem.type === 'group') {
+      handleGroupDrop(dropType, dropId, dropGroupId, zone);
     }
 
     draggedItem = null;
@@ -281,10 +283,10 @@
       }
     }
 
-    updateSortOrders();
+    updateLayerSortOrders();
   }
 
-  function updateSortOrders() {
+  function updateLayerSortOrders() {
     // Update ungrouped layers sort order
     ungroupedLayers.forEach((layer, index) => {
       layer.sort_order = index;
@@ -308,6 +310,121 @@
     // Force reactivity
     ungroupedLayers = [...ungroupedLayers];
     rootGroups = [...rootGroups];
+  }
+
+  // Function to handle dropping groups with drag and drop
+  function handleGroupDrop(dropType: string, dropId: number, dropGroupId: number | null | undefined, zone: string) {
+    if (!draggedItem || draggedItem.type !== 'group') return;
+
+    const groupId = draggedItem.id;
+    const sourceParentId = draggedItem.groupId ?? null; // parent_id of dragged group
+
+    // Prevent dropping group onto itself or its descendants
+    if (groupId === dropId || isDescendantGroup(groupId, dropId)) {
+      return; // invalid drop
+    }
+
+    // Find the dragged group and remove it from its current parent group or rootGroups
+    let draggedGroup: GroupWithLayers | undefined;
+
+    function removeGroup(groups: GroupWithLayers[]): boolean {
+      const index = groups.findIndex(g => g.id === groupId);
+      if (index !== -1) {
+        draggedGroup = groups.splice(index, 1)[0];
+        return true;
+      }
+      for (const group of groups) {
+        if (removeGroup(group.subgroups)) return true;
+      }
+      return false;
+    }
+
+    removeGroup(rootGroups);
+
+    if (!draggedGroup) return;
+
+    if (dropType === 'group' && zone === 'middle') {
+      // Drop into target group as a subgroup (append)
+      const targetGroup = findGroupById(rootGroups, dropId);
+      if (targetGroup) {
+        draggedGroup.parent_id = targetGroup.id;
+        draggedGroup.depth = targetGroup.depth + 1;
+        targetGroup.subgroups.push(draggedGroup);
+      }
+    } else if (dropType === 'group' && (zone === 'top' || zone === 'bottom')) {
+      // Insert as sibling before/after drop group (same parent)
+      const targetGroup = findGroupById(rootGroups, dropId);
+      if (!targetGroup) return;
+
+      const parentGroupId = targetGroup.parent_id;
+      const siblings = parentGroupId === null ? rootGroups : findGroupById(rootGroups, parentGroupId)?.subgroups;
+      if (!siblings) return;
+
+      draggedGroup.parent_id = parentGroupId;
+      draggedGroup.depth = parentGroupId === null ? 0 : (findGroupById(rootGroups, parentGroupId)?.depth ?? 0) + 1;
+
+      const targetIndex = siblings.findIndex(g => g.id === dropId);
+      const insertIndex = zone === 'top' ? targetIndex : targetIndex + 1;
+
+      siblings.splice(insertIndex, 0, draggedGroup);
+    } else if (dropType === 'layer') {
+      // Dropping on a layer means placing group as sibling to that layer's group or ungrouped
+      // For simplicity, place dragged group at root level or sibling group level.
+
+      const targetGroupId = dropGroupId ?? null;
+      const siblings = targetGroupId === null ? rootGroups : findGroupById(rootGroups, targetGroupId)?.subgroups;
+      if (!siblings) return;
+
+      draggedGroup.parent_id = targetGroupId;
+      draggedGroup.depth = targetGroupId === null ? 0 : (findGroupById(rootGroups, targetGroupId)?.depth ?? 0) + 1;
+
+      // Find index of the layer's group (or ungrouped) to place before/after
+      let targetIndex = 0;
+
+      if (targetGroupId === null) {
+        // Ungrouped layers area, append at end
+        targetIndex = siblings.length;
+      } else {
+        // In a group, append at end
+        targetIndex = siblings.length;
+      }
+
+      siblings.splice(targetIndex, 0, draggedGroup);
+    }
+
+    // After reposition, update depths of dragged group's subgroups recursively
+    function updateDepths(group: GroupWithLayers, newDepth: number) {
+      group.depth = newDepth;
+      group.subgroups.forEach(sub => updateDepths(sub, newDepth + 1));
+    }
+    updateDepths(draggedGroup, draggedGroup.depth);
+
+    updateGroupSortOrders(rootGroups);
+
+    // Force reactivity
+    rootGroups = [...rootGroups];
+  }
+
+  function isDescendantGroup(possibleDescendantId: number, possibleAncestorId: number): boolean {
+    const ancestor = findGroupById(rootGroups, possibleAncestorId);
+    if (!ancestor) return false;
+
+    function checkSubgroups(groups: GroupWithLayers[]): boolean {
+      for (const group of groups) {
+        if (group.id === possibleDescendantId) return true;
+        if (checkSubgroups(group.subgroups)) return true;
+      }
+      return false;
+    }
+
+    return checkSubgroups(ancestor.subgroups);
+  }
+
+  function updateGroupSortOrders(groups: GroupWithLayers[]) {
+    groups.forEach((group, index) => {
+      group.sort_order = index;
+      updateGroupSortOrders(group.subgroups);
+    });
   }
 
   function updateLayersWithDetails() {
@@ -346,46 +463,74 @@
   // Save changes to the API
   async function saveChanges() {
     if (!hasChanges) return;
-    
+
     isSaving = true;
     try {
-      // Collect all layer associations and operation action
-      const operations: LayerBulkOperation[] = [];
-      
-      // Add ungrouped layers
+      // Collect layer operations
+      const layerOperations: LayerBulkOperation[] = [];
+
+      // Ungrouped layers
       ungroupedLayers.forEach(layer => {
-        operations.push({
+        layerOperations.push({
           action: "update",
           layer_id: layer.layer_id,
           is_default: layer.is_default,
           sort_order: layer.sort_order,
-          group_id: null
+          group_id: null,
         });
       });
 
-      // Add grouped layers recursively
+      // Grouped layers (recursive)
       function collectGroupLayers(groups: GroupWithLayers[]) {
         groups.forEach(group => {
           group.layers.forEach(layer => {
-            operations.push({
+            layerOperations.push({
               action: "update",
               layer_id: layer.layer_id,
               is_default: layer.is_default,
               sort_order: layer.sort_order,
-              group_id: group.id
+              group_id: group.id,
             });
           });
           collectGroupLayers(group.subgroups);
         });
       }
-
       collectGroupLayers(rootGroups);
 
-      await bulkUpdateDigitalTwinLayers(digitalTwinId, operations);
+      // Collect group operations 
+      const groupOperations: GroupBulkOperation[] = [];
+
+      function collectGroupOperations(groups: Group[]): void {
+        groups.forEach(group => {
+          groupOperations.push({
+            action: "update",
+            id: group.id,
+            title: group.title,
+            parent_id: group.parent_id,
+            sort_order: group.sort_order,
+            digital_twin_id: group.digital_twin_id,
+          });
+
+          if ('subgroups' in group && Array.isArray((group as any).subgroups)) {
+            collectGroupOperations((group as any).subgroups);
+          }
+        });
+      }
       
+      collectGroupOperations(rootGroups);
+
+      // Compose full payload to match backend
+      const payload: BulkAssociationsPayload = {
+        layer_payload: { operations: layerOperations },
+        group_payload: { operations: groupOperations },
+      };
+
+      // Call the combined bulk update API
+      await bulkUpdateDigitalTwinAssociations(digitalTwinId, payload);
+
       hasChanges = false;
       originalData = deepClone({ ungroupedLayers, rootGroups });
-      
+
       alert('Layer volgorde succesvol opgeslagen!');
     } catch (error) {
       console.error('Failed to save changes:', error);
@@ -394,6 +539,7 @@
       isSaving = false;
     }
   }
+
 
   // Reset changes
   function resetChanges() {
@@ -538,6 +684,8 @@
       ondragover={(e) => handleDragOver(e, 'group', group.id)}
       ondragleave={handleDragLeave}
       ondrop={(e) => handleDrop(e, 'group', group.id)}
+      draggable="true"
+      ondragstart={(e) => handleDragStart(e, 'group', group.id, group.parent_id)}
       role="listitem"
     >
       <button

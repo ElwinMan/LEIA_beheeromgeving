@@ -54,3 +54,12 @@ export interface LayerBulkOperation {
   sort_order?: number | null;
   group_id?: number | null;
 }
+
+export interface GroupBulkOperation extends Group {
+  action: 'create' | 'update' | 'delete';
+}
+
+export interface BulkAssociationsPayload {
+  layer_payload: { operations: LayerBulkOperation[] };
+  group_payload: { operations: GroupBulkOperation[] };
+}

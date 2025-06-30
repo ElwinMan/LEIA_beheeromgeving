@@ -1,7 +1,5 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL
-import type { LayerBulkOperation } from '$lib/types/digitalTwin';
-
-const operations: LayerBulkOperation[] = [];
+import type { BulkAssociationsPayload } from '$lib/types/digitalTwin';
 
 type LayerAssociation = {}
 
@@ -54,21 +52,15 @@ export async function updateDigitalTwinLayerOrder(digitalTwinId: string, layerAs
   }
 }
 
-export async function bulkUpdateDigitalTwinLayers(digitalTwinId: string, operations: LayerBulkOperation[]) {
-  try {
-    const res = await fetch(`${API_BASE}/digital-twins/${digitalTwinId}/layer-associations/bulk`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ operations }),
-    });
-    if (!res.ok) throw new Error("Failed to update layer associations");
-    return await res.json();
-  } catch (error) {
-    console.error("Error updating layer associations:", error);
-    throw error;
-  }
+export async function bulkUpdateDigitalTwinAssociations(digitalTwinId: string, payload: BulkAssociationsPayload) {
+  return fetch(`${API_BASE}/digital-twins/${digitalTwinId}/associations/bulk`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }).then(res => {
+    if (!res.ok) throw new Error(`Failed to save: ${res.statusText}`);
+    return res.json();
+  });
 }
 
 export async function updateGroupOrder(digitalTwinId: string, groups: Group[]) {

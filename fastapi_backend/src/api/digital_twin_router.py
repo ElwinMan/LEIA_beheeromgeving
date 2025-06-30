@@ -4,12 +4,14 @@ from db.database import get_db
 import services.digital_twin_service as service
 import services.viewer_service as viewer_service
 import services.digital_twin_layer_relation_service as layer_service
+import services.digital_twin_group_relation_service as group_service
 import services.digital_twin_tool_relation_service as tool_service
 from schemas.digital_twin_schema import (
     DigitalTwinCreate,
     DigitalTwinUpdate,
     DigitalTwinResponse,
-    DigitalTwinListResponse
+    DigitalTwinListResponse,
+    BulkAssociationsPayload
 )
 from schemas.viewer_schema import (
     ViewerCreate,
@@ -19,7 +21,6 @@ from schemas.viewer_schema import (
 from schemas.digital_twin_layer_association_schema import (
     DigitalTwinLayerAssociationCreate,
     DigitalTwinLayerRelationUpdate,
-    DigitalTwinLayerBulkOperation
 )
 from schemas.digital_twin_tool_association_schema import (
     DigitalTwinToolAssociationCreate
@@ -123,18 +124,24 @@ def delete_relation_from_digital_twin(
         raise HTTPException(status_code=404, detail="Relation not found")
 
 # Layer junction table bulk edit
-@router.put("/{digital_twin_id}/layer-associations/bulk")
+@router.put("/{digital_twin_id}/associations/bulk")
 def bulk_modify_layer_associations(
     digital_twin_id: int,
-    payload: DigitalTwinLayerBulkOperation,
+    payload: BulkAssociationsPayload,
     db: Session = Depends(get_db)
 ):
     db_twin = service.get_digital_twin(digital_twin_id, db)
     if not db_twin:
         raise HTTPException(status_code=404, detail="Digital twin not found")
 
-    results = layer_service.handle_bulk_layer_operations(digital_twin_id, payload.operations, db)
-    return results
+    layer_results = layer_service.handle_bulk_layer_operations(
+        digital_twin_id, payload.layer_payload.operations, db
+    )
+    group_results = group_service.handle_bulk_group_operations(
+        digital_twin_id, payload.group_payload.operations, db
+    )
+    
+    return {"layers": layer_results, "groups": group_results}
 
 # Tool junction table routes
 @router.post("/{digital_twin_id}/tool")
