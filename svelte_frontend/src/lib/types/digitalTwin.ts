@@ -23,6 +23,12 @@ export interface Group {
   digital_twin_id: number
 }
 
+export interface Tool {
+  id: number
+  name: string
+  content: any
+}
+
 export interface LayerWithAssociation extends LayerAssociation {
   title: string
   beschrijving: string
@@ -62,4 +68,42 @@ export interface GroupBulkOperation extends Group {
 export interface BulkAssociationsPayload {
   layer_payload: { operations: LayerBulkOperation[] };
   group_payload: { operations: GroupBulkOperation[] };
+}
+
+export interface ViewerStartPosition {
+  x: number;
+  y: number;
+  z: number;
+  heading: number;
+  pitch: number;
+  duration: number;
+}
+
+export interface ViewerColors {
+  [key: string]: string;
+}
+
+export interface ViewerContent {
+  logo: string;
+  thumbnail: string;
+  startPosition: ViewerStartPosition;
+  colors: ViewerColors;
+}
+
+export interface DigitalTwinViewerResponse {
+  id: number;
+  content: ViewerContent;
+}
+
+export interface ToolAssociation {
+  tool_id: number;
+}
+
+export interface BulkToolOperation {
+  tool_id: number;
+  action: "create" | "delete";
+}
+
+export interface BulkToolPayload {
+  operations: BulkToolOperation[];
 }

@@ -23,7 +23,8 @@ from schemas.digital_twin_layer_association_schema import (
     DigitalTwinLayerRelationUpdate,
 )
 from schemas.digital_twin_tool_association_schema import (
-    DigitalTwinToolAssociationCreate
+    # DigitalTwinToolAssociationCreate
+    DigitalTwinToolBulkOperation
 )
 
 router = APIRouter(prefix="/digital-twins", tags=["Digital Twins"])
@@ -143,26 +144,42 @@ def bulk_modify_layer_associations(
     
     return {"layers": layer_results, "groups": group_results}
 
-# Tool junction table routes
-@router.post("/{digital_twin_id}/tool")
-def add_tool_to_digital_twin(
+# # Tool junction table routes
+# @router.post("/{digital_twin_id}/tool")
+# def add_tool_to_digital_twin(
+#     digital_twin_id: int,
+#     tool_data: DigitalTwinToolAssociationCreate,
+#     db: Session = Depends(get_db)
+# ):
+#     db_twin = service.get_digital_twin(digital_twin_id, db)
+#     if not db_twin:
+#         raise HTTPException(status_code=404, detail="Digital twin not found")
+
+#     tool_service.add_tool_association(digital_twin_id, tool_data, db)
+#     return {"message": "Tool association created"}
+
+# @router.delete("/{digital_twin_id}/tool/{tool_id}", status_code=204)
+# def delete_tool_from_digital_twin(
+#     digital_twin_id: int,
+#     tool_id: int,
+#     db: Session = Depends(get_db)
+# ):
+#     deleted = tool_service.delete_tool_relation(digital_twin_id, tool_id, db)
+#     if not deleted:
+#         raise HTTPException(status_code=404, detail="Relation not found")
+    
+# Tools junction table bulk routes
+@router.put("/{digital_twin_id}/tools/bulk")
+def bulk_modify_tool_associations(
     digital_twin_id: int,
-    tool_data: DigitalTwinToolAssociationCreate,
+    payload: DigitalTwinToolBulkOperation,
     db: Session = Depends(get_db)
 ):
     db_twin = service.get_digital_twin(digital_twin_id, db)
     if not db_twin:
         raise HTTPException(status_code=404, detail="Digital twin not found")
 
-    tool_service.add_tool_association(digital_twin_id, tool_data, db)
-    return {"message": "Tool association created"}
-
-@router.delete("/{digital_twin_id}/tool/{tool_id}", status_code=204)
-def delete_tool_from_digital_twin(
-    digital_twin_id: int,
-    tool_id: int,
-    db: Session = Depends(get_db)
-):
-    deleted = tool_service.delete_tool_relation(digital_twin_id, tool_id, db)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Relation not found")
+    results = tool_service.handle_bulk_tool_operations(
+        digital_twin_id, payload.operations, db
+    )
+    return {"tools": results}

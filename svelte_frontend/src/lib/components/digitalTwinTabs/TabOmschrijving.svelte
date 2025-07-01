@@ -1,30 +1,110 @@
 <script lang="ts">
   import type { DigitalTwin } from '$lib/types/digitalTwin';
+  import { updateDigitalTwin } from '$lib/api';
 
-  interface Props {
-    digitalTwin: DigitalTwin | null;
-    digitalTwinId: string;
+  export let digitalTwin: DigitalTwin;
+  export let digitalTwinId: string;
+
+  import AlertBanner from '$lib/components/AlertBanner.svelte';
+  let successBanner: InstanceType<typeof AlertBanner> | null = null;
+  let errorBanner: InstanceType<typeof AlertBanner> | null = null;
+  let requiredBanner: InstanceType<typeof AlertBanner> | null = null;
+  let requiredFieldMessage: string = "";
+
+  let title = digitalTwin?.title ?? "";
+  let name = digitalTwin?.name ?? "";
+  let subtitle = digitalTwin?.subtitle ?? "";
+  let owner = digitalTwin?.owner ?? "";
+  let isPrivate = digitalTwin?.private ?? false;
+
+  function getMissingRequiredFields(): string[] {
+    const requiredFields = [
+      { label: "Titel", value: title },
+      { label: "Naam", value: name }
+    ];
+
+    return requiredFields
+      .filter(field => !field.value.trim())
+      .map(field => field.label);
   }
 
-  let { digitalTwin, digitalTwinId }: Props = $props();
+  async function handleSubmit(event: Event) {
+    event.preventDefault();
+
+    const missingFields = getMissingRequiredFields();
+
+    if (missingFields.length > 0) {
+      requiredFieldMessage = `Verplichte velden niet ingevuld: ${missingFields.join(", ")}`;
+      requiredBanner?.show();
+      return;
+    }
+
+    try {
+      await updateDigitalTwin(digitalTwinId, {
+        title,
+        name,
+        subtitle,
+        owner,
+        private: isPrivate
+      });
+      successBanner?.show();
+    } catch (err) {
+      console.error(err);
+      errorBanner?.show();
+    }
+  }
 </script>
 
-<div class="space-y-6">
-  <h2 class="text-2xl font-bold">Omschrijving</h2>
-  <p class="text-base-content/70">Algemene informatie over deze digital twin.</p>
-  
-  {#if digitalTwin}
-    <div class="card bg-base-100 border border-base-300">
-      <div class="card-body">
-        <h3 class="card-title">{digitalTwin.title}</h3>
-        <p><strong>Naam:</strong> {digitalTwin.name}</p>
-        <p><strong>Subtitle:</strong> {digitalTwin.subtitle}</p>
-        <p><strong>Eigenaar:</strong> {digitalTwin.owner}</p>
-        <p><strong>Laatst gewijzigd:</strong> {digitalTwin.last_updated}</p>
-        <p><strong>Privé:</strong> {digitalTwin.private ? 'Ja' : 'Nee'}</p>
-      </div>
-    </div>
-  {:else}
-    <p>Geen data beschikbaar voor digital twin ID: {digitalTwinId}</p>
-  {/if}
-</div>
+<!-- AlertBanners that are only visable after the submit button is pressed -->
+<AlertBanner
+  bind:this={successBanner}
+  type="success"
+  message="Digital Twin omschrijving bijgewerkt!"
+/>
+<AlertBanner
+  bind:this={errorBanner}
+  type="error"
+  message="Fout bij het opslaan!"
+/>
+<AlertBanner
+  bind:this={requiredBanner}
+  type="error"
+  message={requiredFieldMessage}
+/>
+
+<form on:submit={handleSubmit} class="space-y-4">
+  <div class="flex flex-col">
+    <label for="title" class="mb-1 font-semibold">Titel:</label>
+    <input id="title" class="input input-bordered" bind:value={title} class:error={!title.trim()} />
+    {#if !title.trim()}
+      <span class="text-error text-sm mt-1">Titel is verplicht</span>
+    {/if}
+  </div>
+
+  <div class="flex flex-col">
+    <label for="name" class="mb-1 font-semibold">
+      Naam <span class="opacity-50">(bestandsnaam)</span>:
+    </label>
+    <input id="name" class="input input-bordered" bind:value={name} class:error={!name.trim()} />
+    {#if !name.trim()}
+      <span class="text-error text-sm mt-1">Naam is verplicht</span>
+    {/if}
+  </div>
+
+  <div class="flex flex-col">
+    <label for="subtitle" class="mb-1 font-semibold">Subtitle:</label>
+    <input id="subtitle" class="input input-bordered" bind:value={subtitle} />
+  </div>
+
+  <div class="flex flex-col">
+    <label for="owner" class="mb-1 font-semibold">Eigenaar:</label>
+    <input id="owner" class="input input-bordered" bind:value={owner} />
+  </div>
+
+  <div class="flex items-center space-x-2">
+    <input id="private" type="checkbox" bind:checked={isPrivate} />
+    <label for="private" class="font-semibold">Privé</label>
+  </div>
+
+  <button type="submit" class="btn btn-primary">Opslaan</button>
+</form>

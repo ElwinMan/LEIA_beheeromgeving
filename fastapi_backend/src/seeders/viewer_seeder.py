@@ -17,10 +17,6 @@ def seed(db: Session):
                 "pitch": -34.77193,
                 "duration": 1.50
             },
-            "terrain": {
-                "url": "https://api.pdok.nl/kadaster/3d-basisvoorziening/ogc/v1_0/collections/digitaalterreinmodel/quantized-mesh",
-                "requestVertexNormals": True
-            },
             "colors": {
                 "ui-background": "#ffffff",
                 "interactive-01": "#214170",
