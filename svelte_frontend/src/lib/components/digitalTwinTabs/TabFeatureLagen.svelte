@@ -6,6 +6,7 @@
   import type { LayerWithAssociation, GroupWithLayers, LayerBulkOperation, GroupBulkOperation, BulkAssociationsPayload } from '$lib/types/digitalTwinAssociation';
   import type { Layer } from '$lib/types/layer';
   import type { Group } from '$lib/types/group';
+  import AlertBanner from '$lib/components/AlertBanner.svelte';
 
   interface Props {
     digitalTwin: DigitalTwin | null;
@@ -39,14 +40,17 @@
   let rootGroups = $state<GroupWithLayers[]>([]);
   let expandedGroups = $state<Set<number>>(new Set());
   let hasChanges = $state(false);
-  let isSaving = $state(false);
   let isLoading = $state(true);
   let error = $state<string | null>(null);
   let originalData: { ungroupedLayers: LayerWithAssociation[], rootGroups: GroupWithLayers[] } = { ungroupedLayers: [], rootGroups: [] };
+  let isSaving = $state(false);
 
   // Drag and drop state
   let draggedItem = $state<{ type: 'layer' | 'group', id: number, groupId?: number | null } | null>(null);
   let draggedOverItem = $state<{ type: 'layer' | 'group', id: number, groupId?: number | null, zone: 'top' | 'middle' | 'bottom' } | null>(null);
+
+  let successBanner: InstanceType<typeof AlertBanner> | null = null;
+  let errorBanner: InstanceType<typeof AlertBanner> | null = null;
 
   onMount(async () => {
     try {
@@ -145,8 +149,6 @@
       hasChanges = true;
       // Force reactivity
       layersWithDetails = [...layersWithDetails];
-      ungroupedLayers = [...ungroupedLayers];
-      rootGroups = [...rootGroups];
     }
   }
 
@@ -201,13 +203,23 @@
       draggedOverItem = null;
       return;
     }
-    
-    // For groups, only allow middle zone (drop into group)
-    if (type === 'group' && zone !== 'middle') {
+
+    // Prevent group-to-layer drops
+    if (draggedItem.type === 'group' && type === 'layer') {
       draggedOverItem = null;
       return;
     }
+
+    // For group-to-group drops, prevent ANY drop on descendants
+    if (draggedItem.type === 'group' && type === 'group') {
+      // Check if target is a descendant of dragged item
+      if (isDescendantGroup(draggedItem.id, id)) {
+        draggedOverItem = null;
+        return;
+      }
+    }
     
+    // Allow all zones for valid drops
     draggedOverItem = { type, id, groupId, zone };
   }
 
@@ -320,108 +332,108 @@
     if (!draggedItem || draggedItem.type !== 'group') return;
 
     const groupId = draggedItem.id;
-    const sourceParentId = draggedItem.groupId ?? null; // parent_id of dragged group
 
-    // Prevent dropping group onto itself or its descendants
-    if (groupId === dropId || isDescendantGroup(groupId, dropId)) {
-      return; // invalid drop
-    }
-
-    // Find the dragged group and remove it from its current parent group or rootGroups
+    // Find and remove the dragged group from its current location
     let draggedGroup: GroupWithLayers | undefined;
 
-    function removeGroup(groups: GroupWithLayers[]): boolean {
+    function removeGroupFromParent(groups: GroupWithLayers[]): boolean {
       const index = groups.findIndex(g => g.id === groupId);
       if (index !== -1) {
         draggedGroup = groups.splice(index, 1)[0];
         return true;
       }
       for (const group of groups) {
-        if (removeGroup(group.subgroups)) return true;
+        if (removeGroupFromParent(group.subgroups)) return true;
       }
       return false;
     }
 
-    removeGroup(rootGroups);
-
-    if (!draggedGroup) return;
-
-    if (dropType === 'group' && zone === 'middle') {
-      // Drop into target group as a subgroup (append)
-      const targetGroup = findGroupById(rootGroups, dropId);
-      if (targetGroup) {
-        draggedGroup.parent_id = targetGroup.id;
-        draggedGroup.depth = targetGroup.depth + 1;
-        targetGroup.subgroups.push(draggedGroup);
-      }
-    } else if (dropType === 'group' && (zone === 'top' || zone === 'bottom')) {
-      // Insert as sibling before/after drop group (same parent)
-      const targetGroup = findGroupById(rootGroups, dropId);
-      if (!targetGroup) return;
-
-      const parentGroupId = targetGroup.parent_id;
-      const siblings = parentGroupId === null ? rootGroups : findGroupById(rootGroups, parentGroupId)?.subgroups;
-      if (!siblings) return;
-
-      draggedGroup.parent_id = parentGroupId;
-      draggedGroup.depth = parentGroupId === null ? 0 : (findGroupById(rootGroups, parentGroupId)?.depth ?? 0) + 1;
-
-      const targetIndex = siblings.findIndex(g => g.id === dropId);
-      const insertIndex = zone === 'top' ? targetIndex : targetIndex + 1;
-
-      siblings.splice(insertIndex, 0, draggedGroup);
-    } else if (dropType === 'layer') {
-      // Dropping on a layer means placing group as sibling to that layer's group or ungrouped
-      // For simplicity, place dragged group at root level or sibling group level.
-
-      const targetGroupId = dropGroupId ?? null;
-      const siblings = targetGroupId === null ? rootGroups : findGroupById(rootGroups, targetGroupId)?.subgroups;
-      if (!siblings) return;
-
-      draggedGroup.parent_id = targetGroupId;
-      draggedGroup.depth = targetGroupId === null ? 0 : (findGroupById(rootGroups, targetGroupId)?.depth ?? 0) + 1;
-
-      // Find index of the layer's group (or ungrouped) to place before/after
-      let targetIndex = 0;
-
-      if (targetGroupId === null) {
-        // Ungrouped layers area, append at end
-        targetIndex = siblings.length;
-      } else {
-        // In a group, append at end
-        targetIndex = siblings.length;
-      }
-
-      siblings.splice(targetIndex, 0, draggedGroup);
+    // Remove from current location
+    const removed = removeGroupFromParent(rootGroups);
+    if (!removed || !draggedGroup) {
+      console.error('Could not find dragged group to remove');
+      return;
     }
 
-    // After reposition, update depths of dragged group's subgroups recursively
+    // Handle the drop based on type and zone
+    if (dropType === 'group') {
+      if (zone === 'middle') {
+        // Drop INTO target group as a subgroup
+        const targetGroup = findGroupById(rootGroups, dropId);
+        if (targetGroup) {
+          draggedGroup.parent_id = targetGroup.id;
+          draggedGroup.depth = targetGroup.depth + 1;
+          targetGroup.subgroups.push(draggedGroup);
+        }
+      } else if (zone === 'top' || zone === 'bottom') {
+        // Drop ABOVE or BELOW target group (as sibling)
+        const targetGroup = findGroupById(rootGroups, dropId);
+        if (!targetGroup) {
+          console.error('Could not find target group');
+          return;
+        }
+
+        const parentGroupId = targetGroup.parent_id;
+        
+        // Find the correct siblings array
+        let siblings: GroupWithLayers[];
+        if (parentGroupId === null) {
+          siblings = rootGroups;
+        } else {
+          const parentGroup = findGroupById(rootGroups, parentGroupId);
+          if (!parentGroup) {
+            console.error('Could not find parent group');
+            return;
+          }
+          siblings = parentGroup.subgroups;
+        }
+
+        // Set the dragged group's parent and depth
+        draggedGroup.parent_id = parentGroupId;
+        draggedGroup.depth = parentGroupId === null ? 0 : (findGroupById(rootGroups, parentGroupId)?.depth ?? 0) + 1;
+
+        // Find target index and insert
+        const targetIndex = siblings.findIndex(g => g.id === dropId);
+        if (targetIndex === -1) {
+          console.error('Could not find target group in siblings');
+          return;
+        }
+        
+        const insertIndex = zone === 'top' ? targetIndex : targetIndex + 1;
+        siblings.splice(insertIndex, 0, draggedGroup);
+      }
+    }
+
+    // Update depths of all subgroups recursively
     function updateDepths(group: GroupWithLayers, newDepth: number) {
       group.depth = newDepth;
       group.subgroups.forEach(sub => updateDepths(sub, newDepth + 1));
     }
     updateDepths(draggedGroup, draggedGroup.depth);
 
+    // Update sort orders
     updateGroupSortOrders(rootGroups);
 
     // Force reactivity
     rootGroups = [...rootGroups];
   }
 
-  function isDescendantGroup(possibleDescendantId: number, possibleAncestorId: number): boolean {
-    const ancestor = findGroupById(rootGroups, possibleAncestorId);
-    if (!ancestor) return false;
+  function isDescendantGroup(draggedGroupId: number, targetGroupId: number): boolean {
+  // Find the dragged group (the one being moved)
+  const draggedGroup = findGroupById(rootGroups, draggedGroupId);
+  if (!draggedGroup) return false;
 
-    function checkSubgroups(groups: GroupWithLayers[]): boolean {
-      for (const group of groups) {
-        if (group.id === possibleDescendantId) return true;
-        if (checkSubgroups(group.subgroups)) return true;
-      }
-      return false;
+  // Check if the target group is anywhere in the dragged group's subgroup tree
+  function checkSubgroups(groups: GroupWithLayers[]): boolean {
+    for (const group of groups) {
+      if (group.id === targetGroupId) return true;
+      if (checkSubgroups(group.subgroups)) return true;
     }
-
-    return checkSubgroups(ancestor.subgroups);
+    return false;
   }
+
+  return checkSubgroups(draggedGroup.subgroups);
+}
 
   function updateGroupSortOrders(groups: GroupWithLayers[]) {
     groups.forEach((group, index) => {
@@ -450,17 +462,12 @@
     groupedLayers = allUpdatedLayers.filter(layer => layer.group_id !== null);
   }
 
-  function getDropZoneClass(type: 'layer' | 'group', id: number, groupId?: number | null) {
+  function getDropIndicatorStyle(type: 'layer' | 'group', id: number, groupId?: number | null) {
     if (!draggedOverItem || draggedOverItem.type !== type || draggedOverItem.id !== id) {
-      return '';
+      return { show: false, zone: null };
     }
     
-    const zone = draggedOverItem.zone;
-    if (zone === 'top') return 'border-t-4 border-t-primary';
-    if (zone === 'bottom') return 'border-b-4 border-b-primary';
-    if (zone === 'middle') return 'border-2 border-primary bg-primary/10';
-    
-    return '';
+    return { show: true, zone: draggedOverItem.zone };
   }
 
   // Save changes to the API
@@ -534,15 +541,14 @@
       hasChanges = false;
       originalData = deepClone({ ungroupedLayers, rootGroups });
 
-      alert('Layer volgorde succesvol opgeslagen!');
+      successBanner?.show();
     } catch (error) {
       console.error('Failed to save changes:', error);
-      alert('Fout bij het opslaan van wijzigingen.');
+      errorBanner?.show();
     } finally {
       isSaving = false;
     }
   }
-
 
   // Reset changes
   function resetChanges() {
@@ -552,6 +558,17 @@
     hasChanges = false;
   }
 </script>
+
+<AlertBanner
+  bind:this={successBanner}
+  type="success"
+  message="Layer volgorde succesvol opgeslagen!"
+/>
+<AlertBanner
+  bind:this={errorBanner}
+  type="error"
+  message="Fout bij het opslaan van wijzigingen."
+/>
 
 <div class="space-y-4">
   <div class="flex justify-between items-center">
@@ -598,17 +615,6 @@
       </div>
     {:else}
       <div class="space-y-4">
-        <!-- Summary -->
-        {#if hasChanges}
-          <div class="p-3 rounded text-sm space-y-1">
-            <p><strong>Overzicht:</strong></p>
-            <p>Ongegroepeerde lagen: {ungroupedLayers.length}</p>
-            <p>Gegroepeerde lagen: {groupedLayers.length}</p>
-            <p>Hoofdgroepen: {rootGroups.length}</p>
-            <p>Totaal lagen: {layersWithDetails.length}</p>
-            <p class="text-warning font-medium">⚠️ Er zijn niet-opgeslagen wijzigingen</p>
-          </div>
-        {/if}
         <!-- Nested Structure -->
         <div class="space-y-1">
           <!-- Ungrouped Layers -->
@@ -620,35 +626,49 @@
               </h3>
               <div class="ml-6 space-y-1">
                 {#each ungroupedLayers as layer}
-                  <div
-                    class="flex items-center gap-2 px-2 py-1 hover:bg-base-200 rounded text-sm cursor-move {getDropZoneClass('layer', layer.layer_id, null)} {draggedItem?.type === 'layer' && draggedItem?.id === layer.layer_id ? 'opacity-50' : ''}"
-                    draggable="true"
-                    ondragstart={(e) => handleDragStart(e, 'layer', layer.layer_id, null)}
-                    ondragover={(e) => handleDragOver(e, 'layer', layer.layer_id, null)}
-                    ondragleave={handleDragLeave}
-                    ondrop={(e) => handleDrop(e, 'layer', layer.layer_id, null)}
-                    role="listitem"
-                  >
-                    <GripVertical class="w-4 h-4 text-base-content/30 flex-shrink-0" />
-                    <File class="w-4 h-4 text-blue-600 flex-shrink-0" />
-                    <span class="flex-1">
-                      <span class="font-medium">{layer.title}</span>
-                      {#if layer.is_default}
-                        <span class="badge badge-primary badge-xs ml-2">Standaard</span>
-                      {/if}
-                    </span>
-                    <span class="text-xs text-base-content/50">#{layer.sort_order}</span>
-                    <button
-                      class="btn btn-ghost btn-xs"
-                      onclick={() => toggleDefault(layer.layer_id)}
-                      title={layer.is_default ? 'Verwijder van standaard' : 'Maak standaard'}
+                  <div class="relative">
+                    <div
+                      class="flex items-center gap-2 px-2 py-1 hover:bg-base-200 rounded text-sm cursor-move {draggedItem?.type === 'layer' && draggedItem?.id === layer.layer_id ? 'opacity-50' : ''}"
+                      draggable="true"
+                      ondragstart={(e) => handleDragStart(e, 'layer', layer.layer_id, null)}
+                      ondragover={(e) => handleDragOver(e, 'layer', layer.layer_id, null)}
+                      ondragleave={handleDragLeave}
+                      ondrop={(e) => handleDrop(e, 'layer', layer.layer_id, null)}
+                      role="listitem"
                     >
-                      {#if layer.is_default}
-                        <Eye class="w-3 h-3" />
-                      {:else}
-                        <EyeOff class="w-3 h-3" />
+                      <GripVertical class="w-4 h-4 text-base-content/30 flex-shrink-0" />
+                      <File class="w-4 h-4 text-blue-600 flex-shrink-0" />
+                      <span class="flex-1">
+                        <span class="font-medium">{layer.title}</span>
+                        {#if layer.is_default}
+                          <span class="badge badge-primary badge-xs ml-2">Standaard</span>
+                        {/if}
+                      </span>
+                      <span class="text-xs text-base-content/50">#{layer.sort_order}</span>
+                      <button
+                        class="btn btn-ghost btn-xs"
+                        onclick={() => toggleDefault(layer.layer_id)}
+                        title={layer.is_default ? 'Verwijder van standaard' : 'Maak standaard'}
+                      >
+                        {#if layer.is_default}
+                          <Eye class="w-3 h-3" />
+                        {:else}
+                          <EyeOff class="w-3 h-3" />
+                        {/if}
+                      </button>
+                    </div>
+                    
+                    <!-- Absolute positioned drop indicators -->
+                    {#if getDropIndicatorStyle('layer', layer.layer_id, null).show}
+                      {@const indicator = getDropIndicatorStyle('layer', layer.layer_id, null)}
+                      {#if indicator.zone === 'top'}
+                        <div class="absolute top-0 left-0 right-0 h-1 bg-primary rounded-full -translate-y-0.5 z-10"></div>
+                      {:else if indicator.zone === 'bottom'}
+                        <div class="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-full translate-y-0.5 z-10"></div>
+                      {:else if indicator.zone === 'middle'}
+                        <div class="absolute inset-0 border-2 border-primary bg-primary/10 rounded z-10 pointer-events-none"></div>
                       {/if}
-                    </button>
+                    {/if}
                   </div>
                 {/each}
               </div>
@@ -680,10 +700,11 @@
 </div>
 
 {#snippet groupComponent(group: GroupWithLayers)}
-  <div class="space-y-1" style="margin-left: {group.depth * 1.5}rem;">
-    <!-- Group Header -->
+<div class="space-y-1" style="margin-left: {group.depth * 1.5}rem;" role="group">
+  <!-- Group Header with relative positioning -->
+  <div class="relative">
     <div
-      class="flex items-center gap-2 px-2 py-1 hover:bg-base-200 rounded text-sm {getDropZoneClass('group', group.id)}"
+      class="flex items-center gap-2 px-2 py-1 hover:bg-base-200 rounded text-sm"
       ondragover={(e) => handleDragOver(e, 'group', group.id)}
       ondragleave={handleDragLeave}
       ondrop={(e) => handleDrop(e, 'group', group.id)}
@@ -701,28 +722,42 @@
           <ChevronRight class="w-3 h-3" />
         {/if}
       </button>
-      
+
       {#if expandedGroups.has(group.id)}
         <FolderOpen class="w-4 h-4 text-amber-600 flex-shrink-0" />
       {:else}
         <Folder class="w-4 h-4 text-amber-600 flex-shrink-0" />
       {/if}
-      
+
       <span class="font-medium truncate">{group.title}</span>
       <span class="text-xs text-base-content/50">
         ({getTotalLayersInGroup(group)} lagen)
       </span>
     </div>
+    
+    <!-- Absolute positioned drop indicators for groups -->
+    {#if getDropIndicatorStyle('group', group.id).show}
+      {@const indicator = getDropIndicatorStyle('group', group.id)}
+      {#if indicator.zone === 'top'}
+        <div class="absolute top-0 left-0 right-0 h-1 bg-primary rounded-full -translate-y-0.5 z-10"></div>
+      {:else if indicator.zone === 'bottom'}
+        <div class="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-full translate-y-0.5 z-10"></div>
+      {:else if indicator.zone === 'middle'}
+        <div class="absolute inset-0 border-2 border-primary bg-primary/10 rounded z-10 pointer-events-none"></div>
+      {/if}
+    {/if}
+  </div>
 
-    <!-- Group Content (when expanded) -->
-    {#if expandedGroups.has(group.id)}
-      <div class="space-y-1">
-        <!-- Group Layers -->
-        {#if group.layers.length > 0}
-          <div class="space-y-1">
-            {#each group.layers as layer}
+  <!-- Group Content (only if expanded) -->
+  {#if expandedGroups.has(group.id)}
+    <div class="space-y-1">
+      <!-- Group Layers -->
+      {#if group.layers.length > 0}
+        <div class="space-y-1">
+          {#each group.layers as layer}
+            <div class="relative">
               <div
-                class="flex items-center gap-2 px-2 py-1 hover:bg-base-200 rounded text-sm cursor-move {getDropZoneClass('layer', layer.layer_id, group.id)} {draggedItem?.type === 'layer' && draggedItem?.id === layer.layer_id ? 'opacity-50' : ''}"
+                class="flex items-center gap-2 px-2 py-1 hover:bg-base-200 rounded text-sm cursor-move {draggedItem?.type === 'layer' && draggedItem?.id === layer.layer_id ? 'opacity-50' : ''}"
                 draggable="true"
                 ondragstart={(e) => handleDragStart(e, 'layer', layer.layer_id, group.id)}
                 ondragover={(e) => handleDragOver(e, 'layer', layer.layer_id, group.id)}
@@ -751,15 +786,28 @@
                   {/if}
                 </button>
               </div>
-            {/each}
-          </div>
-        {/if}
+              
+              <!-- Absolute positioned drop indicators for group layers -->
+              {#if getDropIndicatorStyle('layer', layer.layer_id, group.id).show}
+                {@const indicator = getDropIndicatorStyle('layer', layer.layer_id, group.id)}
+                {#if indicator.zone === 'top'}
+                  <div class="absolute top-0 left-0 right-0 h-1 bg-primary rounded-full -translate-y-0.5 z-10"></div>
+                {:else if indicator.zone === 'bottom'}
+                  <div class="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-full translate-y-0.5 z-10"></div>
+                {:else if indicator.zone === 'middle'}
+                  <div class="absolute inset-0 border-2 border-primary bg-primary/10 rounded z-10 pointer-events-none"></div>
+                {/if}
+              {/if}
+            </div>
+          {/each}
+        </div>
+      {/if}
 
-        <!-- Nested Subgroups -->
-        {#each group.subgroups as subgroup}
-          {@render groupComponent(subgroup)}
-        {/each}
-      </div>
-    {/if}
-  </div>
+      <!-- Nested Subgroups -->
+      {#each group.subgroups as subgroup}
+        {@render groupComponent(subgroup)}
+      {/each}
+    </div>
+  {/if}
+</div>
 {/snippet}
