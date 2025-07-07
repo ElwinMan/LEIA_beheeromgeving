@@ -2,7 +2,10 @@
   import { onMount } from 'svelte';
   import { Folder, FolderOpen, File, Eye, EyeOff, ChevronDown, ChevronRight, Save, RotateCcw, GripVertical } from 'lucide-svelte';
   import { fetchLayers, fetchGroups, bulkUpdateDigitalTwinAssociations } from '$lib/api';
-  import type { DigitalTwin, Layer, LayerWithAssociation, Group, GroupWithLayers, LayerBulkOperation, GroupBulkOperation, BulkAssociationsPayload } from '$lib/types/digitalTwin';
+  import type { DigitalTwin } from '$lib/types/digitalTwin';
+  import type { LayerWithAssociation, GroupWithLayers, LayerBulkOperation, GroupBulkOperation, BulkAssociationsPayload } from '$lib/types/digitalTwinAssociation';
+  import type { Layer } from '$lib/types/layer';
+  import type { Group } from '$lib/types/group';
 
   interface Props {
     digitalTwin: DigitalTwin | null;

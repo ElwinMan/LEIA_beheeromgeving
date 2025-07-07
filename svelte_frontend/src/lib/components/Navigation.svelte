@@ -9,7 +9,8 @@
 	
 	const navigationItems = [
 		{ href: '/digital-twins', label: 'Digital Twins', icon: Database },
-		{ href: '/layers', label: 'Layers', icon: Layers },
+		{ href: '/background-layers', label: 'Background Layers', icon: Layers },
+		{ href: '/feature-layers', label: 'Feature Layers', icon: Layers },
 		{ href: '/tools', label: 'Tools', icon: Wrench }
 	];
 	

@@ -1,7 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fetchDigitalTwin, fetchDigitalTwinViewer, updateDigitalTwinViewer, fetchTools, bulkModifyToolAssociations } from '$lib/api';
-  import type { DigitalTwin, DigitalTwinViewerResponse, Tool, BulkToolOperation } from '$lib/types/digitalTwin';
+  import type { DigitalTwin, DigitalTwinViewerResponse } from '$lib/types/digitalTwin';
+  import type { BulkToolOperation } from '$lib/types/digitalTwinAssociation';
+  import type { Tool } from '$lib/types/tool';
   import { ChevronDown, ChevronRight } from 'lucide-svelte';
 
   export let digitalTwinId: string;

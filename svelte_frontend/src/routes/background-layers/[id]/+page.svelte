@@ -7,4 +7,4 @@
 <p>Type: {layer.type}</p>
 <p>Url: {layer.url}</p>
 <p>FeatureName: {layer.featureName}</p>
-<p>isbackground: {layer.isbackground ? 'true' : 'false'}</p>
+<p>isbackground: {layer.isBackground ? 'true' : 'false'}</p>
