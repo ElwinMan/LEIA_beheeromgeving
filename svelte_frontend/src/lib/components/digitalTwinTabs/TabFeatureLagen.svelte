@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { Folder, FolderOpen, File, Eye, EyeOff, ChevronDown, ChevronRight, Save, RotateCcw, GripVertical } from 'lucide-svelte';
+  import { Folder, FolderOpen, File, Eye, EyeOff, ChevronDown, ChevronRight, Save, RotateCcw, GripVertical, Search, Plus } from 'lucide-svelte';
   import { fetchLayers, fetchGroups, bulkUpdateDigitalTwinAssociations } from '$lib/api';
   import type { DigitalTwin } from '$lib/types/digitalTwin';
   import type { LayerWithAssociation, GroupWithLayers, LayerBulkOperation, GroupBulkOperation, BulkAssociationsPayload } from '$lib/types/digitalTwinAssociation';
@@ -45,12 +45,36 @@
   let originalData: { ungroupedLayers: LayerWithAssociation[], rootGroups: GroupWithLayers[] } = { ungroupedLayers: [], rootGroups: [] };
   let isSaving = $state(false);
 
-  // Drag and drop state
-  let draggedItem = $state<{ type: 'layer' | 'group', id: number, groupId?: number | null } | null>(null);
+  // Drag and drop state - extended to support catalog layers
+  let draggedItem = $state<{ type: 'layer' | 'group' | 'catalog-layer', id: number, groupId?: number | null, layer?: Layer } | null>(null);
   let draggedOverItem = $state<{ type: 'layer' | 'group', id: number, groupId?: number | null, zone: 'top' | 'middle' | 'bottom' } | null>(null);
 
   let successBanner: InstanceType<typeof AlertBanner> | null = null;
   let errorBanner: InstanceType<typeof AlertBanner> | null = null;
+
+  // Catalog state
+  let catalogLayers = $state<Layer[]>([]);
+  let catalogSearchTerm = $state('');
+  let catalogIsLoading = $state(true);
+  let catalogError = $state<string | null>(null);
+
+  // Get used layer IDs for filtering catalog
+  let usedLayerIds = $derived(layersWithDetails.map(l => l.layer_id));
+
+  // Filter catalog layers
+  const filteredCatalogLayers = $derived.by(() => {
+    if (catalogSearchTerm.trim() === '') {
+      return catalogLayers.filter(layer => !usedLayerIds.includes(layer.id));
+    } else {
+      const term = catalogSearchTerm.toLowerCase();
+      return catalogLayers.filter(layer => 
+        !usedLayerIds.includes(layer.id) &&
+        (layer.title.toLowerCase().includes(term) ||
+         layer.type?.toLowerCase().includes(term) ||
+         layer.featureName?.toLowerCase().includes(term))
+      );
+    }
+  });
 
   onMount(async () => {
     try {
@@ -71,7 +95,8 @@
               ...association,
               title: layerDetails?.title || `Layer ${association.layer_id}`,
               beschrijving: layerDetails?.type || '',
-              featureName: layerDetails?.featureName || ''
+              featureName: layerDetails?.featureName || '',
+              isNew: false
             };
           });
         
@@ -93,6 +118,16 @@
         ungroupedLayers = [];
         groupedLayers = [];
         rootGroups = [];
+      }
+
+      // Load catalog layers
+      try {
+        catalogIsLoading = true;
+        catalogLayers = allLayers; // Use the same layers we already fetched
+      } catch (err) {
+        catalogError = err instanceof Error ? err.message : 'Failed to load catalog layers';
+      } finally {
+        catalogIsLoading = false;
       }
       
     } catch (err) {
@@ -169,6 +204,64 @@
     return null;
   }
 
+  function addLayerToDigitalTwin(layer: Layer, groupId: number | null = null) {
+    // Create new layer association
+    const newLayerAssociation: LayerWithAssociation = {
+      layer_id: layer.id,
+      is_default: false,
+      sort_order: groupId === null ? ungroupedLayers.length : 0,
+      group_id: groupId,
+      title: layer.title,
+      beschrijving: layer.type || '',
+      featureName: layer.featureName || '',
+      isNew: true // Mark as new layer
+    };
+
+    if (groupId === null) {
+      // Add to ungrouped layers
+      ungroupedLayers.push(newLayerAssociation);
+      ungroupedLayers = [...ungroupedLayers];
+    } else {
+      // Add to specific group
+      const targetGroup = findGroupById(rootGroups, groupId);
+      if (targetGroup) {
+        newLayerAssociation.sort_order = targetGroup.layers.length;
+        targetGroup.layers.push(newLayerAssociation);
+        rootGroups = [...rootGroups];
+      }
+    }
+
+    // Update main arrays
+    layersWithDetails.push(newLayerAssociation);
+    layersWithDetails = [...layersWithDetails];
+    
+    hasChanges = true;
+  }
+
+  // Catalog drag handlers
+  function handleCatalogDragStart(e: DragEvent, layer: Layer) {
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'copy';
+      const dragData = {
+        type: 'catalog-layer',
+        id: layer.id,
+        layer: layer
+      };
+      e.dataTransfer.setData('application/json', JSON.stringify(dragData));
+    }
+    
+    // Set global fallback
+    (window as any).catalogDragData = {
+      type: 'catalog-layer',
+      id: layer.id,
+      layer: layer
+    };
+  }
+
+  function handleCatalogAddLayer(layer: Layer) {
+    addLayerToDigitalTwin(layer, null);
+  }
+
   // Drag and drop functions
   function handleDragStart(e: DragEvent, type: 'layer' | 'group', id: number, groupId?: number | null) {
     draggedItem = { type, id, groupId };
@@ -194,22 +287,55 @@
   function handleDragOver(e: DragEvent, type: 'layer' | 'group', id: number, groupId?: number | null) {
     e.preventDefault();
     
+    // Try to parse catalog drag data if no draggedItem
+    if (!draggedItem) {
+      const dragData = e.dataTransfer?.getData('application/json');
+      if (dragData) {
+        try {
+          const parsedData = JSON.parse(dragData);
+          if (parsedData.type === 'catalog-layer') {
+            draggedItem = parsedData;
+          }
+        } catch (err) {
+          if ((window as any).catalogDragData) {
+            draggedItem = (window as any).catalogDragData;
+          }
+        }
+      } else if ((window as any).catalogDragData) {
+        draggedItem = (window as any).catalogDragData;
+      }
+    }
+    
     if (!draggedItem) return;
     
     const zone = getDropZone(e, e.currentTarget as HTMLElement);
+
+    // Handle catalog layer drops
+    if (draggedItem.type === 'catalog-layer') {
+      // Only allow dropping catalog layers in the middle of groups or anywhere on layers
+      if (type === 'group' && (zone === 'top' || zone === 'bottom')) {
+        draggedOverItem = null;
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'none';
+        return;
+      }
+      
+      draggedOverItem = { type, id, groupId, zone };
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+      return;
+    }
     
     // Don't allow dropping on itself
     if (draggedItem.type === type && draggedItem.id === id) {
       draggedOverItem = null;
       return;
     }
-
+    
     // Prevent group-to-layer drops
     if (draggedItem.type === 'group' && type === 'layer') {
       draggedOverItem = null;
       return;
     }
-
+    
     // For group-to-group drops, prevent ANY drop on descendants
     if (draggedItem.type === 'group' && type === 'group') {
       // Check if target is a descendant of dragged item
@@ -230,19 +356,94 @@
   function handleDrop(e: DragEvent, dropType: 'layer' | 'group', dropId: number, dropGroupId?: number | null) {
     e.preventDefault();
     
+    // Try to get drag data if no draggedItem
+    if (!draggedItem) {
+      const dragData = e.dataTransfer?.getData('application/json');
+      if (dragData) {
+        try {
+          draggedItem = JSON.parse(dragData);
+        } catch (err) {
+          if ((window as any).catalogDragData) {
+            draggedItem = (window as any).catalogDragData;
+          }
+        }
+      } else if ((window as any).catalogDragData) {
+        draggedItem = (window as any).catalogDragData;
+      }
+    }
+    
     if (!draggedItem || !draggedOverItem) return;
-
+    
     const zone = draggedOverItem.zone;
-
-    if (draggedItem.type === 'layer') {
+    
+    if (draggedItem.type === 'catalog-layer') {
+      handleCatalogLayerDrop(dropType, dropId, dropGroupId, zone);
+    } else if (draggedItem.type === 'layer') {
       handleLayerDrop(dropType, dropId, dropGroupId, zone);
     } else if (draggedItem.type === 'group') {
       handleGroupDrop(dropType, dropId, dropGroupId, zone);
     }
-
+    
     draggedItem = null;
     draggedOverItem = null;
+    
+    // Clean up global fallback
+    if ((window as any).catalogDragData) {
+      delete (window as any).catalogDragData;
+    }
+    
     hasChanges = true;
+  }
+
+  function handleCatalogLayerDrop(dropType: string, dropId: number, dropGroupId: number | null | undefined, zone: string) {
+    if (!draggedItem || draggedItem.type !== 'catalog-layer' || !draggedItem.layer) return;
+
+    const layer = draggedItem.layer;
+
+    if (dropType === 'group' && zone === 'middle') {
+      // Drop into group
+      addLayerToDigitalTwin(layer, dropId);
+    } else if (dropType === 'layer') {
+      // Drop above or below another layer
+      const targetGroupId = dropGroupId ?? null;
+      const newLayerAssociation: LayerWithAssociation = {
+        layer_id: layer.id,
+        is_default: false,
+        sort_order: 0,
+        group_id: targetGroupId,
+        title: layer.title,
+        beschrijving: layer.type || '',
+        featureName: layer.featureName || '',
+        isNew: true // Mark as new layer
+      };
+
+      if (targetGroupId === null) {
+        // Insert in ungrouped layers
+        const targetIndex = ungroupedLayers.findIndex(l => l.layer_id === dropId);
+        const insertIndex = zone === 'top' ? targetIndex : targetIndex + 1;
+        ungroupedLayers.splice(insertIndex, 0, newLayerAssociation);
+        ungroupedLayers = [...ungroupedLayers];
+      } else {
+        // Insert in group
+        const targetGroup = findGroupById(rootGroups, targetGroupId);
+        if (targetGroup) {
+          const targetIndex = targetGroup.layers.findIndex(l => l.layer_id === dropId);
+          const insertIndex = zone === 'top' ? targetIndex : targetIndex + 1;
+          targetGroup.layers.splice(insertIndex, 0, newLayerAssociation);
+          rootGroups = [...rootGroups];
+        }
+      }
+
+      // Update main arrays
+      layersWithDetails.push(newLayerAssociation);
+      layersWithDetails = [...layersWithDetails];
+      
+      // Update sort orders
+      updateLayerSortOrders();
+    } else {
+      // Default: add to ungrouped layers
+      addLayerToDigitalTwin(layer, null);
+    }
   }
 
   function handleLayerDrop(dropType: string, dropId: number, dropGroupId: number | null | undefined, zone: string) {
@@ -419,21 +620,21 @@
   }
 
   function isDescendantGroup(draggedGroupId: number, targetGroupId: number): boolean {
-  // Find the dragged group (the one being moved)
-  const draggedGroup = findGroupById(rootGroups, draggedGroupId);
-  if (!draggedGroup) return false;
+    // Find the dragged group (the one being moved)
+    const draggedGroup = findGroupById(rootGroups, draggedGroupId);
+    if (!draggedGroup) return false;
 
-  // Check if the target group is anywhere in the dragged group's subgroup tree
-  function checkSubgroups(groups: GroupWithLayers[]): boolean {
-    for (const group of groups) {
-      if (group.id === targetGroupId) return true;
-      if (checkSubgroups(group.subgroups)) return true;
+    // Check if the target group is anywhere in the dragged group's subgroup tree
+    function checkSubgroups(groups: GroupWithLayers[]): boolean {
+      for (const group of groups) {
+        if (group.id === targetGroupId) return true;
+        if (checkSubgroups(group.subgroups)) return true;
+      }
+      return false;
     }
-    return false;
-  }
 
-  return checkSubgroups(draggedGroup.subgroups);
-}
+    return checkSubgroups(draggedGroup.subgroups);
+  }
 
   function updateGroupSortOrders(groups: GroupWithLayers[]) {
     groups.forEach((group, index) => {
@@ -482,7 +683,7 @@
       // Ungrouped layers
       ungroupedLayers.forEach(layer => {
         layerOperations.push({
-          action: "update",
+          action: layer.isNew ? "create" : "update", // Use correct action
           layer_id: layer.layer_id,
           is_default: layer.is_default,
           sort_order: layer.sort_order,
@@ -495,7 +696,7 @@
         groups.forEach(group => {
           group.layers.forEach(layer => {
             layerOperations.push({
-              action: "update",
+              action: layer.isNew ? "create" : "update", // Use correct action
               layer_id: layer.layer_id,
               is_default: layer.is_default,
               sort_order: layer.sort_order,
@@ -538,6 +739,22 @@
       // Call the combined bulk update API
       await bulkUpdateDigitalTwinAssociations(digitalTwinId, payload);
 
+      // After successful save, mark all layers as no longer new
+      function markLayersAsExisting(layers: LayerWithAssociation[]) {
+        layers.forEach(layer => {
+          layer.isNew = false;
+        });
+      }
+            
+      markLayersAsExisting(ungroupedLayers);
+      function markGroupLayersAsExisting(groups: GroupWithLayers[]) {
+        groups.forEach(group => {
+          markLayersAsExisting(group.layers);
+          markGroupLayersAsExisting(group.subgroups);
+        });
+      }
+      markGroupLayersAsExisting(rootGroups);
+
       hasChanges = false;
       originalData = deepClone({ ungroupedLayers, rootGroups });
 
@@ -559,143 +776,232 @@
   }
 </script>
 
-<AlertBanner
-  bind:this={successBanner}
-  type="success"
-  message="Layer volgorde succesvol opgeslagen!"
-/>
-<AlertBanner
-  bind:this={errorBanner}
-  type="error"
-  message="Fout bij het opslaan van wijzigingen."
-/>
-
-<div class="space-y-4">
-  <div class="flex justify-between items-center">
-    <div>
-      <h2 class="text-2xl font-bold">Feature Lagen</h2>
-      <p class="text-sm text-base-content/70">Sleep lagen om ze te herordenen en tussen groepen te verplaatsen</p>
-    </div>
-    
-    {#if hasChanges}
-      <div class="flex gap-2">
-        <button 
-          class="btn btn-ghost btn-sm"
-          onclick={resetChanges}
-          disabled={isSaving}
-        >
-          <RotateCcw class="w-4 h-4" />
-          Reset
-        </button>
-        <button 
-          class="btn btn-primary btn-sm"
-          onclick={saveChanges}
-          disabled={isSaving}
-        >
-          {#if isSaving}
-            <span class="loading loading-spinner loading-xs"></span>
-          {:else}
-            <Save class="w-4 h-4" />
-          {/if}
-          Opslaan
-        </button>
-      </div>
-    {/if}
-  </div>
-
-  <div class="bg-base-100 border border-base-300 rounded-lg p-4">
-    {#if isLoading}
-      <div class="flex items-center justify-center py-8">
-        <span class="loading loading-spinner loading-md"></span>
-        <span class="ml-3">Laden...</span>
-      </div>
-    {:else if error}
-      <div class="alert alert-error">
-        <span>Fout bij het laden: {error}</span>
-      </div>
-    {:else}
+<div class="flex gap-4 h-full">
+  <!-- Layer Catalog -->
+  <div class="w-1/3">
+    <div class="bg-base-100 border border-base-300 rounded-lg p-4 h-full">
       <div class="space-y-4">
-        <!-- Nested Structure -->
-        <div class="space-y-1">
-          <!-- Ungrouped Layers -->
-          {#if ungroupedLayers.length > 0}
-            <div class="mb-4">
-              <h3 class="text-sm font-semibold text-base-content/80 mb-2 flex items-center gap-2">
-                <File class="w-4 h-4" />
-                Ongegroepeerde Lagen ({ungroupedLayers.length})
-              </h3>
-              <div class="ml-6 space-y-1">
-                {#each ungroupedLayers as layer}
-                  <div class="relative">
-                    <div
-                      class="flex items-center gap-2 px-2 py-1 hover:bg-base-200 rounded text-sm cursor-move {draggedItem?.type === 'layer' && draggedItem?.id === layer.layer_id ? 'opacity-50' : ''}"
-                      draggable="true"
-                      ondragstart={(e) => handleDragStart(e, 'layer', layer.layer_id, null)}
-                      ondragover={(e) => handleDragOver(e, 'layer', layer.layer_id, null)}
-                      ondragleave={handleDragLeave}
-                      ondrop={(e) => handleDrop(e, 'layer', layer.layer_id, null)}
-                      role="listitem"
-                    >
-                      <GripVertical class="w-4 h-4 text-base-content/30 flex-shrink-0" />
-                      <File class="w-4 h-4 text-blue-600 flex-shrink-0" />
-                      <span class="flex-1">
-                        <span class="font-medium">{layer.title}</span>
-                        {#if layer.is_default}
-                          <span class="badge badge-primary badge-xs ml-2">Standaard</span>
-                        {/if}
-                      </span>
-                      <span class="text-xs text-base-content/50">#{layer.sort_order}</span>
-                      <button
-                        class="btn btn-ghost btn-xs"
-                        onclick={() => toggleDefault(layer.layer_id)}
-                        title={layer.is_default ? 'Verwijder van standaard' : 'Maak standaard'}
-                      >
-                        {#if layer.is_default}
-                          <Eye class="w-3 h-3" />
-                        {:else}
-                          <EyeOff class="w-3 h-3" />
-                        {/if}
-                      </button>
-                    </div>
-                    
-                    <!-- Absolute positioned drop indicators -->
-                    {#if getDropIndicatorStyle('layer', layer.layer_id, null).show}
-                      {@const indicator = getDropIndicatorStyle('layer', layer.layer_id, null)}
-                      {#if indicator.zone === 'top'}
-                        <div class="absolute top-0 left-0 right-0 h-1 bg-primary rounded-full -translate-y-0.5 z-10"></div>
-                      {:else if indicator.zone === 'bottom'}
-                        <div class="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-full translate-y-0.5 z-10"></div>
-                      {:else if indicator.zone === 'middle'}
-                        <div class="absolute inset-0 border-2 border-primary bg-primary/10 rounded z-10 pointer-events-none"></div>
-                      {/if}
-                    {/if}
-                  </div>
-                {/each}
-              </div>
-            </div>
-          {/if}
+        <!-- Header -->
+        <div>
+          <h3 class="text-lg font-semibold">Layer Catalogus</h3>
+          <p class="text-sm text-base-content/70">Sleep lagen naar de digital twin of klik op + om toe te voegen</p>
+        </div>
 
-          <!-- Root Groups -->
-          {#if rootGroups.length > 0}
-            <div class="mb-4">
-              <h3 class="text-sm font-semibold text-base-content/80 mb-2 flex items-center gap-2">
-                <Folder class="w-4 h-4" />
-                Groepen ({rootGroups.length})
-              </h3>
-              {#each rootGroups as group}
-                {@render groupComponent(group)}
-              {/each}
+        <!-- Search -->
+        <div class="relative">
+          <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/50" />
+          <input
+            type="text"
+            placeholder="Zoek lagen..."
+            class="input input-bordered w-full pl-10 input-sm"
+            bind:value={catalogSearchTerm}
+          />
+        </div>
+
+        <!-- Layer List -->
+        <div class="space-y-1 max-h-96 overflow-y-auto">
+          {#if catalogIsLoading}
+            <div class="flex items-center justify-center py-8">
+              <span class="loading loading-spinner loading-sm"></span>
+              <span class="ml-2 text-sm">Laden...</span>
             </div>
-          {/if}
-          
-          {#if ungroupedLayers.length === 0 && rootGroups.length === 0}
+          {:else if catalogError}
+            <div class="alert alert-error alert-sm">
+              <span class="text-sm">{catalogError}</span>
+            </div>
+          {:else if filteredCatalogLayers.length === 0}
             <div class="text-center py-8 text-base-content/50">
-              <p>Geen lagen gevonden voor deze digital twin.</p>
+              <File class="mx-auto h-8 w-8 mb-2 opacity-50" />
+              <p class="text-sm">
+                {catalogSearchTerm ? 'Geen lagen gevonden voor deze zoekopdracht' : 'Alle beschikbare lagen zijn al toegevoegd'}
+              </p>
             </div>
+          {:else}
+            {#each filteredCatalogLayers as layer}
+              <div
+                class="group flex items-center gap-2 px-3 py-2 hover:bg-base-200 rounded text-sm cursor-move border border-transparent hover:border-base-300 transition-colors"
+                draggable="true"
+                ondragstart={(e) => handleCatalogDragStart(e, layer)}
+                role="listitem"
+              >
+                <File class="w-4 h-4 text-purple-600 flex-shrink-0" />
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium truncate">{layer.title}</div>
+                  {#if layer.type}
+                    <div class="text-xs text-base-content/60 truncate">{layer.type}</div>
+                  {/if}
+                </div>
+                <button
+                  class="btn btn-ghost btn-xs opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity"
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    handleCatalogAddLayer(layer);
+                  }}
+                  onmousedown={(e) => e.stopPropagation()}
+                  title="Voeg toe aan digital twin"
+                >
+                  <Plus class="w-3 h-3" />
+                </button>
+              </div>
+            {/each}
           {/if}
         </div>
+
+        <!-- Stats -->
+        {#if !catalogIsLoading && !catalogError}
+          <div class="text-xs text-base-content/50 border-t border-base-300 pt-2">
+            {filteredCatalogLayers.length} beschikbare lagen
+            {#if usedLayerIds.length > 0}
+              • {usedLayerIds.length} al toegevoegd
+            {/if}
+          </div>
+        {/if}
       </div>
-    {/if}
+    </div>
+  </div>
+
+  <!-- Feature Layers -->
+  <div class="flex-1">
+    <AlertBanner
+      bind:this={successBanner}
+      type="success"
+      message="Layer volgorde succesvol opgeslagen!"
+    />
+    <AlertBanner
+      bind:this={errorBanner}
+      type="error"
+      message="Fout bij het opslaan van wijzigingen."
+    />
+
+    <div class="space-y-4">
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="text-2xl font-bold">Feature Lagen</h2>
+          <p class="text-sm text-base-content/70">Sleep lagen om ze te herordenen en tussen groepen te verplaatsen</p>
+        </div>
+        
+        {#if hasChanges}
+          <div class="flex gap-2">
+            <button 
+              class="btn btn-ghost btn-sm"
+              onclick={resetChanges}
+              disabled={isSaving}
+            >
+              <RotateCcw class="w-4 h-4" />
+              Reset
+            </button>
+            <button 
+              class="btn btn-primary btn-sm"
+              onclick={saveChanges}
+              disabled={isSaving}
+            >
+              {#if isSaving}
+                <span class="loading loading-spinner loading-xs"></span>
+              {:else}
+                <Save class="w-4 h-4" />
+              {/if}
+              Opslaan
+            </button>
+          </div>
+        {/if}
+      </div>
+
+      <div class="bg-base-100 border border-base-300 rounded-lg p-4">
+        {#if isLoading}
+          <div class="flex items-center justify-center py-8">
+            <span class="loading loading-spinner loading-md"></span>
+            <span class="ml-3">Laden...</span>
+          </div>
+        {:else if error}
+          <div class="alert alert-error">
+            <span>Fout bij het laden: {error}</span>
+          </div>
+        {:else}
+          <div class="space-y-4">
+            <!-- Nested Structure -->
+            <div class="space-y-1">
+              <!-- Ungrouped Layers -->
+              {#if ungroupedLayers.length > 0}
+                <div class="mb-4">
+                  <h3 class="text-sm font-semibold text-base-content/80 mb-2 flex items-center gap-2">
+                    <File class="w-4 h-4" />
+                    Ongegroepeerde Lagen ({ungroupedLayers.length})
+                  </h3>
+                  <div class="ml-6 space-y-1">
+                    {#each ungroupedLayers as layer}
+                      <div class="relative">
+                        <div
+                          class="flex items-center gap-2 px-2 py-1 hover:bg-base-200 rounded text-sm cursor-move {draggedItem?.type === 'layer' && draggedItem?.id === layer.layer_id ? 'opacity-50' : ''}"
+                          draggable="true"
+                          ondragstart={(e) => handleDragStart(e, 'layer', layer.layer_id, null)}
+                          ondragover={(e) => handleDragOver(e, 'layer', layer.layer_id, null)}
+                          ondragleave={handleDragLeave}
+                          ondrop={(e) => handleDrop(e, 'layer', layer.layer_id, null)}
+                          role="listitem"
+                        >
+                          <GripVertical class="w-4 h-4 text-base-content/30 flex-shrink-0" />
+                          <File class="w-4 h-4 text-blue-600 flex-shrink-0" />
+                          <span class="flex-1">
+                            <span class="font-medium">{layer.title}</span>
+                            {#if layer.is_default}
+                              <span class="badge badge-primary badge-xs ml-2">Standaard</span>
+                            {/if}
+                          </span>
+                          <span class="text-xs text-base-content/50">#{layer.sort_order}</span>
+                          <button
+                            class="btn btn-ghost btn-xs"
+                            onclick={() => toggleDefault(layer.layer_id)}
+                            title={layer.is_default ? 'Verwijder van standaard' : 'Maak standaard'}
+                          >
+                            {#if layer.is_default}
+                              <Eye class="w-3 h-3" />
+                            {:else}
+                              <EyeOff class="w-3 h-3" />
+                            {/if}
+                          </button>
+                        </div>
+                        
+                        <!-- Absolute positioned drop indicators -->
+                        {#if getDropIndicatorStyle('layer', layer.layer_id, null).show}
+                          {@const indicator = getDropIndicatorStyle('layer', layer.layer_id, null)}
+                          {#if indicator.zone === 'top'}
+                            <div class="absolute top-0 left-0 right-0 h-1 bg-primary rounded-full -translate-y-0.5 z-10"></div>
+                          {:else if indicator.zone === 'bottom'}
+                            <div class="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-full translate-y-0.5 z-10"></div>
+                          {:else if indicator.zone === 'middle'}
+                            <div class="absolute inset-0 border-2 border-primary bg-primary/10 rounded z-10 pointer-events-none"></div>
+                          {/if}
+                        {/if}
+                      </div>
+                    {/each}
+                  </div>
+                </div>
+              {/if}
+
+              <!-- Root Groups -->
+              {#if rootGroups.length > 0}
+                <div class="mb-4">
+                  <h3 class="text-sm font-semibold text-base-content/80 mb-2 flex items-center gap-2">
+                    <Folder class="w-4 h-4" />
+                    Groepen ({rootGroups.length})
+                  </h3>
+                  {#each rootGroups as group}
+                    {@render groupComponent(group)}
+                  {/each}
+                </div>
+              {/if}
+              
+              {#if ungroupedLayers.length === 0 && rootGroups.length === 0}
+                <div class="text-center py-8 text-base-content/50">
+                  <p>Geen lagen gevonden voor deze digital twin.</p>
+                  <p class="text-xs mt-2">Sleep lagen vanuit de catalogus om te beginnen.</p>
+                </div>
+              {/if}
+            </div>
+          </div>
+        {/if}
+      </div>
+    </div>
   </div>
 </div>
 

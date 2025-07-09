@@ -11,6 +11,7 @@ export interface LayerWithAssociation extends LayerAssociation {
   title: string
   beschrijving: string
   featureName: string
+  isNew: boolean
 }
 
 export interface GroupWithLayers extends Group {
