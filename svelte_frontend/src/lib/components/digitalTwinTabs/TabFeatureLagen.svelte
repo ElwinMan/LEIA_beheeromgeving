@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { Folder, FolderOpen, File, Eye, EyeOff, ChevronDown, ChevronRight, Save, RotateCcw, GripVertical, Search, Plus } from 'lucide-svelte';
-  import { fetchLayers, fetchGroups, bulkUpdateDigitalTwinAssociations } from '$lib/api';
+  import { fetchDigitalTwin, fetchLayers, fetchGroups, bulkUpdateDigitalTwinAssociations } from '$lib/api';
   import type { DigitalTwin } from '$lib/types/digitalTwin';
   import type { LayerWithAssociation, GroupWithLayers, LayerBulkOperation, GroupBulkOperation, BulkAssociationsPayload } from '$lib/types/digitalTwinAssociation';
   import type { Layer } from '$lib/types/layer';
@@ -79,21 +79,18 @@
     }
   });
 
-  onMount(async () => {
+  async function fetchAllData() {
+    isLoading = true;
     try {
-      isLoading = true;
-      
-      // Fetch all data
+      digitalTwin = await fetchDigitalTwin(digitalTwinId);
       allLayers = await fetchLayers();
       allGroups = await fetchGroups(digitalTwinId);
-      
-      // Process layer associations if they exist
+
       if (digitalTwin?.layer_associations) {
         layersWithDetails = digitalTwin.layer_associations
           .sort((a, b) => a.sort_order - b.sort_order)
           .map((association) => {
             const layerDetails = allLayers.find((layer) => layer.id === association.layer_id);
-            
             return {
               ...association,
               title: layerDetails?.title || `Layer ${association.layer_id}`,
@@ -102,20 +99,12 @@
               isNew: false
             };
           });
-        
-        // Separate ungrouped and grouped layers
+
         ungroupedLayers = layersWithDetails.filter(layer => layer.group_id === null);
         groupedLayers = layersWithDetails.filter(layer => layer.group_id !== null);
-        
-        // Build nested group structure
         rootGroups = buildNestedGroups(allGroups, layersWithDetails);
-        
-        // Expand all groups by default
         expandedGroups = new Set(getAllGroupIds(rootGroups));
-        
-        // Store original state for reset functionality
         originalData = deepClone({ ungroupedLayers, rootGroups });
-        
       } else {
         layersWithDetails = [];
         ungroupedLayers = [];
@@ -123,23 +112,17 @@
         rootGroups = [];
       }
 
-      // Load catalog layers
-      try {
-        catalogIsLoading = true;
-        catalogLayers = allLayers; // Use the same layers we already fetched
-      } catch (err) {
-        catalogError = err instanceof Error ? err.message : 'Failed to load catalog layers';
-      } finally {
-        catalogIsLoading = false;
-      }
-      
+      catalogIsLoading = true;
+      catalogLayers = allLayers;
+      catalogIsLoading = false;
     } catch (err) {
-      console.error('Failed to load data:', err);
       error = err instanceof Error ? err.message : 'Unknown error occurred';
     } finally {
       isLoading = false;
     }
-  });
+  }
+
+  onMount(fetchAllData);
 
   function buildNestedGroups(groups: Group[], layers: LayerWithAssociation[], parentId: number | null = null, depth: number = 0): GroupWithLayers[] {
     const childGroups = groups.filter(group => group.parent_id === parentId);
@@ -347,6 +330,11 @@
         draggedOverItem = null;
         return;
       }
+    }
+
+    if (draggedItem.type === 'layer' && type === 'group' && (zone === 'top' || zone === 'bottom')) {
+        draggedOverItem = null;
+        return;
     }
     
     // Allow all zones for valid drops
@@ -687,7 +675,7 @@
       // Ungrouped layers
       ungroupedLayers.forEach(layer => {
         layerOperations.push({
-          action: layer.isNew ? "create" : "update", // Use correct action
+          action: layer.isNew ? "create" : "update",
           layer_id: layer.layer_id,
           is_default: layer.is_default,
           sort_order: layer.sort_order,
@@ -700,7 +688,7 @@
         groups.forEach(group => {
           group.layers.forEach(layer => {
             layerOperations.push({
-              action: layer.isNew ? "create" : "update", // Use correct action
+              action: layer.isNew ? "create" : "update",
               layer_id: layer.layer_id,
               is_default: layer.is_default,
               sort_order: layer.sort_order,
@@ -749,13 +737,13 @@
           layer.isNew = false;
         });
       }
-            
       markLayersAsExisting(ungroupedLayers);
+
       function markGroupLayersAsExisting(groups: GroupWithLayers[]) {
         groups.forEach(group => {
           markLayersAsExisting(group.layers);
           markGroupLayersAsExisting(group.subgroups);
-        });
+        }); 
       }
       markGroupLayersAsExisting(rootGroups);
 

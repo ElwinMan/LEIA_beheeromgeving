@@ -30,8 +30,7 @@ def bulk_create_layer_association(db: Session, association: DigitalTwinLayerAsso
 
 def bulk_update_layer_fields(assoc: DigitalTwinLayerAssociation, updates: dict):
     for field, value in updates.items():
-        if value is not None:
-            setattr(assoc, field, value)
+        setattr(assoc, field, value)
 
 def bulk_delete_layer_association(db: Session, assoc: DigitalTwinLayerAssociation):
     db.delete(assoc)
