@@ -1,6 +1,6 @@
 <script>
-	export let data;
-    const { layer } = data;
+  export let data;
+  const { layer } = data;
 </script>
 
 <h1>{layer.title}</h1>

@@ -9,25 +9,25 @@
   let successBanner: InstanceType<typeof AlertBanner> | null = null;
   let errorBanner: InstanceType<typeof AlertBanner> | null = null;
   let requiredBanner: InstanceType<typeof AlertBanner> | null = null;
-  let requiredFieldMessage: string = "";
+  let requiredFieldMessage: string = '';
 
   let digitalTwin: DigitalTwin | null = null;
   let isReady = false;
 
-  let title = "";
-  let name = "";
-  let subtitle = "";
-  let owner = "";
-  let isPrivate = false;  
+  let title = '';
+  let name = '';
+  let subtitle = '';
+  let owner = '';
+  let isPrivate = false;
 
   async function loadDigitalTwin() {
     try {
       digitalTwin = await fetchDigitalTwin(digitalTwinId);
       if (digitalTwin) {
-        title = digitalTwin.title ?? "";
-        name = digitalTwin.name ?? "";
-        subtitle = digitalTwin.subtitle ?? "";
-        owner = digitalTwin.owner ?? "";
+        title = digitalTwin.title ?? '';
+        name = digitalTwin.name ?? '';
+        subtitle = digitalTwin.subtitle ?? '';
+        owner = digitalTwin.owner ?? '';
         isPrivate = digitalTwin.private ?? false;
         isReady = true;
       } else {
@@ -44,13 +44,11 @@
 
   function getMissingRequiredFields(): string[] {
     const requiredFields = [
-      { label: "Titel", value: title },
-      { label: "Naam", value: name }
+      { label: 'Titel', value: title },
+      { label: 'Naam', value: name }
     ];
 
-    return requiredFields
-      .filter(field => !field.value.trim())
-      .map(field => field.label);
+    return requiredFields.filter((field) => !field.value.trim()).map((field) => field.label);
   }
 
   async function handleSubmit(event: Event) {
@@ -59,7 +57,7 @@
     const missingFields = getMissingRequiredFields();
 
     if (missingFields.length > 0) {
-      requiredFieldMessage = `Verplichte velden niet ingevuld: ${missingFields.join(", ")}`;
+      requiredFieldMessage = `Verplichte velden niet ingevuld: ${missingFields.join(', ')}`;
       requiredBanner?.show();
       return;
     }
@@ -86,24 +84,21 @@
   type="success"
   message="Digital Twin omschrijving bijgewerkt!"
 />
-<AlertBanner
-  bind:this={errorBanner}
-  type="error"
-  message="Fout bij het opslaan!"
-/>
-<AlertBanner
-  bind:this={requiredBanner}
-  type="error"
-  message={requiredFieldMessage}
-/>
+<AlertBanner bind:this={errorBanner} type="error" message="Fout bij het opslaan!" />
+<AlertBanner bind:this={requiredBanner} type="error" message={requiredFieldMessage} />
 
 {#if isReady}
   <form on:submit={handleSubmit} class="space-y-4">
     <div class="flex flex-col">
       <label for="title" class="mb-1 font-semibold">Titel:</label>
-      <input id="title" class="input input-bordered" bind:value={title} class:error={!title.trim()} />
+      <input
+        id="title"
+        class="input input-bordered"
+        bind:value={title}
+        class:error={!title.trim()}
+      />
       {#if !title.trim()}
-        <span class="text-error text-sm mt-1">Titel is verplicht</span>
+        <span class="text-error mt-1 text-sm">Titel is verplicht</span>
       {/if}
     </div>
 
@@ -113,7 +108,7 @@
       </label>
       <input id="name" class="input input-bordered" bind:value={name} class:error={!name.trim()} />
       {#if !name.trim()}
-        <span class="text-error text-sm mt-1">Naam is verplicht</span>
+        <span class="text-error mt-1 text-sm">Naam is verplicht</span>
       {/if}
     </div>
 

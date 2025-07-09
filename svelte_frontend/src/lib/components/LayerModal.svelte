@@ -17,8 +17,8 @@
 
   export function showModal(l: Layer) {
     layer = l;
-	title = layer.title || '';
-	type = layer.type || '';
+    title = layer.title || '';
+    type = layer.type || '';
     url = layer.url || '';
     featureName = layer.featureName || '';
     isBackground = layer.isBackground || false;
@@ -32,14 +32,13 @@
 
     try {
       const updated = await updateLayer(String(layer.id), {
-	  	title,
+        title,
         type,
         url,
         featureName,
-        isBackground,
-      }
-	);
-    dispatch('updated', updated); // notify parent if needed
+        isBackground
+      });
+      dispatch('updated', updated); // notify parent if needed
 
       modalRef.close();
     } catch (error) {
@@ -50,31 +49,60 @@
 </script>
 
 <dialog bind:this={modalRef} class="modal">
-	<form on:submit|preventDefault={handleSubmit} class="modal-box w-full max-w-4xl grid grid-cols-4 gap-4 items-center">
-		<h3 class="col-span-4 text-lg font-bold mb-4">Laag details bewerken</h3>
+  <form
+    on:submit|preventDefault={handleSubmit}
+    class="modal-box grid w-full max-w-4xl grid-cols-4 items-center gap-4"
+  >
+    <h3 class="col-span-4 mb-4 text-lg font-bold">Laag details bewerken</h3>
 
-		<label for="title" class="text-right pr-4 font-semibold">Title:</label>
-		<input id="title" type="text" class="input input-bordered w-full col-span-3" bind:value={title} required/>
+    <label for="title" class="pr-4 text-right font-semibold">Title:</label>
+    <input
+      id="title"
+      type="text"
+      class="input input-bordered col-span-3 w-full"
+      bind:value={title}
+      required
+    />
 
-		<label for="type" class="text-right pr-4 font-semibold">Type:</label>
-		<input id="type" type="text" class="input input-bordered w-full col-span-3" bind:value={type} required/>
+    <label for="type" class="pr-4 text-right font-semibold">Type:</label>
+    <input
+      id="type"
+      type="text"
+      class="input input-bordered col-span-3 w-full"
+      bind:value={type}
+      required
+    />
 
-		<label for="url" class="text-right pr-4 font-semibold">URL:</label>
-		<input id="url" type="text" class="input input-bordered w-full col-span-3" bind:value={url} required/>
+    <label for="url" class="pr-4 text-right font-semibold">URL:</label>
+    <input
+      id="url"
+      type="text"
+      class="input input-bordered col-span-3 w-full"
+      bind:value={url}
+      required
+    />
 
-		<label for="featureName" class="text-right pr-4 font-semibold">Feature Name:</label>
-		<input id="featureName" type="text" class="input input-bordered w-full col-span-3" bind:value={featureName} />
+    <label for="featureName" class="pr-4 text-right font-semibold">Feature Name:</label>
+    <input
+      id="featureName"
+      type="text"
+      class="input input-bordered col-span-3 w-full"
+      bind:value={featureName}
+    />
 
-		<label for="isBackground" class="text-right pr-4 font-semibold">Achtergrond:</label>
-		<input id="isBackground" type="checkbox" class="checkbox checkbox-primary" bind:checked={isBackground} />
+    <label for="isBackground" class="pr-4 text-right font-semibold">Achtergrond:</label>
+    <input
+      id="isBackground"
+      type="checkbox"
+      class="checkbox checkbox-primary"
+      bind:checked={isBackground}
+    />
 
-		<div class="col-span-4 mt-6 flex justify-end gap-2">
-			<button type="button" class="btn btn-ghost" on:click={() => modalRef.close()}>
-			Annuleren
-			</button>
-			<button type="submit" class="btn btn-primary">
-			Opslaan
-			</button>
-		</div>
-	</form>
+    <div class="col-span-4 mt-6 flex justify-end gap-2">
+      <button type="button" class="btn btn-ghost" on:click={() => modalRef.close()}>
+        Annuleren
+      </button>
+      <button type="submit" class="btn btn-primary"> Opslaan </button>
+    </div>
+  </form>
 </dialog>

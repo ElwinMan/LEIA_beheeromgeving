@@ -1,9 +1,33 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { Folder, FolderOpen, File, Eye, EyeOff, ChevronDown, ChevronRight, Save, RotateCcw, GripVertical, Search, Plus } from 'lucide-svelte';
-  import { fetchDigitalTwin, fetchLayers, fetchGroups, bulkUpdateDigitalTwinAssociations } from '$lib/api';
+  import {
+    Folder,
+    FolderOpen,
+    File,
+    Eye,
+    EyeOff,
+    ChevronDown,
+    ChevronRight,
+    Save,
+    RotateCcw,
+    GripVertical,
+    Search,
+    Plus
+  } from 'lucide-svelte';
+  import {
+    fetchDigitalTwin,
+    fetchLayers,
+    fetchGroups,
+    bulkUpdateDigitalTwinAssociations
+  } from '$lib/api';
   import type { DigitalTwin } from '$lib/types/digitalTwin';
-  import type { LayerWithAssociation, GroupWithLayers, LayerBulkOperation, GroupBulkOperation, BulkAssociationsPayload } from '$lib/types/digitalTwinAssociation';
+  import type {
+    LayerWithAssociation,
+    GroupWithLayers,
+    LayerBulkOperation,
+    GroupBulkOperation,
+    BulkAssociationsPayload
+  } from '$lib/types/digitalTwinAssociation';
   import type { Layer } from '$lib/types/layer';
   import type { Group } from '$lib/types/group';
   import AlertBanner from '$lib/components/AlertBanner.svelte';
@@ -21,7 +45,7 @@
   function deepClone<T>(obj: T): T {
     if (obj === null || typeof obj !== 'object') return obj;
     if (obj instanceof Date) return new Date(obj.getTime()) as unknown as T;
-    if (obj instanceof Array) return obj.map(item => deepClone(item)) as unknown as T;
+    if (obj instanceof Array) return obj.map((item) => deepClone(item)) as unknown as T;
     if (typeof obj === 'object') {
       const clonedObj = {} as T;
       for (const key in obj) {
@@ -44,12 +68,25 @@
   let hasChanges = $state(false);
   let isLoading = $state(true);
   let error = $state<string | null>(null);
-  let originalData: { ungroupedLayers: LayerWithAssociation[], rootGroups: GroupWithLayers[] } = { ungroupedLayers: [], rootGroups: [] };
+  let originalData: { ungroupedLayers: LayerWithAssociation[]; rootGroups: GroupWithLayers[] } = {
+    ungroupedLayers: [],
+    rootGroups: []
+  };
   let isSaving = $state(false);
 
   // Drag and drop state - extended to support catalog layers
-  let draggedItem = $state<{ type: 'layer' | 'group' | 'catalog-layer', id: number, groupId?: number | null, layer?: Layer } | null>(null);
-  let draggedOverItem = $state<{ type: 'layer' | 'group', id: number, groupId?: number | null, zone: 'top' | 'middle' | 'bottom' } | null>(null);
+  let draggedItem = $state<{
+    type: 'layer' | 'group' | 'catalog-layer';
+    id: number;
+    groupId?: number | null;
+    layer?: Layer;
+  } | null>(null);
+  let draggedOverItem = $state<{
+    type: 'layer' | 'group';
+    id: number;
+    groupId?: number | null;
+    zone: 'top' | 'middle' | 'bottom';
+  } | null>(null);
 
   let successBanner: InstanceType<typeof AlertBanner> | null = null;
   let errorBanner: InstanceType<typeof AlertBanner> | null = null;
@@ -61,7 +98,7 @@
   let catalogError = $state<string | null>(null);
 
   // Get used layer IDs for filtering catalog
-  let usedLayerIds = $derived(layersWithDetails.map(l => l.layer_id));
+  let usedLayerIds = $derived(layersWithDetails.map((l) => l.layer_id));
 
   let editingGroupId = $state<number | null>(null);
   let editingGroupTitle = $state('');
@@ -69,14 +106,15 @@
   // Filter catalog layers
   const filteredCatalogLayers = $derived.by(() => {
     if (catalogSearchTerm.trim() === '') {
-      return catalogLayers.filter(layer => !usedLayerIds.includes(layer.id));
+      return catalogLayers.filter((layer) => !usedLayerIds.includes(layer.id));
     } else {
       const term = catalogSearchTerm.toLowerCase();
-      return catalogLayers.filter(layer => 
-        !usedLayerIds.includes(layer.id) &&
-        (layer.title.toLowerCase().includes(term) ||
-         layer.type?.toLowerCase().includes(term) ||
-         layer.featureName?.toLowerCase().includes(term))
+      return catalogLayers.filter(
+        (layer) =>
+          !usedLayerIds.includes(layer.id) &&
+          (layer.title.toLowerCase().includes(term) ||
+            layer.type?.toLowerCase().includes(term) ||
+            layer.featureName?.toLowerCase().includes(term))
       );
     }
   });
@@ -102,8 +140,8 @@
             };
           });
 
-        ungroupedLayers = layersWithDetails.filter(layer => layer.group_id === null);
-        groupedLayers = layersWithDetails.filter(layer => layer.group_id !== null);
+        ungroupedLayers = layersWithDetails.filter((layer) => layer.group_id === null);
+        groupedLayers = layersWithDetails.filter((layer) => layer.group_id !== null);
         rootGroups = buildNestedGroups(allGroups, layersWithDetails);
         expandedGroups = new Set(getAllGroupIds(rootGroups));
         originalData = deepClone({ ungroupedLayers, rootGroups });
@@ -126,23 +164,28 @@
 
   onMount(fetchAllData);
 
-  function buildNestedGroups(groups: Group[], layers: LayerWithAssociation[], parentId: number | null = null, depth: number = 0): GroupWithLayers[] {
-    const childGroups = groups.filter(group => group.parent_id === parentId);
-    
+  function buildNestedGroups(
+    groups: Group[],
+    layers: LayerWithAssociation[],
+    parentId: number | null = null,
+    depth: number = 0
+  ): GroupWithLayers[] {
+    const childGroups = groups.filter((group) => group.parent_id === parentId);
+
     return childGroups
       .sort((a, b) => a.sort_order - b.sort_order)
-      .map(group => {
+      .map((group) => {
         const groupLayers = layers
-          .filter(layer => layer.group_id === group.id)
+          .filter((layer) => layer.group_id === group.id)
           .sort((a, b) => a.sort_order - b.sort_order);
-        
+
         const subgroups = buildNestedGroups(groups, layers, group.id, depth + 1);
-        
+
         return {
           ...group,
           depth,
           layers: groupLayers,
-          subgroups,
+          subgroups
         };
       });
   }
@@ -167,19 +210,19 @@
 
   function toggleDefault(layerId: number) {
     // Update in layersWithDetails
-    const layer = layersWithDetails.find(l => l.layer_id === layerId);
+    const layer = layersWithDetails.find((l) => l.layer_id === layerId);
     if (layer) {
       layer.is_default = !layer.is_default;
     }
     // Update in ungroupedLayers
-    const ungrouped = ungroupedLayers.find(l => l.layer_id === layerId);
+    const ungrouped = ungroupedLayers.find((l) => l.layer_id === layerId);
     if (ungrouped) {
       ungrouped.is_default = layer?.is_default ?? false;
     }
     // Update in all group layers
     function updateInGroups(groups: GroupWithLayers[]) {
       for (const group of groups) {
-        const groupLayer = group.layers.find(l => l.layer_id === layerId);
+        const groupLayer = group.layers.find((l) => l.layer_id === layerId);
         if (groupLayer) groupLayer.is_default = layer?.is_default ?? false;
         updateInGroups(group.subgroups);
       }
@@ -240,7 +283,7 @@
     // Update main arrays
     layersWithDetails.push(newLayerAssociation);
     layersWithDetails = [...layersWithDetails];
-    
+
     hasChanges = true;
   }
 
@@ -255,7 +298,7 @@
       };
       e.dataTransfer.setData('application/json', JSON.stringify(dragData));
     }
-    
+
     // Set global fallback
     (window as any).catalogDragData = {
       type: 'catalog-layer',
@@ -269,7 +312,12 @@
   }
 
   // Drag and drop functions
-  function handleDragStart(e: DragEvent, type: 'layer' | 'group', id: number, groupId?: number | null) {
+  function handleDragStart(
+    e: DragEvent,
+    type: 'layer' | 'group',
+    id: number,
+    groupId?: number | null
+  ) {
     draggedItem = { type, id, groupId };
     if (e.dataTransfer) {
       e.dataTransfer.effectAllowed = 'move';
@@ -281,18 +329,23 @@
     const rect = element.getBoundingClientRect();
     const y = e.clientY - rect.top;
     const height = rect.height;
-    
+
     const topThreshold = height * 0.35;
     const bottomThreshold = height * 0.65;
-    
+
     if (y < topThreshold) return 'top';
     if (y > bottomThreshold) return 'bottom';
     return 'middle';
   }
 
-  function handleDragOver(e: DragEvent, type: 'layer' | 'group', id: number, groupId?: number | null) {
+  function handleDragOver(
+    e: DragEvent,
+    type: 'layer' | 'group',
+    id: number,
+    groupId?: number | null
+  ) {
     e.preventDefault();
-    
+
     // Try to parse catalog drag data if no draggedItem
     if (!draggedItem) {
       const dragData = e.dataTransfer?.getData('application/json');
@@ -311,9 +364,9 @@
         draggedItem = (window as any).catalogDragData;
       }
     }
-    
+
     if (!draggedItem) return;
-    
+
     const zone = getDropZone(e, e.currentTarget as HTMLElement);
 
     // Handle catalog layer drops
@@ -324,24 +377,24 @@
         if (e.dataTransfer) e.dataTransfer.dropEffect = 'none';
         return;
       }
-      
+
       draggedOverItem = { type, id, groupId, zone };
       if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
       return;
     }
-    
+
     // Don't allow dropping on itself
     if (draggedItem.type === type && draggedItem.id === id) {
       draggedOverItem = null;
       return;
     }
-    
+
     // Prevent group-to-layer drops
     if (draggedItem.type === 'group' && type === 'layer') {
       draggedOverItem = null;
       return;
     }
-    
+
     // For group-to-group drops, prevent ANY drop on descendants
     if (draggedItem.type === 'group' && type === 'group') {
       // Check if target is a descendant of dragged item
@@ -352,10 +405,10 @@
     }
 
     if (draggedItem.type === 'layer' && type === 'group' && (zone === 'top' || zone === 'bottom')) {
-        draggedOverItem = null;
-        return;
+      draggedOverItem = null;
+      return;
     }
-    
+
     // Allow all zones for valid drops
     draggedOverItem = { type, id, groupId, zone };
   }
@@ -364,9 +417,14 @@
     draggedOverItem = null;
   }
 
-  function handleDrop(e: DragEvent, dropType: 'layer' | 'group', dropId: number, dropGroupId?: number | null) {
+  function handleDrop(
+    e: DragEvent,
+    dropType: 'layer' | 'group',
+    dropId: number,
+    dropGroupId?: number | null
+  ) {
     e.preventDefault();
-    
+
     // Try to get drag data if no draggedItem
     if (!draggedItem) {
       const dragData = e.dataTransfer?.getData('application/json');
@@ -382,11 +440,11 @@
         draggedItem = (window as any).catalogDragData;
       }
     }
-    
+
     if (!draggedItem || !draggedOverItem) return;
-    
+
     const zone = draggedOverItem.zone;
-    
+
     if (draggedItem.type === 'catalog-layer') {
       handleCatalogLayerDrop(dropType, dropId, dropGroupId, zone);
     } else if (draggedItem.type === 'layer') {
@@ -394,19 +452,24 @@
     } else if (draggedItem.type === 'group') {
       handleGroupDrop(dropType, dropId, dropGroupId, zone);
     }
-    
+
     draggedItem = null;
     draggedOverItem = null;
-    
+
     // Clean up global fallback
     if ((window as any).catalogDragData) {
       delete (window as any).catalogDragData;
     }
-    
+
     hasChanges = true;
   }
 
-  function handleCatalogLayerDrop(dropType: string, dropId: number, dropGroupId: number | null | undefined, zone: string) {
+  function handleCatalogLayerDrop(
+    dropType: string,
+    dropId: number,
+    dropGroupId: number | null | undefined,
+    zone: string
+  ) {
     if (!draggedItem || draggedItem.type !== 'catalog-layer' || !draggedItem.layer) return;
 
     const layer = draggedItem.layer;
@@ -430,7 +493,7 @@
 
       if (targetGroupId === null) {
         // Insert in ungrouped layers
-        const targetIndex = ungroupedLayers.findIndex(l => l.layer_id === dropId);
+        const targetIndex = ungroupedLayers.findIndex((l) => l.layer_id === dropId);
         const insertIndex = zone === 'top' ? targetIndex : targetIndex + 1;
         ungroupedLayers.splice(insertIndex, 0, newLayerAssociation);
         ungroupedLayers = [...ungroupedLayers];
@@ -438,7 +501,7 @@
         // Insert in group
         const targetGroup = findGroupById(rootGroups, targetGroupId);
         if (targetGroup) {
-          const targetIndex = targetGroup.layers.findIndex(l => l.layer_id === dropId);
+          const targetIndex = targetGroup.layers.findIndex((l) => l.layer_id === dropId);
           const insertIndex = zone === 'top' ? targetIndex : targetIndex + 1;
           targetGroup.layers.splice(insertIndex, 0, newLayerAssociation);
           rootGroups = [...rootGroups];
@@ -448,7 +511,7 @@
       // Update main arrays
       layersWithDetails.push(newLayerAssociation);
       layersWithDetails = [...layersWithDetails];
-      
+
       // Update sort orders
       updateLayerSortOrders();
     } else {
@@ -457,7 +520,12 @@
     }
   }
 
-  function handleLayerDrop(dropType: string, dropId: number, dropGroupId: number | null | undefined, zone: string) {
+  function handleLayerDrop(
+    dropType: string,
+    dropId: number,
+    dropGroupId: number | null | undefined,
+    zone: string
+  ) {
     if (!draggedItem || draggedItem.type !== 'layer') return;
 
     const layerId = draggedItem.id;
@@ -466,14 +534,14 @@
     // Find and remove the layer from its current location
     let layer: LayerWithAssociation | undefined;
     if (sourceGroupId === null || sourceGroupId === undefined) {
-      const index = ungroupedLayers.findIndex(l => l.layer_id === layerId);
+      const index = ungroupedLayers.findIndex((l) => l.layer_id === layerId);
       if (index !== -1) {
         layer = ungroupedLayers.splice(index, 1)[0];
       }
     } else {
       const group = findGroupById(rootGroups, sourceGroupId);
       if (group) {
-        const index = group.layers.findIndex(l => l.layer_id === layerId);
+        const index = group.layers.findIndex((l) => l.layer_id === layerId);
         if (index !== -1) {
           layer = group.layers.splice(index, 1)[0];
         }
@@ -493,17 +561,17 @@
       // Drop above or below another layer
       const targetGroupId = dropGroupId ?? null;
       layer.group_id = targetGroupId;
-      
+
       if (targetGroupId === null) {
         // Insert in ungrouped layers
-        const targetIndex = ungroupedLayers.findIndex(l => l.layer_id === dropId);
+        const targetIndex = ungroupedLayers.findIndex((l) => l.layer_id === dropId);
         const insertIndex = zone === 'top' ? targetIndex : targetIndex + 1;
         ungroupedLayers.splice(insertIndex, 0, layer);
       } else {
         // Insert in group
         const targetGroup = findGroupById(rootGroups, targetGroupId);
         if (targetGroup) {
-          const targetIndex = targetGroup.layers.findIndex(l => l.layer_id === dropId);
+          const targetIndex = targetGroup.layers.findIndex((l) => l.layer_id === dropId);
           const insertIndex = zone === 'top' ? targetIndex : targetIndex + 1;
           targetGroup.layers.splice(insertIndex, 0, layer);
         }
@@ -521,7 +589,7 @@
 
     // Update grouped layers sort order recursively
     function updateGroupLayerSortOrders(groups: GroupWithLayers[]) {
-      groups.forEach(group => {
+      groups.forEach((group) => {
         group.layers.forEach((layer, index) => {
           layer.sort_order = index;
         });
@@ -530,17 +598,22 @@
     }
 
     updateGroupLayerSortOrders(rootGroups);
-    
+
     // Update main arrays
     updateLayersWithDetails();
-    
+
     // Force reactivity
     ungroupedLayers = [...ungroupedLayers];
     rootGroups = [...rootGroups];
   }
 
   // Function to handle dropping groups with drag and drop
-  function handleGroupDrop(dropType: string, dropId: number, dropGroupId: number | null | undefined, zone: string) {
+  function handleGroupDrop(
+    dropType: string,
+    dropId: number,
+    dropGroupId: number | null | undefined,
+    zone: string
+  ) {
     if (!draggedItem || draggedItem.type !== 'group') return;
 
     const groupId = draggedItem.id;
@@ -549,7 +622,7 @@
     let draggedGroup: GroupWithLayers | undefined;
 
     function removeGroupFromParent(groups: GroupWithLayers[]): boolean {
-      const index = groups.findIndex(g => g.id === groupId);
+      const index = groups.findIndex((g) => g.id === groupId);
       if (index !== -1) {
         draggedGroup = groups.splice(index, 1)[0];
         return true;
@@ -601,16 +674,17 @@
           siblings = parentGroup.subgroups;
           // Set the dragged group's parent and depth
           draggedGroup.parent_id = parentGroupId;
-          draggedGroup.depth = parentGroupId === null ? 0 : (findGroupById(rootGroups, parentGroupId)?.depth ?? 0) + 1;
+          draggedGroup.depth =
+            parentGroupId === null ? 0 : (findGroupById(rootGroups, parentGroupId)?.depth ?? 0) + 1;
         }
 
         // Find target index and insert
-        const targetIndex = siblings.findIndex(g => g.id === dropId);
+        const targetIndex = siblings.findIndex((g) => g.id === dropId);
         if (targetIndex === -1) {
           console.error('Could not find target group in siblings');
           return;
         }
-        
+
         const insertIndex = zone === 'top' ? targetIndex : targetIndex + 1;
         siblings.splice(insertIndex, 0, draggedGroup);
       }
@@ -619,7 +693,7 @@
     // Update depths of all subgroups recursively
     function updateDepths(group: GroupWithLayers, newDepth: number) {
       group.depth = newDepth;
-      group.subgroups.forEach(sub => updateDepths(sub, newDepth + 1));
+      group.subgroups.forEach((sub) => updateDepths(sub, newDepth + 1));
     }
     updateDepths(draggedGroup, draggedGroup.depth);
 
@@ -656,29 +730,29 @@
 
   function updateLayersWithDetails() {
     const allUpdatedLayers: LayerWithAssociation[] = [];
-    
+
     // Add ungrouped layers
     allUpdatedLayers.push(...ungroupedLayers);
-    
+
     // Add grouped layers recursively
     function collectGroupLayers(groups: GroupWithLayers[]) {
-      groups.forEach(group => {
+      groups.forEach((group) => {
         allUpdatedLayers.push(...group.layers);
         collectGroupLayers(group.subgroups);
       });
     }
-    
+
     collectGroupLayers(rootGroups);
-    
+
     layersWithDetails = allUpdatedLayers;
-    groupedLayers = allUpdatedLayers.filter(layer => layer.group_id !== null);
+    groupedLayers = allUpdatedLayers.filter((layer) => layer.group_id !== null);
   }
 
   function getDropIndicatorStyle(type: 'layer' | 'group', id: number, groupId?: number | null) {
     if (!draggedOverItem || draggedOverItem.type !== type || draggedOverItem.id !== id) {
       return { show: false, zone: null };
     }
-    
+
     return { show: true, zone: draggedOverItem.zone };
   }
 
@@ -692,26 +766,26 @@
       const layerOperations: LayerBulkOperation[] = [];
 
       // Ungrouped layers
-      ungroupedLayers.forEach(layer => {
+      ungroupedLayers.forEach((layer) => {
         layerOperations.push({
-          action: layer.isNew ? "create" : "update",
+          action: layer.isNew ? 'create' : 'update',
           layer_id: layer.layer_id,
           is_default: layer.is_default,
           sort_order: layer.sort_order,
-          group_id: null,
+          group_id: null
         });
       });
 
       // Grouped layers (recursive)
       function collectGroupLayers(groups: GroupWithLayers[]) {
-        groups.forEach(group => {
-          group.layers.forEach(layer => {
+        groups.forEach((group) => {
+          group.layers.forEach((layer) => {
             layerOperations.push({
-              action: layer.isNew ? "create" : "update",
+              action: layer.isNew ? 'create' : 'update',
               layer_id: layer.layer_id,
               is_default: layer.is_default,
               sort_order: layer.sort_order,
-              group_id: group.id,
+              group_id: group.id
             });
           });
           collectGroupLayers(group.subgroups);
@@ -719,18 +793,18 @@
       }
       collectGroupLayers(rootGroups);
 
-      // Collect group operations 
+      // Collect group operations
       const groupOperations: GroupBulkOperation[] = [];
 
       function collectGroupOperations(groups: GroupWithLayers[]): void {
-        groups.forEach(group => {
+        groups.forEach((group) => {
           groupOperations.push({
-            action: "update",
+            action: 'update',
             id: group.id,
             title: group.title,
             parent_id: group.parent_id,
             sort_order: group.sort_order,
-            digital_twin_id: group.digital_twin_id,
+            digital_twin_id: group.digital_twin_id
           });
 
           if ('subgroups' in group && Array.isArray((group as any).subgroups)) {
@@ -738,13 +812,13 @@
           }
         });
       }
-      
+
       collectGroupOperations(rootGroups);
 
       // Compose full payload to match backend
       const payload: BulkAssociationsPayload = {
         layer_payload: { operations: layerOperations },
-        group_payload: { operations: groupOperations },
+        group_payload: { operations: groupOperations }
       };
 
       // Call the combined bulk update API
@@ -752,17 +826,17 @@
 
       // After successful save, mark all layers as no longer new
       function markLayersAsExisting(layers: LayerWithAssociation[]) {
-        layers.forEach(layer => {
+        layers.forEach((layer) => {
           layer.isNew = false;
         });
       }
       markLayersAsExisting(ungroupedLayers);
 
       function markGroupLayersAsExisting(groups: GroupWithLayers[]) {
-        groups.forEach(group => {
+        groups.forEach((group) => {
           markLayersAsExisting(group.layers);
           markGroupLayersAsExisting(group.subgroups);
-        }); 
+        });
       }
       markGroupLayersAsExisting(rootGroups);
 
@@ -809,30 +883,34 @@
   on:created={() => fetchAllData()}
 />
 
-<div class="flex gap-4 h-full">
+<div class="flex h-full gap-4">
   <!-- Layer Catalog -->
   <div class="w-1/3">
-    <div class="bg-base-100 border border-base-300 rounded-lg p-4 h-full">
+    <div class="bg-base-100 border-base-300 h-full rounded-lg border p-4">
       <div class="space-y-4">
         <!-- Header -->
         <div>
           <h3 class="text-lg font-semibold">Layer Catalogus</h3>
-          <p class="text-sm text-base-content/70">Sleep lagen naar de digital twin of klik op + om toe te voegen</p>
+          <p class="text-base-content/70 text-sm">
+            Sleep lagen naar de digital twin of klik op + om toe te voegen
+          </p>
         </div>
 
         <!-- Search -->
         <div class="relative">
-          <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/50" />
+          <Search
+            class="text-base-content/50 absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform"
+          />
           <input
             type="text"
             placeholder="Zoek lagen..."
-            class="input input-bordered w-full pl-10 input-sm"
+            class="input input-bordered input-sm w-full pl-10"
             bind:value={catalogSearchTerm}
           />
         </div>
 
         <!-- Layer List -->
-        <div class="space-y-1 max-h-96 overflow-y-auto">
+        <div class="max-h-96 space-y-1 overflow-y-auto">
           {#if catalogIsLoading}
             <div class="flex items-center justify-center py-8">
               <span class="loading loading-spinner loading-sm"></span>
@@ -843,29 +921,31 @@
               <span class="text-sm">{catalogError}</span>
             </div>
           {:else if filteredCatalogLayers.length === 0}
-            <div class="text-center py-8 text-base-content/50">
-              <File class="mx-auto h-8 w-8 mb-2 opacity-50" />
+            <div class="text-base-content/50 py-8 text-center">
+              <File class="mx-auto mb-2 h-8 w-8 opacity-50" />
               <p class="text-sm">
-                {catalogSearchTerm ? 'Geen lagen gevonden voor deze zoekopdracht' : 'Alle beschikbare lagen zijn al toegevoegd'}
+                {catalogSearchTerm
+                  ? 'Geen lagen gevonden voor deze zoekopdracht'
+                  : 'Alle beschikbare lagen zijn al toegevoegd'}
               </p>
             </div>
           {:else}
             {#each filteredCatalogLayers as layer}
               <div
-                class="group flex items-center gap-2 px-3 py-2 hover:bg-base-200 rounded text-sm cursor-move border border-transparent hover:border-base-300 transition-colors"
+                class="hover:bg-base-200 hover:border-base-300 group flex cursor-move items-center gap-2 rounded border border-transparent px-3 py-2 text-sm transition-colors"
                 draggable="true"
                 ondragstart={(e) => handleCatalogDragStart(e, layer)}
                 role="listitem"
               >
-                <File class="w-4 h-4 text-purple-600 flex-shrink-0" />
-                <div class="flex-1 min-w-0">
-                  <div class="font-medium truncate">{layer.title}</div>
+                <File class="h-4 w-4 flex-shrink-0 text-purple-600" />
+                <div class="min-w-0 flex-1">
+                  <div class="truncate font-medium">{layer.title}</div>
                   {#if layer.type}
-                    <div class="text-xs text-base-content/60 truncate">{layer.type}</div>
+                    <div class="text-base-content/60 truncate text-xs">{layer.type}</div>
                   {/if}
                 </div>
                 <button
-                  class="btn btn-ghost btn-xs opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity"
+                  class="btn btn-ghost btn-xs opacity-0 transition-opacity group-hover:opacity-100 hover:opacity-100"
                   onclick={(e) => {
                     e.stopPropagation();
                     handleCatalogAddLayer(layer);
@@ -873,7 +953,7 @@
                   onmousedown={(e) => e.stopPropagation()}
                   title="Voeg toe aan digital twin"
                 >
-                  <Plus class="w-3 h-3" />
+                  <Plus class="h-3 w-3" />
                 </button>
               </div>
             {/each}
@@ -882,7 +962,7 @@
 
         <!-- Stats -->
         {#if !catalogIsLoading && !catalogError}
-          <div class="text-xs text-base-content/50 border-t border-base-300 pt-2">
+          <div class="text-base-content/50 border-base-300 border-t pt-2 text-xs">
             {filteredCatalogLayers.length} beschikbare lagen
             {#if usedLayerIds.length > 0}
               • {usedLayerIds.length} al toegevoegd
@@ -907,31 +987,25 @@
     />
 
     <div class="space-y-4">
-      <div class="flex justify-between items-center">
+      <div class="flex items-center justify-between">
         <div>
           <h2 class="text-2xl font-bold">Feature Lagen</h2>
-          <p class="text-sm text-base-content/70">Sleep lagen om ze te herordenen en tussen groepen te verplaatsen</p>
+          <p class="text-base-content/70 text-sm">
+            Sleep lagen om ze te herordenen en tussen groepen te verplaatsen
+          </p>
         </div>
-        
+
         {#if hasChanges}
           <div class="flex gap-2">
-            <button 
-              class="btn btn-ghost btn-sm"
-              onclick={resetChanges}
-              disabled={isSaving}
-            >
-              <RotateCcw class="w-4 h-4" />
+            <button class="btn btn-ghost btn-sm" onclick={resetChanges} disabled={isSaving}>
+              <RotateCcw class="h-4 w-4" />
               Reset
             </button>
-            <button 
-              class="btn btn-primary btn-sm"
-              onclick={saveChanges}
-              disabled={isSaving}
-            >
+            <button class="btn btn-primary btn-sm" onclick={saveChanges} disabled={isSaving}>
               {#if isSaving}
                 <span class="loading loading-spinner loading-xs"></span>
               {:else}
-                <Save class="w-4 h-4" />
+                <Save class="h-4 w-4" />
               {/if}
               Opslaan
             </button>
@@ -939,7 +1013,7 @@
         {/if}
       </div>
 
-      <div class="bg-base-100 border border-base-300 rounded-lg p-4">
+      <div class="bg-base-100 border-base-300 rounded-lg border p-4">
         {#if isLoading}
           <div class="flex items-center justify-center py-8">
             <span class="loading loading-spinner loading-md"></span>
@@ -955,15 +1029,18 @@
             <div class="space-y-1">
               <!-- Ungrouped Layers -->
               <div class="mb-4">
-                <h3 class="text-sm font-semibold text-base-content/80 mb-2 flex items-center gap-2">
-                  <File class="w-4 h-4" />
+                <h3 class="text-base-content/80 mb-2 flex items-center gap-2 text-sm font-semibold">
+                  <File class="h-4 w-4" />
                   Ongegroepeerde Lagen ({ungroupedLayers.length})
                 </h3>
                 <div class="ml-6 space-y-1">
                   {#each ungroupedLayers as layer}
                     <div class="relative">
                       <div
-                        class="flex items-center gap-2 px-2 py-1 hover:bg-base-200 rounded text-sm cursor-move {draggedItem?.type === 'layer' && draggedItem?.id === layer.layer_id ? 'opacity-50' : ''}"
+                        class="hover:bg-base-200 flex cursor-move items-center gap-2 rounded px-2 py-1 text-sm {draggedItem?.type ===
+                          'layer' && draggedItem?.id === layer.layer_id
+                          ? 'opacity-50'
+                          : ''}"
                         draggable="true"
                         ondragstart={(e) => handleDragStart(e, 'layer', layer.layer_id, null)}
                         ondragover={(e) => handleDragOver(e, 'layer', layer.layer_id, null)}
@@ -971,37 +1048,43 @@
                         ondrop={(e) => handleDrop(e, 'layer', layer.layer_id, null)}
                         role="listitem"
                       >
-                        <GripVertical class="w-4 h-4 text-base-content/30 flex-shrink-0" />
-                        <File class="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        <GripVertical class="text-base-content/30 h-4 w-4 flex-shrink-0" />
+                        <File class="h-4 w-4 flex-shrink-0 text-blue-600" />
                         <span class="flex-1">
                           <span class="font-medium">{layer.title}</span>
                           {#if layer.is_default}
                             <span class="badge badge-primary badge-xs ml-2">Standaard</span>
                           {/if}
                         </span>
-                        <span class="text-xs text-base-content/50">#{layer.sort_order}</span>
+                        <span class="text-base-content/50 text-xs">#{layer.sort_order}</span>
                         <button
                           class="btn btn-ghost btn-xs"
                           onclick={() => toggleDefault(layer.layer_id)}
                           title={layer.is_default ? 'Verwijder van standaard' : 'Maak standaard'}
                         >
                           {#if layer.is_default}
-                            <Eye class="w-3 h-3" />
+                            <Eye class="h-3 w-3" />
                           {:else}
-                            <EyeOff class="w-3 h-3" />
+                            <EyeOff class="h-3 w-3" />
                           {/if}
                         </button>
                       </div>
-                      
+
                       <!-- Absolute positioned drop indicators -->
                       {#if getDropIndicatorStyle('layer', layer.layer_id, null).show}
                         {@const indicator = getDropIndicatorStyle('layer', layer.layer_id, null)}
                         {#if indicator.zone === 'top'}
-                          <div class="absolute top-0 left-0 right-0 h-1 bg-primary rounded-full -translate-y-0.5 z-10"></div>
+                          <div
+                            class="bg-primary absolute top-0 right-0 left-0 z-10 h-1 -translate-y-0.5 rounded-full"
+                          ></div>
                         {:else if indicator.zone === 'bottom'}
-                          <div class="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-full translate-y-0.5 z-10"></div>
+                          <div
+                            class="bg-primary absolute right-0 bottom-0 left-0 z-10 h-1 translate-y-0.5 rounded-full"
+                          ></div>
                         {:else if indicator.zone === 'middle'}
-                          <div class="absolute inset-0 border-2 border-primary bg-primary/10 rounded z-10 pointer-events-none"></div>
+                          <div
+                            class="border-primary bg-primary/10 pointer-events-none absolute inset-0 z-10 rounded border-2"
+                          ></div>
                         {/if}
                       {/if}
                     </div>
@@ -1011,26 +1094,26 @@
 
               <!-- Root Groups -->
               <div class="mb-4">
-                <h3 class="text-sm font-semibold text-base-content/80 mb-2 flex items-center gap-2">
-                  <Folder class="w-4 h-4" />
+                <h3 class="text-base-content/80 mb-2 flex items-center gap-2 text-sm font-semibold">
+                  <Folder class="h-4 w-4" />
                   Groepen ({rootGroups.length})
                   <button
                     class="btn btn-sm btn-outline mb-2"
                     onclick={() => groupModalRef.showModal()}
                     disabled={isSaving}
                   >
-                    <Plus class="w-4 h-4 mr-1" /> Nieuwe groep
+                    <Plus class="mr-1 h-4 w-4" /> Nieuwe groep
                   </button>
                 </h3>
                 {#each rootGroups as group}
                   {@render groupComponent(group)}
                 {/each}
               </div>
-              
+
               {#if ungroupedLayers.length === 0 && rootGroups.length === 0}
-                <div class="text-center py-8 text-base-content/50">
+                <div class="text-base-content/50 py-8 text-center">
                   <p>Geen lagen gevonden voor deze digital twin.</p>
-                  <p class="text-xs mt-2">Sleep lagen vanuit de catalogus om te beginnen.</p>
+                  <p class="mt-2 text-xs">Sleep lagen vanuit de catalogus om te beginnen.</p>
                 </div>
               {/if}
             </div>
@@ -1042,130 +1125,184 @@
 </div>
 
 {#snippet groupComponent(group: GroupWithLayers)}
-<div class="space-y-1" style="margin-left: {group.depth * 1.5}rem;" role="group">
-  <!-- Group Header with relative positioning -->
-  <div class="relative">
-    <div
-      class="flex items-center gap-2 px-2 py-1 hover:bg-base-200 rounded text-sm"
-      ondragover={(e) => handleDragOver(e, 'group', group.id)}
-      ondragleave={handleDragLeave}
-      ondrop={(e) => handleDrop(e, 'group', group.id)}
-      draggable="true"
-      ondragstart={(e) => handleDragStart(e, 'group', group.id, group.parent_id)}
-      role="listitem"
-    >
-      <button
-        class="btn btn-ghost btn-xs p-0 min-h-0 h-4 w-4"
-        onclick={() => toggleGroup(group.id)}
+  <div class="space-y-1" style="margin-left: {group.depth * 1.5}rem;" role="group">
+    <!-- Group Header with relative positioning -->
+    <div class="relative">
+      <div
+        class="hover:bg-base-200 flex items-center gap-2 rounded px-2 py-1 text-sm"
+        ondragover={(e) => handleDragOver(e, 'group', group.id)}
+        ondragleave={handleDragLeave}
+        ondrop={(e) => handleDrop(e, 'group', group.id)}
+        draggable="true"
+        ondragstart={(e) => handleDragStart(e, 'group', group.id, group.parent_id)}
+        role="listitem"
       >
-        {#if expandedGroups.has(group.id)}
-          <ChevronDown class="w-3 h-3" />
-        {:else}
-          <ChevronRight class="w-3 h-3" />
-        {/if}
-      </button>
-
-      {#if expandedGroups.has(group.id)}
-        <FolderOpen class="w-4 h-4 text-amber-600 flex-shrink-0" />
-      {:else}
-        <Folder class="w-4 h-4 text-amber-600 flex-shrink-0" />
-      {/if}
-
-      {#if editingGroupId === group.id}
-        <input
-          class="input input-xs input-bordered w-32"
-          bind:value={editingGroupTitle}
-          onblur={() => finishEditGroupTitle(group)}
-          onkeydown={(e) => e.key === 'Enter' && finishEditGroupTitle(group)}
-        />
-      {:else}
-        <span class="font-medium truncate">{group.title}</span>
         <button
-          class="btn btn-ghost btn-xs ml-1"
-          title="Naam wijzigen"
-          onclick={() => startEditGroupTitle(group)}
-          tabindex="-1"
-          aria-label="Title wijzigen"
+          class="btn btn-ghost btn-xs h-4 min-h-0 w-4 p-0"
+          onclick={() => toggleGroup(group.id)}
         >
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.3 2.7a1 1 0 0 1 0 1.4l-7.6 7.6-3 0.6 0.6-3 7.6-7.6a1 1 0 0 1 1.4 0z"></path></svg>
+          {#if expandedGroups.has(group.id)}
+            <ChevronDown class="h-3 w-3" />
+          {:else}
+            <ChevronRight class="h-3 w-3" />
+          {/if}
         </button>
-      {/if}
-      <span class="text-xs text-base-content/50">
-        ({getTotalLayersInGroup(group)} lagen)
-      </span>
-    </div>
-    
-    <!-- Absolute positioned drop indicators for groups -->
-    {#if getDropIndicatorStyle('group', group.id).show}
-      {@const indicator = getDropIndicatorStyle('group', group.id)}
-      {#if indicator.zone === 'top'}
-        <div class="absolute top-0 left-0 right-0 h-1 bg-primary rounded-full -translate-y-0.5 z-10"></div>
-      {:else if indicator.zone === 'bottom'}
-        <div class="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-full translate-y-0.5 z-10"></div>
-      {:else if indicator.zone === 'middle'}
-        <div class="absolute inset-0 border-2 border-primary bg-primary/10 rounded z-10 pointer-events-none"></div>
-      {/if}
-    {/if}
-  </div>
 
-  <!-- Group Content (only if expanded) -->
-  {#if expandedGroups.has(group.id)}
-    <div class="space-y-1">
-      <!-- Group Layers -->
-      <div class="space-y-1">
-        {#each group.layers as layer}
-          <div class="relative">
-            <div
-              class="flex items-center gap-2 px-2 py-1 hover:bg-base-200 rounded text-sm cursor-move {draggedItem?.type === 'layer' && draggedItem?.id === layer.layer_id ? 'opacity-50' : ''}"
-              draggable="true"
-              ondragstart={(e) => handleDragStart(e, 'layer', layer.layer_id, group.id)}
-              ondragover={(e) => handleDragOver(e, 'layer', layer.layer_id, group.id)}
-              ondragleave={handleDragLeave}
-              ondrop={(e) => handleDrop(e, 'layer', layer.layer_id, group.id)}
-              role="listitem"
+        {#if expandedGroups.has(group.id)}
+          <FolderOpen class="h-4 w-4 flex-shrink-0 text-amber-600" />
+        {:else}
+          <Folder class="h-4 w-4 flex-shrink-0 text-amber-600" />
+        {/if}
+
+        {#if editingGroupId === group.id}
+          <input
+            class="input input-xs input-bordered w-64 text-sm"
+            bind:value={editingGroupTitle}
+            onblur={() => finishEditGroupTitle(group)}
+            onkeydown={(e) => e.key === 'Enter' && finishEditGroupTitle(group)}
+          />
+          <button
+            class="btn btn-ghost btn-xs ml-1"
+            title="Bevestigen"
+            onclick={() => finishEditGroupTitle(group)}
+            tabindex="-1"
+            aria-label="Bevestig naam"
+          >
+            <svg
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 16 16"
+              ><path d="M4 8l3 3 5-5" stroke-linecap="round" stroke-linejoin="round" /></svg
             >
-              <GripVertical class="w-4 h-4 text-base-content/30 flex-shrink-0" />
-              <File class="w-4 h-4 text-green-600 flex-shrink-0" />
-              <span class="flex-1">
-                <span class="font-medium">{layer.title}</span>
-                {#if layer.is_default}
-                  <span class="badge badge-primary badge-xs ml-2">Standaard</span>
-                {/if}
-              </span>
-              <span class="text-xs text-base-content/50">#{layer.sort_order}</span>
-              <button
-                class="btn btn-ghost btn-xs"
-                onclick={() => toggleDefault(layer.layer_id)}
-                title={layer.is_default ? 'Verwijder van standaard' : 'Maak standaard'}
-              >
-                {#if layer.is_default}
-                  <Eye class="w-3 h-3" />
-                {:else}
-                  <EyeOff class="w-3 h-3" />
-                {/if}
-              </button>
-            </div>
-            
-            <!-- Absolute positioned drop indicators for group layers -->
-            {#if getDropIndicatorStyle('layer', layer.layer_id, group.id).show}
-              {@const indicator = getDropIndicatorStyle('layer', layer.layer_id, group.id)}
-              {#if indicator.zone === 'top'}
-                <div class="absolute top-0 left-0 right-0 h-1 bg-primary rounded-full -translate-y-0.5 z-10"></div>
-              {:else if indicator.zone === 'bottom'}
-                <div class="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-full translate-y-0.5 z-10"></div>
-              {:else if indicator.zone === 'middle'}
-                <div class="absolute inset-0 border-2 border-primary bg-primary/10 rounded z-10 pointer-events-none"></div>
-              {/if}
-            {/if}
-          </div>
-        {/each}
+          </button>
+          <button
+            class="btn btn-ghost btn-xs ml-1"
+            title="Annuleren"
+            onclick={() => {
+              editingGroupId = null;
+              editingGroupTitle = '';
+            }}
+            tabindex="-1"
+            aria-label="Annuleer naam wijzigen"
+          >
+            <svg
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" stroke-linecap="round" /></svg
+            >
+          </button>
+        {:else}
+          <span class="truncate font-medium">{group.title}</span>
+          <button
+            class="btn btn-ghost btn-xs ml-1"
+            title="Naam wijzigen"
+            onclick={() => startEditGroupTitle(group)}
+            tabindex="-1"
+            aria-label="Title wijzigen"
+          >
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+              ><path d="M12.3 2.7a1 1 0 0 1 0 1.4l-7.6 7.6-3 0.6 0.6-3 7.6-7.6a1 1 0 0 1 1.4 0z"
+              ></path></svg
+            >
+          </button>
+        {/if}
+        <span class="text-base-content/50 text-xs">
+          ({getTotalLayersInGroup(group)} lagen)
+        </span>
       </div>
 
-      <!-- Nested Subgroups -->
-      {#each group.subgroups as subgroup}
-        {@render groupComponent(subgroup)}
-      {/each}
+      <!-- Absolute positioned drop indicators for groups -->
+      {#if getDropIndicatorStyle('group', group.id).show}
+        {@const indicator = getDropIndicatorStyle('group', group.id)}
+        {#if indicator.zone === 'top'}
+          <div
+            class="bg-primary absolute top-0 right-0 left-0 z-10 h-1 -translate-y-0.5 rounded-full"
+          ></div>
+        {:else if indicator.zone === 'bottom'}
+          <div
+            class="bg-primary absolute right-0 bottom-0 left-0 z-10 h-1 translate-y-0.5 rounded-full"
+          ></div>
+        {:else if indicator.zone === 'middle'}
+          <div
+            class="border-primary bg-primary/10 pointer-events-none absolute inset-0 z-10 rounded border-2"
+          ></div>
+        {/if}
+      {/if}
     </div>
-  {/if}
-</div>
+
+    <!-- Group Content (only if expanded) -->
+    {#if expandedGroups.has(group.id)}
+      <div class="space-y-1">
+        <!-- Group Layers -->
+        <div class="space-y-1">
+          {#each group.layers as layer}
+            <div class="relative">
+              <div
+                class="hover:bg-base-200 flex cursor-move items-center gap-2 rounded px-2 py-1 text-sm {draggedItem?.type ===
+                  'layer' && draggedItem?.id === layer.layer_id
+                  ? 'opacity-50'
+                  : ''}"
+                draggable="true"
+                ondragstart={(e) => handleDragStart(e, 'layer', layer.layer_id, group.id)}
+                ondragover={(e) => handleDragOver(e, 'layer', layer.layer_id, group.id)}
+                ondragleave={handleDragLeave}
+                ondrop={(e) => handleDrop(e, 'layer', layer.layer_id, group.id)}
+                role="listitem"
+              >
+                <GripVertical class="text-base-content/30 h-4 w-4 flex-shrink-0" />
+                <File class="h-4 w-4 flex-shrink-0 text-green-600" />
+                <span class="flex-1">
+                  <span class="font-medium">{layer.title}</span>
+                  {#if layer.is_default}
+                    <span class="badge badge-primary badge-xs ml-2">Standaard</span>
+                  {/if}
+                </span>
+                <span class="text-base-content/50 text-xs">#{layer.sort_order}</span>
+                <button
+                  class="btn btn-ghost btn-xs"
+                  onclick={() => toggleDefault(layer.layer_id)}
+                  title={layer.is_default ? 'Verwijder van standaard' : 'Maak standaard'}
+                >
+                  {#if layer.is_default}
+                    <Eye class="h-3 w-3" />
+                  {:else}
+                    <EyeOff class="h-3 w-3" />
+                  {/if}
+                </button>
+              </div>
+
+              <!-- Absolute positioned drop indicators for group layers -->
+              {#if getDropIndicatorStyle('layer', layer.layer_id, group.id).show}
+                {@const indicator = getDropIndicatorStyle('layer', layer.layer_id, group.id)}
+                {#if indicator.zone === 'top'}
+                  <div
+                    class="bg-primary absolute top-0 right-0 left-0 z-10 h-1 -translate-y-0.5 rounded-full"
+                  ></div>
+                {:else if indicator.zone === 'bottom'}
+                  <div
+                    class="bg-primary absolute right-0 bottom-0 left-0 z-10 h-1 translate-y-0.5 rounded-full"
+                  ></div>
+                {:else if indicator.zone === 'middle'}
+                  <div
+                    class="border-primary bg-primary/10 pointer-events-none absolute inset-0 z-10 rounded border-2"
+                  ></div>
+                {/if}
+              {/if}
+            </div>
+          {/each}
+        </div>
+
+        <!-- Nested Subgroups -->
+        {#each group.subgroups as subgroup}
+          {@render groupComponent(subgroup)}
+        {/each}
+      </div>
+    {/if}
+  </div>
 {/snippet}

@@ -1,6 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { fetchDigitalTwin, fetchDigitalTwinViewer, updateDigitalTwinViewer, fetchTools, bulkModifyToolAssociations } from '$lib/api';
+  import {
+    fetchDigitalTwin,
+    fetchDigitalTwinViewer,
+    updateDigitalTwinViewer,
+    fetchTools,
+    bulkModifyToolAssociations
+  } from '$lib/api';
   import type { DigitalTwin, DigitalTwinViewerResponse } from '$lib/types/digitalTwin';
   import type { BulkToolOperation } from '$lib/types/digitalTwinAssociation';
   import type { Tool } from '$lib/types/tool';
@@ -18,8 +24,8 @@
   let error: string | null = null;
 
   // Local editable copies of fields
-  let logo = "";
-  let thumbnail = "";
+  let logo = '';
+  let thumbnail = '';
   let startPosition = {
     x: 0,
     y: 0,
@@ -31,9 +37,8 @@
   let colors: Record<string, string> = {};
   let allTools: (Tool & { enabled: boolean })[] = [];
 
-
   function toggleTool(toolId: number) {
-    const tool = allTools.find(t => t.id === toolId);
+    const tool = allTools.find((t) => t.id === toolId);
     if (tool) {
       tool.enabled = !tool.enabled;
     }
@@ -45,8 +50,8 @@
       viewerData = await fetchDigitalTwinViewer(digitalTwinId);
 
       // Initialize local copies with safe defaults
-      logo = viewerData.content.logo ?? "";
-      thumbnail = viewerData.content.thumbnail ?? "";
+      logo = viewerData.content.logo ?? '';
+      thumbnail = viewerData.content.thumbnail ?? '';
       startPosition = {
         x: viewerData.content.startPosition?.x ?? 0,
         y: viewerData.content.startPosition?.y ?? 0,
@@ -63,7 +68,7 @@
       // Get enabled tool IDs from the viewer's tool_associations
       // if tool_associations is undefined, use empty array
       const enabledToolIds = new Set(
-        (digitalTwinData?.tool_associations ?? []).map(t => t.tool_id)
+        (digitalTwinData?.tool_associations ?? []).map((t) => t.tool_id)
       );
 
       // Combine tools with enabled info
@@ -71,7 +76,6 @@
         ...tool,
         enabled: enabledToolIds.has(tool.id)
       }));
-
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e);
     }
@@ -80,21 +84,21 @@
   async function handleSubmit() {
     try {
       // Get current enabled tools from state
-      const currentlyEnabled = new Set(allTools.filter(t => t.enabled).map(t => t.id));
+      const currentlyEnabled = new Set(allTools.filter((t) => t.enabled).map((t) => t.id));
 
       // Get originally enabled tool IDs from viewer data
       const originallyEnabled = new Set(
-        (digitalTwinData?.tool_associations ?? []).map(t => t.tool_id)
+        (digitalTwinData?.tool_associations ?? []).map((t) => t.tool_id)
       );
 
       // Tools to add and delete
-      const toolsToAdd = [...currentlyEnabled].filter(id => !originallyEnabled.has(id));
-      const toolsToRemove = [...originallyEnabled].filter(id => !currentlyEnabled.has(id));
+      const toolsToAdd = [...currentlyEnabled].filter((id) => !originallyEnabled.has(id));
+      const toolsToRemove = [...originallyEnabled].filter((id) => !currentlyEnabled.has(id));
 
       // Prepare operations for bulk API
       const operations: BulkToolOperation[] = [
-        ...toolsToAdd.map(id => ({ tool_id: id, action: "create" as const })),
-        ...toolsToRemove.map(id => ({ tool_id: id, action: "delete" as const })),
+        ...toolsToAdd.map((id) => ({ tool_id: id, action: 'create' as const })),
+        ...toolsToRemove.map((id) => ({ tool_id: id, action: 'delete' as const }))
       ];
 
       // Call bulk API only if there are operations
@@ -113,22 +117,14 @@
       successBanner?.show();
     } catch (err) {
       console.error(err);
-      errorBanner?.show
+      errorBanner?.show;
     }
   }
 </script>
 
 <!-- AlertBanners that are only visable after the submit button is pressed -->
-<AlertBanner
-  bind:this={successBanner}
-  type="success"
-  message="Digital Twin Viewer bijgewerkt!"
-/>
-<AlertBanner
-  bind:this={errorBanner}
-  type="error"
-  message="Fout bij het opslaan!"
-/>
+<AlertBanner bind:this={successBanner} type="success" message="Digital Twin Viewer bijgewerkt!" />
+<AlertBanner bind:this={errorBanner} type="error" message="Fout bij het opslaan!" />
 
 {#if error}
   <div class="alert alert-error">{error}</div>
@@ -139,17 +135,12 @@
     <h2 class="text-2xl font-bold">Basis Instellingen</h2>
     <p class="text-base-content/70">Basis configuratie voor deze digital twin.</p>
 
-    <div class="card bg-base-100 border border-base-300">
+    <div class="card bg-base-100 border-base-300 border">
       <div class="card-body space-y-4">
         <!-- Logo -->
         <div>
           <label for="logo-url" class="block font-medium">Logo URL</label>
-          <input
-            id="logo-url"
-            type="text"
-            bind:value={logo}
-            class="input input-bordered w-full"
-          />
+          <input id="logo-url" type="text" bind:value={logo} class="input input-bordered w-full" />
         </div>
 
         <!-- Thumbnail -->
@@ -237,10 +228,12 @@
 
         <!-- Tools checkboxes list in 3 column grid (defined by class grid-cols-3) -->
         <fieldset>
-          <legend class="font-semibold mb-2">Tools</legend>
-          <div class="max-h-48 overflow-auto border border-gray-300 rounded p-2 grid grid-cols-3 gap-2">
+          <legend class="mb-2 font-semibold">Tools</legend>
+          <div
+            class="grid max-h-48 grid-cols-3 gap-2 overflow-auto rounded border border-gray-300 p-2"
+          >
             {#each allTools as tool (tool.id)}
-              <label class="flex items-center space-x-2 cursor-pointer select-none">
+              <label class="flex cursor-pointer items-center space-x-2 select-none">
                 <input
                   type="checkbox"
                   checked={tool.enabled}
@@ -257,33 +250,33 @@
         <fieldset>
           <button
             type="button"
-            class="w-full text-left font-semibold flex items-center space-x-2 cursor-pointer select-none p-0 m-0 border-0 bg-transparent"
+            class="m-0 flex w-full cursor-pointer items-center space-x-2 border-0 bg-transparent p-0 text-left font-semibold select-none"
             on:click={() => (colorsOpen = !colorsOpen)}
             aria-expanded={colorsOpen}
           >
             {#if colorsOpen}
-              <ChevronDown class="w-5 h-5" />
+              <ChevronDown class="h-5 w-5" />
             {:else}
-              <ChevronRight class="w-5 h-5" />
+              <ChevronRight class="h-5 w-5" />
             {/if}
             <span>Colors</span>
           </button>
 
           {#if colorsOpen}
-            <div class="grid grid-cols-5 gap-4 mt-2">
+            <div class="mt-2 grid grid-cols-5 gap-4">
               {#each Object.entries(colors) as [key, value]}
                 <div>
-                  <label for={"color-" + key} class="block font-medium truncate">{key}</label>
+                  <label for={'color-' + key} class="block truncate font-medium">{key}</label>
                   <input
-                    id={"color-" + key}
+                    id={'color-' + key}
                     type="color"
                     bind:value={colors[key]}
-                    class="w-12 h-8 p-0 border border-gray-300 rounded"
+                    class="h-8 w-12 rounded border border-gray-300 p-0"
                   />
                   <input
                     type="text"
                     bind:value={colors[key]}
-                    class="input input-bordered w-full mt-1"
+                    class="input input-bordered mt-1 w-full"
                   />
                 </div>
               {/each}

@@ -1,5 +1,5 @@
 export interface Tool {
-  id: number
-  name: string
-  content: any
+  id: number;
+  name: string;
+  content: any;
 }

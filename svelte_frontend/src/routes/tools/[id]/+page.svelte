@@ -1,6 +1,6 @@
 <script>
-	export let data;
-    const { tool } = data;
+  export let data;
+  const { tool } = data;
 </script>
 
 <h1>{tool.title}</h1>
