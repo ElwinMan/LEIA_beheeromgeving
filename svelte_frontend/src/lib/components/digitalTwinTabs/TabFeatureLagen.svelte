@@ -61,6 +61,9 @@
   // Get used layer IDs for filtering catalog
   let usedLayerIds = $derived(layersWithDetails.map(l => l.layer_id));
 
+  let editingGroupId = $state<number | null>(null);
+  let editingGroupTitle = $state('');
+
   // Filter catalog layers
   const filteredCatalogLayers = $derived.by(() => {
     if (catalogSearchTerm.trim() === '') {
@@ -154,7 +157,8 @@
           ...group,
           depth,
           layers: groupLayers,
-          subgroups
+          subgroups,
+          isNew: false
         };
       });
   }
@@ -711,10 +715,10 @@
       // Collect group operations 
       const groupOperations: GroupBulkOperation[] = [];
 
-      function collectGroupOperations(groups: Group[]): void {
+      function collectGroupOperations(groups: GroupWithLayers[]): void {
         groups.forEach(group => {
           groupOperations.push({
-            action: "update",
+            action: group.isNew ? "create" : "update",
             id: group.id,
             title: group.title,
             parent_id: group.parent_id,
@@ -765,6 +769,46 @@
     } finally {
       isSaving = false;
     }
+  }
+
+  function createNewGroup() {
+    // Find max sort_order at root level
+    const maxSortOrder = rootGroups.length > 0
+      ? Math.max(...rootGroups.map(g => g.sort_order ?? 0))
+      : 0;
+
+    // Generate a temporary negative ID for new group (to avoid conflicts)
+    const tempId = -(Math.floor(Math.random() * 1000000) + 1);
+
+    const newGroup: GroupWithLayers = {
+      id: tempId,
+      title: 'Nieuwe groep',
+      parent_id: null,
+      sort_order: maxSortOrder + 1,
+      digital_twin_id: Number(digitalTwinId),
+      layers: [],
+      subgroups: [],
+      depth: 0,
+      isNew: true // Mark as new for the bulk operation
+    };
+
+    rootGroups = [...rootGroups, newGroup];
+    expandedGroups = new Set(expandedGroups).add(newGroup.id);
+    hasChanges = true;
+  }
+
+  function startEditGroupTitle(group: GroupWithLayers) {
+    editingGroupId = group.id;
+    editingGroupTitle = group.title;
+  }
+
+  function finishEditGroupTitle(group: GroupWithLayers) {
+    if (editingGroupTitle.trim() !== '') {
+      group.title = editingGroupTitle.trim();
+      hasChanges = true;
+    }
+    editingGroupId = null;
+    editingGroupTitle = '';
   }
 
   // Reset changes
@@ -921,75 +965,78 @@
             <!-- Nested Structure -->
             <div class="space-y-1">
               <!-- Ungrouped Layers -->
-              {#if ungroupedLayers.length > 0}
-                <div class="mb-4">
-                  <h3 class="text-sm font-semibold text-base-content/80 mb-2 flex items-center gap-2">
-                    <File class="w-4 h-4" />
-                    Ongegroepeerde Lagen ({ungroupedLayers.length})
-                  </h3>
-                  <div class="ml-6 space-y-1">
-                    {#each ungroupedLayers as layer}
-                      <div class="relative">
-                        <div
-                          class="flex items-center gap-2 px-2 py-1 hover:bg-base-200 rounded text-sm cursor-move {draggedItem?.type === 'layer' && draggedItem?.id === layer.layer_id ? 'opacity-50' : ''}"
-                          draggable="true"
-                          ondragstart={(e) => handleDragStart(e, 'layer', layer.layer_id, null)}
-                          ondragover={(e) => handleDragOver(e, 'layer', layer.layer_id, null)}
-                          ondragleave={handleDragLeave}
-                          ondrop={(e) => handleDrop(e, 'layer', layer.layer_id, null)}
-                          role="listitem"
-                        >
-                          <GripVertical class="w-4 h-4 text-base-content/30 flex-shrink-0" />
-                          <File class="w-4 h-4 text-blue-600 flex-shrink-0" />
-                          <span class="flex-1">
-                            <span class="font-medium">{layer.title}</span>
-                            {#if layer.is_default}
-                              <span class="badge badge-primary badge-xs ml-2">Standaard</span>
-                            {/if}
-                          </span>
-                          <span class="text-xs text-base-content/50">#{layer.sort_order}</span>
-                          <button
-                            class="btn btn-ghost btn-xs"
-                            onclick={() => toggleDefault(layer.layer_id)}
-                            title={layer.is_default ? 'Verwijder van standaard' : 'Maak standaard'}
-                          >
-                            {#if layer.is_default}
-                              <Eye class="w-3 h-3" />
-                            {:else}
-                              <EyeOff class="w-3 h-3" />
-                            {/if}
-                          </button>
-                        </div>
-                        
-                        <!-- Absolute positioned drop indicators -->
-                        {#if getDropIndicatorStyle('layer', layer.layer_id, null).show}
-                          {@const indicator = getDropIndicatorStyle('layer', layer.layer_id, null)}
-                          {#if indicator.zone === 'top'}
-                            <div class="absolute top-0 left-0 right-0 h-1 bg-primary rounded-full -translate-y-0.5 z-10"></div>
-                          {:else if indicator.zone === 'bottom'}
-                            <div class="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-full translate-y-0.5 z-10"></div>
-                          {:else if indicator.zone === 'middle'}
-                            <div class="absolute inset-0 border-2 border-primary bg-primary/10 rounded z-10 pointer-events-none"></div>
+              <div class="mb-4">
+                <h3 class="text-sm font-semibold text-base-content/80 mb-2 flex items-center gap-2">
+                  <File class="w-4 h-4" />
+                  Ongegroepeerde Lagen ({ungroupedLayers.length})
+                </h3>
+                <div class="ml-6 space-y-1">
+                  {#each ungroupedLayers as layer}
+                    <div class="relative">
+                      <div
+                        class="flex items-center gap-2 px-2 py-1 hover:bg-base-200 rounded text-sm cursor-move {draggedItem?.type === 'layer' && draggedItem?.id === layer.layer_id ? 'opacity-50' : ''}"
+                        draggable="true"
+                        ondragstart={(e) => handleDragStart(e, 'layer', layer.layer_id, null)}
+                        ondragover={(e) => handleDragOver(e, 'layer', layer.layer_id, null)}
+                        ondragleave={handleDragLeave}
+                        ondrop={(e) => handleDrop(e, 'layer', layer.layer_id, null)}
+                        role="listitem"
+                      >
+                        <GripVertical class="w-4 h-4 text-base-content/30 flex-shrink-0" />
+                        <File class="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        <span class="flex-1">
+                          <span class="font-medium">{layer.title}</span>
+                          {#if layer.is_default}
+                            <span class="badge badge-primary badge-xs ml-2">Standaard</span>
                           {/if}
-                        {/if}
+                        </span>
+                        <span class="text-xs text-base-content/50">#{layer.sort_order}</span>
+                        <button
+                          class="btn btn-ghost btn-xs"
+                          onclick={() => toggleDefault(layer.layer_id)}
+                          title={layer.is_default ? 'Verwijder van standaard' : 'Maak standaard'}
+                        >
+                          {#if layer.is_default}
+                            <Eye class="w-3 h-3" />
+                          {:else}
+                            <EyeOff class="w-3 h-3" />
+                          {/if}
+                        </button>
                       </div>
-                    {/each}
-                  </div>
-                </div>
-              {/if}
-
-              <!-- Root Groups -->
-              {#if rootGroups.length > 0}
-                <div class="mb-4">
-                  <h3 class="text-sm font-semibold text-base-content/80 mb-2 flex items-center gap-2">
-                    <Folder class="w-4 h-4" />
-                    Groepen ({rootGroups.length})
-                  </h3>
-                  {#each rootGroups as group}
-                    {@render groupComponent(group)}
+                      
+                      <!-- Absolute positioned drop indicators -->
+                      {#if getDropIndicatorStyle('layer', layer.layer_id, null).show}
+                        {@const indicator = getDropIndicatorStyle('layer', layer.layer_id, null)}
+                        {#if indicator.zone === 'top'}
+                          <div class="absolute top-0 left-0 right-0 h-1 bg-primary rounded-full -translate-y-0.5 z-10"></div>
+                        {:else if indicator.zone === 'bottom'}
+                          <div class="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-full translate-y-0.5 z-10"></div>
+                        {:else if indicator.zone === 'middle'}
+                          <div class="absolute inset-0 border-2 border-primary bg-primary/10 rounded z-10 pointer-events-none"></div>
+                        {/if}
+                      {/if}
+                    </div>
                   {/each}
                 </div>
-              {/if}
+              </div>
+
+              <!-- Root Groups -->
+              <div class="mb-4">
+                <h3 class="text-sm font-semibold text-base-content/80 mb-2 flex items-center gap-2">
+                  <Folder class="w-4 h-4" />
+                  Groepen ({rootGroups.length})
+                  <button
+                    class="btn btn-sm btn-outline mb-2"
+                    onclick={createNewGroup}
+                    disabled={isSaving}
+                  >
+                    <Plus class="w-4 h-4 mr-1" /> Nieuwe groep
+                  </button>
+                </h3>
+                {#each rootGroups as group}
+                  {@render groupComponent(group)}
+                {/each}
+              </div>
               
               {#if ungroupedLayers.length === 0 && rootGroups.length === 0}
                 <div class="text-center py-8 text-base-content/50">
@@ -1035,7 +1082,25 @@
         <Folder class="w-4 h-4 text-amber-600 flex-shrink-0" />
       {/if}
 
-      <span class="font-medium truncate">{group.title}</span>
+      {#if editingGroupId === group.id}
+        <input
+          class="input input-xs input-bordered w-32"
+          bind:value={editingGroupTitle}
+          onblur={() => finishEditGroupTitle(group)}
+          onkeydown={(e) => e.key === 'Enter' && finishEditGroupTitle(group)}
+        />
+      {:else}
+        <span class="font-medium truncate">{group.title}</span>
+        <button
+          class="btn btn-ghost btn-xs ml-1"
+          title="Naam wijzigen"
+          onclick={() => startEditGroupTitle(group)}
+          tabindex="-1"
+          aria-label="Title wijzigen"
+        >
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.3 2.7a1 1 0 0 1 0 1.4l-7.6 7.6-3 0.6 0.6-3 7.6-7.6a1 1 0 0 1 1.4 0z"></path></svg>
+        </button>
+      {/if}
       <span class="text-xs text-base-content/50">
         ({getTotalLayersInGroup(group)} lagen)
       </span>
@@ -1058,56 +1123,54 @@
   {#if expandedGroups.has(group.id)}
     <div class="space-y-1">
       <!-- Group Layers -->
-      {#if group.layers.length > 0}
-        <div class="space-y-1">
-          {#each group.layers as layer}
-            <div class="relative">
-              <div
-                class="flex items-center gap-2 px-2 py-1 hover:bg-base-200 rounded text-sm cursor-move {draggedItem?.type === 'layer' && draggedItem?.id === layer.layer_id ? 'opacity-50' : ''}"
-                draggable="true"
-                ondragstart={(e) => handleDragStart(e, 'layer', layer.layer_id, group.id)}
-                ondragover={(e) => handleDragOver(e, 'layer', layer.layer_id, group.id)}
-                ondragleave={handleDragLeave}
-                ondrop={(e) => handleDrop(e, 'layer', layer.layer_id, group.id)}
-                role="listitem"
-              >
-                <GripVertical class="w-4 h-4 text-base-content/30 flex-shrink-0" />
-                <File class="w-4 h-4 text-green-600 flex-shrink-0" />
-                <span class="flex-1">
-                  <span class="font-medium">{layer.title}</span>
-                  {#if layer.is_default}
-                    <span class="badge badge-primary badge-xs ml-2">Standaard</span>
-                  {/if}
-                </span>
-                <span class="text-xs text-base-content/50">#{layer.sort_order}</span>
-                <button
-                  class="btn btn-ghost btn-xs"
-                  onclick={() => toggleDefault(layer.layer_id)}
-                  title={layer.is_default ? 'Verwijder van standaard' : 'Maak standaard'}
-                >
-                  {#if layer.is_default}
-                    <Eye class="w-3 h-3" />
-                  {:else}
-                    <EyeOff class="w-3 h-3" />
-                  {/if}
-                </button>
-              </div>
-              
-              <!-- Absolute positioned drop indicators for group layers -->
-              {#if getDropIndicatorStyle('layer', layer.layer_id, group.id).show}
-                {@const indicator = getDropIndicatorStyle('layer', layer.layer_id, group.id)}
-                {#if indicator.zone === 'top'}
-                  <div class="absolute top-0 left-0 right-0 h-1 bg-primary rounded-full -translate-y-0.5 z-10"></div>
-                {:else if indicator.zone === 'bottom'}
-                  <div class="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-full translate-y-0.5 z-10"></div>
-                {:else if indicator.zone === 'middle'}
-                  <div class="absolute inset-0 border-2 border-primary bg-primary/10 rounded z-10 pointer-events-none"></div>
+      <div class="space-y-1">
+        {#each group.layers as layer}
+          <div class="relative">
+            <div
+              class="flex items-center gap-2 px-2 py-1 hover:bg-base-200 rounded text-sm cursor-move {draggedItem?.type === 'layer' && draggedItem?.id === layer.layer_id ? 'opacity-50' : ''}"
+              draggable="true"
+              ondragstart={(e) => handleDragStart(e, 'layer', layer.layer_id, group.id)}
+              ondragover={(e) => handleDragOver(e, 'layer', layer.layer_id, group.id)}
+              ondragleave={handleDragLeave}
+              ondrop={(e) => handleDrop(e, 'layer', layer.layer_id, group.id)}
+              role="listitem"
+            >
+              <GripVertical class="w-4 h-4 text-base-content/30 flex-shrink-0" />
+              <File class="w-4 h-4 text-green-600 flex-shrink-0" />
+              <span class="flex-1">
+                <span class="font-medium">{layer.title}</span>
+                {#if layer.is_default}
+                  <span class="badge badge-primary badge-xs ml-2">Standaard</span>
                 {/if}
-              {/if}
+              </span>
+              <span class="text-xs text-base-content/50">#{layer.sort_order}</span>
+              <button
+                class="btn btn-ghost btn-xs"
+                onclick={() => toggleDefault(layer.layer_id)}
+                title={layer.is_default ? 'Verwijder van standaard' : 'Maak standaard'}
+              >
+                {#if layer.is_default}
+                  <Eye class="w-3 h-3" />
+                {:else}
+                  <EyeOff class="w-3 h-3" />
+                {/if}
+              </button>
             </div>
-          {/each}
-        </div>
-      {/if}
+            
+            <!-- Absolute positioned drop indicators for group layers -->
+            {#if getDropIndicatorStyle('layer', layer.layer_id, group.id).show}
+              {@const indicator = getDropIndicatorStyle('layer', layer.layer_id, group.id)}
+              {#if indicator.zone === 'top'}
+                <div class="absolute top-0 left-0 right-0 h-1 bg-primary rounded-full -translate-y-0.5 z-10"></div>
+              {:else if indicator.zone === 'bottom'}
+                <div class="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-full translate-y-0.5 z-10"></div>
+              {:else if indicator.zone === 'middle'}
+                <div class="absolute inset-0 border-2 border-primary bg-primary/10 rounded z-10 pointer-events-none"></div>
+              {/if}
+            {/if}
+          </div>
+        {/each}
+      </div>
 
       <!-- Nested Subgroups -->
       {#each group.subgroups as subgroup}

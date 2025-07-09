@@ -18,6 +18,7 @@ export interface GroupWithLayers extends Group {
   layers: LayerWithAssociation[]
   subgroups: GroupWithLayers[]
   depth: number
+  isNew?: boolean
 }
 
 export interface ToolAssociation {
@@ -40,12 +41,8 @@ export interface BulkAssociationsPayload {
   group_payload: { operations: GroupBulkOperation[] };
 }
 
-export interface LayerBulkOperation {
+export interface LayerBulkOperation extends LayerAssociation{
   action: 'create' | 'update' | 'delete';
-  layer_id: number;
-  is_default?: boolean;
-  sort_order?: number | null;
-  group_id?: number | null;
 }
 
 export interface GroupBulkOperation extends Group {
