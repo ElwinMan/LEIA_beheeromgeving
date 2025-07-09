@@ -124,3 +124,13 @@ export async function bulkModifyToolAssociations(digitalTwinId: number | string,
 
   return res.json();
 }
+
+export async function createGroup(digitalTwinId: number, data: { title: string; parent_id: number | null; digital_twin_id: number }) {
+  const res = await fetch(`${API_BASE}/digital-twins/${digitalTwinId}/groups`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to create group');
+  return await res.json();
+}

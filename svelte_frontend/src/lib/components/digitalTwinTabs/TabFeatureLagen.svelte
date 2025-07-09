@@ -7,6 +7,7 @@
   import type { Layer } from '$lib/types/layer';
   import type { Group } from '$lib/types/group';
   import AlertBanner from '$lib/components/AlertBanner.svelte';
+  import GroupModal from '$lib/components/GroupModal.svelte';
 
   interface Props {
     digitalTwin: DigitalTwin | null;
@@ -14,7 +15,8 @@
   }
 
   let { digitalTwin, digitalTwinId }: Props = $props();
-  
+  let groupModalRef: InstanceType<typeof GroupModal>;
+
   // Deep clone function to replace structuredClone
   function deepClone<T>(obj: T): T {
     if (obj === null || typeof obj !== 'object') return obj;
@@ -141,7 +143,6 @@
           depth,
           layers: groupLayers,
           subgroups,
-          isNew: false
         };
       });
   }
@@ -165,13 +166,31 @@
   }
 
   function toggleDefault(layerId: number) {
+    // Update in layersWithDetails
     const layer = layersWithDetails.find(l => l.layer_id === layerId);
     if (layer) {
       layer.is_default = !layer.is_default;
-      hasChanges = true;
-      // Force reactivity
-      layersWithDetails = [...layersWithDetails];
     }
+    // Update in ungroupedLayers
+    const ungrouped = ungroupedLayers.find(l => l.layer_id === layerId);
+    if (ungrouped) {
+      ungrouped.is_default = layer?.is_default ?? false;
+    }
+    // Update in all group layers
+    function updateInGroups(groups: GroupWithLayers[]) {
+      for (const group of groups) {
+        const groupLayer = group.layers.find(l => l.layer_id === layerId);
+        if (groupLayer) groupLayer.is_default = layer?.is_default ?? false;
+        updateInGroups(group.subgroups);
+      }
+    }
+    updateInGroups(rootGroups);
+
+    hasChanges = true;
+    // Force reactivity
+    layersWithDetails = [...layersWithDetails];
+    ungroupedLayers = [...ungroupedLayers];
+    rootGroups = [...rootGroups];
   }
 
   function getTotalLayersInGroup(group: GroupWithLayers): number {
@@ -706,7 +725,7 @@
       function collectGroupOperations(groups: GroupWithLayers[]): void {
         groups.forEach(group => {
           groupOperations.push({
-            action: group.isNew ? "create" : "update",
+            action: "update",
             id: group.id,
             title: group.title,
             parent_id: group.parent_id,
@@ -750,6 +769,7 @@
       hasChanges = false;
       originalData = deepClone({ ungroupedLayers, rootGroups });
 
+      await fetchAllData();
       successBanner?.show();
     } catch (error) {
       console.error('Failed to save changes:', error);
@@ -757,32 +777,6 @@
     } finally {
       isSaving = false;
     }
-  }
-
-  function createNewGroup() {
-    // Find max sort_order at root level
-    const maxSortOrder = rootGroups.length > 0
-      ? Math.max(...rootGroups.map(g => g.sort_order ?? 0))
-      : 0;
-
-    // Generate a temporary negative ID for new group (to avoid conflicts)
-    const tempId = -(Math.floor(Math.random() * 1000000) + 1);
-
-    const newGroup: GroupWithLayers = {
-      id: tempId,
-      title: 'Nieuwe groep',
-      parent_id: null,
-      sort_order: maxSortOrder + 1,
-      digital_twin_id: Number(digitalTwinId),
-      layers: [],
-      subgroups: [],
-      depth: 0,
-      isNew: true // Mark as new for the bulk operation
-    };
-
-    rootGroups = [...rootGroups, newGroup];
-    expandedGroups = new Set(expandedGroups).add(newGroup.id);
-    hasChanges = true;
   }
 
   function startEditGroupTitle(group: GroupWithLayers) {
@@ -807,6 +801,13 @@
     hasChanges = false;
   }
 </script>
+
+<GroupModal
+  bind:this={groupModalRef}
+  availableGroups={allGroups}
+  digitalTwinId={Number(digitalTwinId)}
+  on:created={() => fetchAllData()}
+/>
 
 <div class="flex gap-4 h-full">
   <!-- Layer Catalog -->
@@ -1015,7 +1016,7 @@
                   Groepen ({rootGroups.length})
                   <button
                     class="btn btn-sm btn-outline mb-2"
-                    onclick={createNewGroup}
+                    onclick={() => groupModalRef.showModal()}
                     disabled={isSaving}
                   >
                     <Plus class="w-4 h-4 mr-1" /> Nieuwe groep

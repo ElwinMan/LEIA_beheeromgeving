@@ -18,7 +18,6 @@ export interface GroupWithLayers extends Group {
   layers: LayerWithAssociation[]
   subgroups: GroupWithLayers[]
   depth: number
-  isNew?: boolean
 }
 
 export interface ToolAssociation {
