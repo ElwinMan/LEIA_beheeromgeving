@@ -9,8 +9,7 @@ def bulk_create_group(db: Session, group: Group):
 
 def bulk_update_group_fields(group: Group, updates: dict):
     for field, value in updates.items():
-        if value is not None:
-            setattr(group, field, value)
+        setattr(group, field, value)
 
 def bulk_delete_group(db: Session, group: Group):
     db.delete(group)

@@ -586,11 +586,12 @@
         }
 
         const parentGroupId = targetGroup.parent_id;
-        
-        // Find the correct siblings array
         let siblings: GroupWithLayers[];
         if (parentGroupId === null) {
+          // Dropping as a root group
           siblings = rootGroups;
+          draggedGroup.parent_id = null;
+          draggedGroup.depth = 0;
         } else {
           const parentGroup = findGroupById(rootGroups, parentGroupId);
           if (!parentGroup) {
@@ -598,11 +599,10 @@
             return;
           }
           siblings = parentGroup.subgroups;
+          // Set the dragged group's parent and depth
+          draggedGroup.parent_id = parentGroupId;
+          draggedGroup.depth = parentGroupId === null ? 0 : (findGroupById(rootGroups, parentGroupId)?.depth ?? 0) + 1;
         }
-
-        // Set the dragged group's parent and depth
-        draggedGroup.parent_id = parentGroupId;
-        draggedGroup.depth = parentGroupId === null ? 0 : (findGroupById(rootGroups, parentGroupId)?.depth ?? 0) + 1;
 
         // Find target index and insert
         const targetIndex = siblings.findIndex(g => g.id === dropId);
