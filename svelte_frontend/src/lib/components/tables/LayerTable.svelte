@@ -2,6 +2,7 @@
   import { Database } from 'lucide-svelte';
   import LayerModal from '$lib/components/LayerModal.svelte';
   import type { Layer } from '$lib/types/layer';
+  import { deleteLayer } from '$lib/api';
 
   export let layers: Layer[] = [];
   export let isBackgroundPage: boolean = false;
@@ -34,6 +35,18 @@
       layers = [...layers, updatedLayer];
     }
   }
+
+  async function handleDelete(layerId: number) {
+    if (confirm('Weet je zeker dat je deze layer wilt verwijderen?')) {
+      try {
+        await deleteLayer(layerId);
+        layers = layers.filter((layer) => layer.id !== layerId);
+      } catch (err) {
+        alert('Verwijderen mislukt. Controleer de server.');
+        console.error(err);
+      }
+    }
+  }
 </script>
 
 <LayerModal bind:this={modalComponent} on:updated={handleUpdated} />
@@ -58,13 +71,41 @@
               <td class="text-sm">{layer.type || '-'}</td>
               <td class="text-sm">{truncate(layer.url, 30) || '-'}</td>
               <td class="text-sm">{layer.featureName || '-'}</td>
-              <td>
-                <button class="btn btn-sm" onclick={() => handleOpenModal(layer)}> Opties </button>
+              <td class="relative">
+                <details class="dropdown dropdown-end">
+                  <summary class="btn btn-sm btn-ghost">
+                    Opties
+                    <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M19 9l-7 7-7-7"
+                      ></path>
+                    </svg>
+                  </summary>
+                  <ul class="menu dropdown-content bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
+                    <li>
+                      <button on:click={() => handleOpenModal(layer)} class="flex items-center gap-2">
+                        Bewerken
+                      </button>
+                    </li>
+                    <li>
+                      <button on:click={() => handleDelete(layer.id)} class="flex items-center gap-2 text-error">
+                        Verwijderen
+                      </button>
+                    </li>
+                  </ul>
+                </details>
               </td>
             </tr>
           {/each}
         </tbody>
       </table>
+
+      <!-- Add padding at the bottom for dropdown space -->
+      <!-- Temp fix till dropdown fix for absolute position -->
+      <div class="h-32"></div>
 
       {#if layers.length === 0}
         <div class="py-12 text-center">

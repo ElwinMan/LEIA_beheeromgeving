@@ -146,3 +146,17 @@ export async function createGroup(
   if (!res.ok) throw new Error('Failed to create group');
   return await res.json();
 }
+
+export async function deleteLayer(id: number): Promise<void> {
+  const response = await fetch(`${API_BASE}/layers/${id}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to delete layer (${response.status}): ${errorText}`);
+  }
+}

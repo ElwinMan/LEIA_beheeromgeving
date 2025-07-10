@@ -90,14 +90,6 @@
       bind:value={featureName}
     />
 
-    <label for="isBackground" class="pr-4 text-right font-semibold">Achtergrond:</label>
-    <input
-      id="isBackground"
-      type="checkbox"
-      class="checkbox checkbox-primary"
-      bind:checked={isBackground}
-    />
-
     <div class="col-span-4 mt-6 flex justify-end gap-2">
       <button type="button" class="btn btn-ghost" on:click={() => modalRef.close()}>
         Annuleren

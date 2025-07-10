@@ -17,7 +17,6 @@ class LayerUpdate(BaseModel):
     title: Optional[str] = None
     url: Optional[str] = None
     featureName: Optional[str] = None
-    isBackground: Optional[bool] = None
     content: Optional[Dict[str, Any]] = None
 
 class LayerResponse(LayerBase):
