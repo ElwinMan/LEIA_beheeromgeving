@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { Settings, Database } from 'lucide-svelte';
-
   let { tools = [] } = $props();
 </script>
 
@@ -22,19 +20,12 @@
                 <details class="dropdown dropdown-end text-right">
                   <summary class="btn btn-sm btn-ghost">
                     Opties
-                    <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M19 9l-7 7-7-7"
-                      ></path>
-                    </svg>
+                    <img src="/icons/chevron-down.svg" alt="Chevron Down" class="ml-1 h-4 w-4" />
                   </summary>
                   <ul class="menu dropdown-content bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
                     <li>
                       <a href={`/tools/${tool.id}`} class="flex items-center gap-2">
-                        <Settings class="h-4 w-4" />
+                        <img src="/icons/settings.svg" alt="Settings" class="h-4 w-4" />
                         Configureer tool
                       </a>
                     </li>
@@ -54,7 +45,7 @@
 
       {#if tools.length === 0}
         <div class="py-12 text-center">
-          <Database class="mx-auto h-12 w-12 opacity-50" />
+          <img src="/icons/database.svg" alt="No tools" class="mx-auto h-12 w-12 opacity-50" />
           <h3 class="mt-2 text-lg font-medium">Geen tools</h3>
           <p class="mt-1 opacity-70">Er zijn nog geen tools beschikbaar.</p>
         </div>

@@ -10,7 +10,6 @@
   import type { DigitalTwin, DigitalTwinViewerResponse } from '$lib/types/digitalTwin';
   import type { BulkToolOperation } from '$lib/types/digitalTwinAssociation';
   import type { Tool } from '$lib/types/tool';
-  import { ChevronDown, ChevronRight } from 'lucide-svelte';
 
   export let digitalTwinId: string;
 
@@ -255,9 +254,9 @@
             aria-expanded={colorsOpen}
           >
             {#if colorsOpen}
-              <ChevronDown class="h-5 w-5" />
+              <img src="/icons/chevron-down.svg" alt="Open" class="h-5 w-5" />
             {:else}
-              <ChevronRight class="h-5 w-5" />
+              <img src="/icons/chevron-right.svg" alt="Closed" class="h-5 w-5" />
             {/if}
             <span>Colors</span>
           </button>

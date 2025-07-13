@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { ArrowLeft } from 'lucide-svelte';
   import TabOmschrijving from '$lib/components/digitalTwinTabs/TabOmschrijving.svelte';
   import TabBasis from '$lib/components/digitalTwinTabs/TabBasis.svelte';
   import TabOndergrond from '$lib/components/digitalTwinTabs/TabOndergrond.svelte';
@@ -32,7 +31,7 @@
 <div class="space-y-6">
   <div class="flex items-center gap-4">
     <a href="/digital-twins" class="btn btn-ghost btn-sm">
-      <ArrowLeft class="h-4 w-4" />
+      <img src="/icons/arrow-left.svg" alt="Ga terug" class="h-4 w-4" />
       Terug
     </a>
     <div>

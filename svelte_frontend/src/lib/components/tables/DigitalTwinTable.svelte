@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { ExternalLink, Settings, Database } from 'lucide-svelte';
-
   let { digitalTwins = [] } = $props();
 </script>
 
@@ -52,13 +50,13 @@
                         rel="noopener noreferrer"
                         class="flex items-center gap-2"
                       >
-                        <ExternalLink class="h-4 w-4" />
+                        <img src="/icons/external-link.svg" alt="Open" class="h-4 w-4" />
                         Bekijk kaart
                       </a>
                     </li>
                     <li>
                       <a href={`/digital-twins/${twin.id}`} class="flex items-center gap-2">
-                        <Settings class="h-4 w-4" />
+                        <img src="/icons/settings.svg" alt="Settings" class="h-4 w-4" />
                         Digital Twin Configuratie
                       </a>
                     </li>
@@ -76,7 +74,7 @@
 
       {#if digitalTwins.length === 0}
         <div class="py-12 text-center">
-          <Database class="mx-auto h-12 w-12 opacity-50" />
+          <img src="/icons/database.svg" alt="Geen digital twins" class="mx-auto h-12 w-12 opacity-50" />
           <h3 class="mt-2 text-lg font-medium">Geen digital twins</h3>
           <p class="mt-1 opacity-70">Er zijn nog geen digital twins beschikbaar.</p>
         </div>

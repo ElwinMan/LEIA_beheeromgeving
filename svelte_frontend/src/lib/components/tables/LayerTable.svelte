@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { Database } from 'lucide-svelte';
   import LayerModal from '$lib/components/LayerModal.svelte';
   import type { Layer } from '$lib/types/layer';
   import { deleteLayer } from '$lib/api';
@@ -109,7 +108,7 @@
 
       {#if layers.length === 0}
         <div class="py-12 text-center">
-          <Database class="mx-auto h-12 w-12 opacity-50" />
+          <img src="/icons/database.svg" alt="Database" class="mx-auto h-12 w-12 opacity-50" />
           <h3 class="mt-2 text-lg font-medium">Geen layers</h3>
           <p class="mt-1 opacity-70">Er zijn nog geen layers beschikbaar.</p>
         </div>

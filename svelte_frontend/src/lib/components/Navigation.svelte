@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { Database, Layers, Wrench } from 'lucide-svelte';
   interface Props {
     children?: import('svelte').Snippet;
   }
@@ -8,10 +7,10 @@
   let { children }: Props = $props();
 
   const navigationItems = [
-    { href: '/digital-twins', label: 'Digital Twins', icon: Database },
-    { href: '/background-layers', label: 'Background Layers', icon: Layers },
-    { href: '/feature-layers', label: 'Feature Layers', icon: Layers },
-    { href: '/tools', label: 'Tools', icon: Wrench }
+    { href: '/digital-twins', label: 'Digital Twins', icon: '/icons/database.svg' },
+    { href: '/background-layers', label: 'Background Layers', icon: '/icons/layers.svg' },
+    { href: '/feature-layers', label: 'Feature Layers', icon: '/icons/layers.svg' },
+    { href: '/tools', label: 'Tools', icon: '/icons/wrench.svg' }
   ];
 
   function isActive(href: string) {
@@ -61,7 +60,7 @@
                 href={item.href}
                 class="flex items-center gap-3 {isActive(item.href) ? 'active' : ''}"
               >
-                <item.icon class="h-5 w-5" />
+                <img src={item.icon} alt={item.label} class="h-5 w-5" />
                 {item.label}
               </a>
             </li>

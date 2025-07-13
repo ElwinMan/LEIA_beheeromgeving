@@ -21,7 +21,7 @@
   async function handleSubmit(event: Event) {
     event.preventDefault();
     try {
-      const newGroup = await await createGroup(digitalTwinId, {
+      const newGroup = await createGroup(digitalTwinId, {
         title,
         parent_id: parentId,
         digital_twin_id: digitalTwinId

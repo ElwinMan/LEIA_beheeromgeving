@@ -1,19 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import {
-    Folder,
-    FolderOpen,
-    File,
-    Eye,
-    EyeOff,
-    ChevronDown,
-    ChevronRight,
-    Save,
-    RotateCcw,
-    GripVertical,
-    Search,
-    Plus
-  } from 'lucide-svelte';
+  import { writable } from 'svelte/store';
   import {
     fetchDigitalTwin,
     fetchLayers,
@@ -32,6 +19,7 @@
   import type { Group } from '$lib/types/group';
   import AlertBanner from '$lib/components/AlertBanner.svelte';
   import GroupModal from '$lib/components/GroupModal.svelte';
+  import DeleteModal from '$lib/components/DeleteModal.svelte';
 
   interface Props {
     digitalTwin: DigitalTwin | null;
@@ -40,6 +28,15 @@
 
   let { digitalTwin, digitalTwinId }: Props = $props();
   let groupModalRef: InstanceType<typeof GroupModal>;
+  let deleteLayerModalShow = $state(false);
+  let layerToDelete: LayerWithAssociation | null = null;
+  let skipDeleteLayerConfirm = false;
+
+  onMount(() => {
+    // Restore skipDeleteLayerConfirm from sessionStorage if set
+    const stored = sessionStorage.getItem('skipDeleteLayerConfirm');
+    skipDeleteLayerConfirm = stored === 'true';
+  });
 
   // Deep clone function to replace structuredClone
   function deepClone<T>(obj: T): T {
@@ -793,6 +790,16 @@
       }
       collectGroupLayers(rootGroups);
 
+      // Add deleted layers
+      if (window._deletedLayerIds && Array.isArray(window._deletedLayerIds)) {
+        for (const deletedId of window._deletedLayerIds) {
+          layerOperations.push({
+            action: 'delete',
+            layer_id: deletedId
+          } as LayerBulkOperation);
+        }
+      }
+
       // Collect group operations
       const groupOperations: GroupBulkOperation[] = [];
 
@@ -840,6 +847,11 @@
       }
       markGroupLayersAsExisting(rootGroups);
 
+      // Clear deleted layer IDs after successful save
+      if (window._deletedLayerIds) {
+        window._deletedLayerIds = [];
+      }
+
       hasChanges = false;
       originalData = deepClone({ ungroupedLayers, rootGroups });
 
@@ -874,6 +886,66 @@
     updateLayersWithDetails();
     hasChanges = false;
   }
+
+  function confirmDeleteLayer(layer: LayerWithAssociation) {
+    layerToDelete = layer;
+    if (sessionStorage.getItem('skipDeleteLayerConfirm') === 'true') {
+      actuallyDeleteLayer(layer);
+    } else {
+      deleteLayerModalShow = true;
+    }
+  }
+
+  async function actuallyDeleteLayer(layer: LayerWithAssociation) {
+    // Remove from layersWithDetails
+    layersWithDetails = layersWithDetails.filter(l => l.layer_id !== layer.layer_id);
+
+    // Remove from ungroupedLayers or rootGroups
+    if (layer.group_id === null) {
+      ungroupedLayers = ungroupedLayers.filter(l => l.layer_id !== layer.layer_id);
+    } else {
+      // Remove from group
+      function removeLayerFromGroup(groups: GroupWithLayers[]) {
+        groups.forEach(group => {
+          group.layers = group.layers.filter(l => l.layer_id !== layer.layer_id);
+          removeLayerFromGroup(group.subgroups);
+        });
+      }
+      removeLayerFromGroup(rootGroups);
+    }
+
+    // Track deleted layer for bulk API call (only if it's not a new layer)
+    if (!layer.isNew) {
+      if (!window._deletedLayerIds) {
+        window._deletedLayerIds = [];
+      }
+      window._deletedLayerIds.push(layer.layer_id);
+    }
+
+    // Update main arrays
+    layersWithDetails = [...layersWithDetails];
+    ungroupedLayers = [...ungroupedLayers];
+    rootGroups = [...rootGroups];
+
+    hasChanges = true;
+  }
+
+  function handleDeleteLayerModalConfirm(detail: { doNotAskAgain: boolean }) {
+    if (layerToDelete) {
+      actuallyDeleteLayer(layerToDelete);
+      if (detail.doNotAskAgain) {
+        skipDeleteLayerConfirm = true;
+        sessionStorage.setItem('skipDeleteLayerConfirm', 'true');
+      }
+    }
+    deleteLayerModalShow = false;
+    layerToDelete = null;
+  }
+
+  function handleDeleteLayerModalCancel() {
+    deleteLayerModalShow = false;
+    layerToDelete = null;
+  }
 </script>
 
 <GroupModal
@@ -881,6 +953,18 @@
   availableGroups={allGroups}
   digitalTwinId={Number(digitalTwinId)}
   on:created={() => fetchAllData()}
+/>
+
+<DeleteModal
+  show={deleteLayerModalShow}
+  title="Laag verwijderen"
+  message="Weet je zeker dat je deze laag wilt verwijderen uit de digital twin?"
+  confirmLabel="Verwijder"
+  cancelLabel="Annuleer"
+  showCheckbox={true}
+  checkboxLabel="Niet meer vragen deze sessie"
+  onconfirm={handleDeleteLayerModalConfirm}
+  oncancel={handleDeleteLayerModalCancel}
 />
 
 <div class="flex h-full gap-4">
@@ -898,9 +982,7 @@
 
         <!-- Search -->
         <div class="relative">
-          <Search
-            class="text-base-content/50 absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform"
-          />
+          <img src="/icons/search.svg" alt="Zoeken" class="text-base-content/50 absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
           <input
             type="text"
             placeholder="Zoek lagen..."
@@ -922,7 +1004,7 @@
             </div>
           {:else if filteredCatalogLayers.length === 0}
             <div class="text-base-content/50 py-8 text-center">
-              <File class="mx-auto mb-2 h-8 w-8 opacity-50" />
+              <img src="/icons/file.svg" alt="Geen lagen" class="mx-auto mb-2 h-8 w-8 opacity-50" />
               <p class="text-sm">
                 {catalogSearchTerm
                   ? 'Geen lagen gevonden voor deze zoekopdracht'
@@ -937,7 +1019,7 @@
                 ondragstart={(e) => handleCatalogDragStart(e, layer)}
                 role="listitem"
               >
-                <File class="h-4 w-4 flex-shrink-0 text-purple-600" />
+                <img src="/icons/file.svg" alt="Laag" class="h-4 w-4 flex-shrink-0 text-purple-600" />
                 <div class="min-w-0 flex-1">
                   <div class="truncate font-medium">{layer.title}</div>
                   {#if layer.type}
@@ -953,7 +1035,7 @@
                   onmousedown={(e) => e.stopPropagation()}
                   title="Voeg toe aan digital twin"
                 >
-                  <Plus class="h-3 w-3" />
+                  <img src="/icons/plus.svg" alt="Voeg toe" class="h-3 w-3" />
                 </button>
               </div>
             {/each}
@@ -998,14 +1080,14 @@
         {#if hasChanges}
           <div class="flex gap-2">
             <button class="btn btn-ghost btn-sm" onclick={resetChanges} disabled={isSaving}>
-              <RotateCcw class="h-4 w-4" />
+              <img src="/icons/rotate-ccw.svg" alt="Reset" class="h-4 w-4" />
               Reset
             </button>
             <button class="btn btn-primary btn-sm" onclick={saveChanges} disabled={isSaving}>
               {#if isSaving}
                 <span class="loading loading-spinner loading-xs"></span>
               {:else}
-                <Save class="h-4 w-4" />
+                <img src="/icons/save.svg" alt="Opslaan" class="h-4 w-4" />
               {/if}
               Opslaan
             </button>
@@ -1030,7 +1112,7 @@
               <!-- Ungrouped Layers -->
               <div class="mb-4">
                 <h3 class="text-base-content/80 mb-2 flex items-center gap-2 text-sm font-semibold">
-                  <File class="h-4 w-4" />
+                  <img src="/icons/file.svg" alt="Laag" class="h-4 w-4" />
                   Ongegroepeerde Lagen ({ungroupedLayers.length})
                 </h3>
                 <div class="ml-6 space-y-1">
@@ -1048,8 +1130,8 @@
                         ondrop={(e) => handleDrop(e, 'layer', layer.layer_id, null)}
                         role="listitem"
                       >
-                        <GripVertical class="text-base-content/30 h-4 w-4 flex-shrink-0" />
-                        <File class="h-4 w-4 flex-shrink-0 text-blue-600" />
+                        <img src="/icons/grip-vertical.svg" alt="Grip" class="text-base-content/30 h-4 w-4 flex-shrink-0" />
+                        <img src="/icons/file.svg" alt="Laag" class="h-4 w-4 flex-shrink-0 text-blue-600" />
                         <span class="flex-1">
                           <span class="font-medium">{layer.title}</span>
                           {#if layer.is_default}
@@ -1063,10 +1145,18 @@
                           title={layer.is_default ? 'Verwijder van standaard' : 'Maak standaard'}
                         >
                           {#if layer.is_default}
-                            <Eye class="h-3 w-3" />
+                            <img src="/icons/eye.svg" alt="Zichtbaar" class="h-3 w-3" />
                           {:else}
-                            <EyeOff class="h-3 w-3" />
+                            <img src="/icons/eye-off.svg" alt="Verborgen" class="h-3 w-3" />
                           {/if}
+                        </button>
+                        <button
+                          class="btn btn-ghost btn-xs"
+                          onclick={() => confirmDeleteLayer(layer)}
+                          title="Verwijder laag"
+                          aria-label="Verwijder laag"
+                        >
+                          <img src="/icons/trash-2.svg" alt="Verwijder laag" class="h-5 w-5" />
                         </button>
                       </div>
 
@@ -1095,14 +1185,15 @@
               <!-- Root Groups -->
               <div class="mb-4">
                 <h3 class="text-base-content/80 mb-2 flex items-center gap-2 text-sm font-semibold">
-                  <Folder class="h-4 w-4" />
+                  <img src="/icons/folder.svg" alt="Map" class="h-4 w-4" />
                   Groepen ({rootGroups.length})
                   <button
                     class="btn btn-sm btn-outline mb-2"
                     onclick={() => groupModalRef.showModal()}
                     disabled={isSaving}
                   >
-                    <Plus class="mr-1 h-4 w-4" /> Nieuwe groep
+                  <img src="/icons/plus.svg" alt="Nieuwe groep" class="mr-1 h-4 w-4" />
+                    Nieuwe groep
                   </button>
                 </h3>
                 {#each rootGroups as group}
@@ -1141,17 +1232,17 @@
           class="btn btn-ghost btn-xs h-4 min-h-0 w-4 p-0"
           onclick={() => toggleGroup(group.id)}
         >
-          {#if expandedGroups.has(group.id)}
-            <ChevronDown class="h-3 w-3" />
-          {:else}
-            <ChevronRight class="h-3 w-3" />
-          {/if}
+        {#if expandedGroups.has(group.id)}
+          <img src="/icons/chevron-down.svg" alt="Expand" class="h-3 w-3" />
+        {:else}
+          <img src="/icons/chevron-right.svg" alt="Collapse" class="h-3 w-3" />
+        {/if}
         </button>
 
         {#if expandedGroups.has(group.id)}
-          <FolderOpen class="h-4 w-4 flex-shrink-0 text-amber-600" />
+          <img src="/icons/folder-open.svg" alt="Folder open" class="h-4 w-4 flex-shrink-0 text-amber-600" />
         {:else}
-          <Folder class="h-4 w-4 flex-shrink-0 text-amber-600" />
+          <img src="/icons/folder.svg" alt="Folder closed" class="h-4 w-4 flex-shrink-0 text-amber-600" />
         {/if}
 
         {#if editingGroupId === group.id}
@@ -1168,15 +1259,7 @@
             tabindex="-1"
             aria-label="Bevestig naam"
           >
-            <svg
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 16 16"
-              ><path d="M4 8l3 3 5-5" stroke-linecap="round" stroke-linejoin="round" /></svg
-            >
+            <img src="/icons/check.svg" alt="Opslaan" class="h-4 w-4" />
           </button>
           <button
             class="btn btn-ghost btn-xs ml-1"
@@ -1188,14 +1271,7 @@
             tabindex="-1"
             aria-label="Annuleer naam wijzigen"
           >
-            <svg
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" stroke-linecap="round" /></svg
-            >
+            <img src="/icons/x.svg" alt="Annuleer" class="h-4 w-4" />
           </button>
         {:else}
           <span class="truncate font-medium">{group.title}</span>
@@ -1206,10 +1282,7 @@
             tabindex="-1"
             aria-label="Title wijzigen"
           >
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
-              ><path d="M12.3 2.7a1 1 0 0 1 0 1.4l-7.6 7.6-3 0.6 0.6-3 7.6-7.6a1 1 0 0 1 1.4 0z"
-              ></path></svg
-            >
+            <img src="/icons/pencil.svg" alt="Wijzig groep naam" class="h-3 w-3" />
           </button>
         {/if}
         <span class="text-base-content/50 text-xs">
@@ -1255,8 +1328,8 @@
                 ondrop={(e) => handleDrop(e, 'layer', layer.layer_id, group.id)}
                 role="listitem"
               >
-                <GripVertical class="text-base-content/30 h-4 w-4 flex-shrink-0" />
-                <File class="h-4 w-4 flex-shrink-0 text-green-600" />
+                <img src="/icons/grip-vertical.svg" alt="Grip" class="text-base-content/30 h-4 w-4 flex-shrink-0" />
+                <img src="/icons/file.svg" alt="File" class="h-4 w-4 flex-shrink-0 text-green-600" />
                 <span class="flex-1">
                   <span class="font-medium">{layer.title}</span>
                   {#if layer.is_default}
@@ -1269,11 +1342,19 @@
                   onclick={() => toggleDefault(layer.layer_id)}
                   title={layer.is_default ? 'Verwijder van standaard' : 'Maak standaard'}
                 >
-                  {#if layer.is_default}
-                    <Eye class="h-3 w-3" />
-                  {:else}
-                    <EyeOff class="h-3 w-3" />
-                  {/if}
+                {#if layer.is_default}
+                  <img src="/icons/eye.svg" alt="Visible" class="h-3 w-3" />
+                {:else}
+                  <img src="/icons/eye-off.svg" alt="Hidden" class="h-3 w-3" />
+                {/if}
+                </button>
+                <button
+                  class="btn btn-ghost btn-xs"
+                  onclick={() => confirmDeleteLayer(layer)}
+                  title="Verwijder laag"
+                  aria-label="Verwijder laag"
+                >
+                  <img src="/icons/trash-2.svg" alt="Trash" class="w-5 h-5 text-error" />
                 </button>
               </div>
 
