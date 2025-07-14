@@ -267,3 +267,24 @@ export async function createViewer(digitalTwinId: number) {
 
   return await response.json();
 }
+
+export async function createLayer(data: {
+  title: string;
+  type: string;
+  url: string;
+  featureName?: string;
+  isBackground: boolean;
+}) {
+  const res = await fetch(`${API_BASE}/layers`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Failed to create layer: ${errText}`);
+  }
+
+  return res.json();
+}

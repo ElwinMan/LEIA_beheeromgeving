@@ -2,11 +2,13 @@
   import LayerModal from '$lib/components/modals/LayerModal.svelte';
   import type { Layer } from '$lib/types/layer';
   import { deleteLayer } from '$lib/api';
+  import CreateLayerModal from '$lib/components/modals/CreateLayerModal.svelte';
 
   export let layers: Layer[] = [];
   export let isBackgroundPage: boolean = false;
 
   let modalComponent: any;
+  let createModal: any;
 
   function handleOpenModal(layer: Layer) {
     modalComponent.showModal(layer);
@@ -14,6 +16,13 @@
 
   function truncate(str: string, length = 30) {
     return str.length > length ? str.slice(0, length) + '…' : str;
+  }
+
+  function handleCreated(event: CustomEvent<Layer>) {
+    const created = event.detail;
+    if (created.isBackground === isBackgroundPage) {
+      layers = [...layers, created];
+    }
   }
 
   function handleUpdated(event: CustomEvent<Layer>) {
@@ -48,6 +57,7 @@
   }
 </script>
 
+<CreateLayerModal bind:this={createModal} on:created={handleCreated} />
 <LayerModal bind:this={modalComponent} on:updated={handleUpdated} />
 
 <div class="card bg-base-100 shadow-xl">
