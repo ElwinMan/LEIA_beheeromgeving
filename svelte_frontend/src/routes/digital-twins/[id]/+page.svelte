@@ -7,6 +7,8 @@
   import TabStories from '$lib/components/digitalTwinTabs/TabStories.svelte';
   import TabProjects from '$lib/components/digitalTwinTabs/TabProjects.svelte';
 
+  import { digitalTwinExport } from '$lib/api';
+
   let { data } = $props();
 
   let tabs = [
@@ -22,6 +24,8 @@
   let selectedIndex = $state(0);
 
   const SvelteComponent = $derived(tabs[selectedIndex].component);
+
+  const downloadUrl = digitalTwinExport(data.id);
 </script>
 
 <svelte:head>
@@ -40,6 +44,14 @@
         {data.digitalTwin?.title || `Digital twin ID: ${data.id}`}
       </p>
     </div>
+    <a
+      href={downloadUrl}
+      class="btn btn-primary flex items-center gap-2"
+      download
+    >
+      <img src="/icons/download.svg" alt="Download" class="w-5 h-5" />
+      Download export
+    </a>
   </div>
 
   <!-- Tab headers -->

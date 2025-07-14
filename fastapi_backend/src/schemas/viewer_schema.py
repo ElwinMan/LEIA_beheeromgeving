@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Dict, Any
 
 class ViewerBase(BaseModel):
@@ -10,8 +10,8 @@ class ViewerCreate(ViewerBase):
 class ViewerUpdate(BaseModel):
     content: Dict[str, Any]
 
-class ViewerResponse(ViewerBase):
+class ViewerResponse(BaseModel):
     id: int
+    content: Dict[str, Any]
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

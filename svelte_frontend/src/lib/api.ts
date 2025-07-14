@@ -288,3 +288,7 @@ export async function createLayer(data: {
 
   return res.json();
 }
+
+export function digitalTwinExport(digitalTwinId: number | string): string {
+  return `${API_BASE}/digital-twins/${digitalTwinId}/export/download.json`;
+}

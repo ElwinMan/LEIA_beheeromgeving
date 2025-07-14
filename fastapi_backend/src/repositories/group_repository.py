@@ -1,10 +1,13 @@
 from sqlalchemy.orm import Session
 from models.group import Group
 
-def get_group(db: Session, group_id: int) -> Group | None:
+def get_group_by_id(db: Session, group_id: int) -> Group | None:
     return db.query(Group).filter(Group.id == group_id).first()
 
-def get_groups_by_digital_twin(db: Session, digital_twin_id: int):
+def get_groups_by_ids(db: Session, group_ids: list[int]):
+    return db.query(Group).filter(Group.id.in_(group_ids)).all()
+
+def get_groups_by_digital_twin_id(db: Session, digital_twin_id: int):
     return (
         db.query(Group)
         .filter(Group.digital_twin_id == digital_twin_id)

@@ -4,10 +4,10 @@ import repositories.group_repository as repo
 from models.group import Group
 
 def get_group(group_id: int, db: Session) -> Group | None:
-    return repo.get_group(db, group_id)
+    return repo.get_group_by_id(db, group_id)
 
 def list_groups(digital_twin_id: int, db: Session) -> list[Group]:
-    return repo.get_groups_by_digital_twin(db, digital_twin_id)
+    return repo.get_groups_by_digital_twin_id(db, digital_twin_id)
 
 def create_group(digital_twin_id: int, group_create: GroupCreate, db: Session) -> Group:
     data = group_create.dict()

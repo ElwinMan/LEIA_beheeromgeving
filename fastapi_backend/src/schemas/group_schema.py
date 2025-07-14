@@ -20,9 +20,10 @@ class GroupResponse(BaseModel):
     parent_id: Optional[int] = None
     sort_order: int = 0
 
-    class Config:
-        orm_mode = True
-
+    model_config = {
+        "from_attributes": True
+    }
+    
 class DigitalTwinGroupBulkItem(BaseModel):
     id: Optional[int] = None
     title: Optional[str] = None
