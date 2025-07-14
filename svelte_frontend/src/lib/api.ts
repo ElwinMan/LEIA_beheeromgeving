@@ -1,5 +1,5 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
-import type { DigitalTwin, DigitalTwinViewerResponse, ViewerContent } from '$lib/types/digitalTwin';
+import type { DigitalTwin, DigitalTwinViewerResponse, ViewerContent, CreateDigitalTwinInput } from '$lib/types/digitalTwin';
 import type { BulkAssociationsPayload, BulkToolOperation } from '$lib/types/digitalTwinAssociation';
 import type { Layer } from '$lib/types/layer';
 
@@ -159,4 +159,111 @@ export async function deleteLayer(id: number): Promise<void> {
     const errorText = await response.text();
     throw new Error(`Failed to delete layer (${response.status}): ${errorText}`);
   }
+}
+
+export async function createDigitalTwin(data: CreateDigitalTwinInput): Promise<DigitalTwin> {
+  const response = await fetch(`${API_BASE}/digital-twins/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to create digital twin');
+  }
+
+  const result = await response.json();
+  return {
+    ...result,
+    last_updated: new Date(result.last_updated)
+  };
+}
+
+export async function createViewer(digitalTwinId: number) {
+  const payload = {
+    digital_twin_id: digitalTwinId,
+    content: {
+      logo: "",
+      thumbnail: "",
+      startPosition: {
+        x: 3.62121,
+        y: 51.45503,
+        z: 3096.9614,
+        heading: 360,
+        pitch: -34.77193,
+        duration: 1.5
+      },
+      colors: {
+        "ui-background": "#ffffff",
+        "interactive-01": "#214170",
+        "interactive-02": "#171717",
+        "interactive-03": "#0062ff",
+        "interactive-04": "#0062ff",
+        "ui-01": "#f3f3f3",
+        "ui-02": "#ffffff",
+        "ui-03": "#dcdcdc",
+        "ui-04": "#8c8c8c",
+        "ui-05": "#171717",
+        "text-01": "#171717",
+        "text-02": "#565656",
+        "text-03": "#8c8c8c",
+        "text-04": "#ffffff",
+        "link-01": "#0062ff",
+        "icon-01": "#171717",
+        "icon-02": "#565656",
+        "icon-03": "#ffffff",
+        "field-01": "#f3f3f3",
+        "field-02": "#ffffff",
+        "inverse-01": "#ffffff",
+        "inverse-02": "#3d3d3d",
+        "support-01": "#da1e28",
+        "support-02": "#24a148",
+        "support-03": "#fdd13a",
+        "support-04": "#054ada",
+        "inverse-support-01": "#fb4b53",
+        "inverse-support-02": "#3dbb61",
+        "inverse-support-03": "#fdd13a",
+        "inverse-support-04": "#408bfc",
+        "overlay-01": "#171717CC",
+        "interaction-tokens": "#0062ff",
+        "hover-primary": "#376dbc",
+        "hover-primary-text": "#054ada",
+        "hover-secondary": "#4c4c4c",
+        "hover-tertiary": "#4cabd8",
+        "hover-ui": "#e5e5e5",
+        "hover-selected-ui": "#cacaca",
+        "hover-danger": "#ba1b23",
+        "hover-row": "#e5e5e5",
+        "active-primary": "#376dbc",
+        "active-secondary": "#6f6f6f",
+        "active-tertiary": "#0530ad",
+        "active-ui": "#bebebe",
+        "active-danger": "#750e13",
+        "selected-ui": "#dcdcdc",
+        "highlight": "#C9deff",
+        "skeleton-01": "#e5e5e5",
+        "skeleton-02": "#bebebe",
+        "visited-link": "#0062ff",
+        "disabled-01": "#f3f3f3",
+        "disabled-02": "#bebebe",
+        "disabled-03": "#8c8c8c"
+      }
+    }
+  };
+
+  const response = await fetch(`${API_BASE}/digital-twins/${digitalTwinId}/viewer`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to create viewer');
+  }
+
+  return await response.json();
 }

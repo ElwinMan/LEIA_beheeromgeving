@@ -1,5 +1,5 @@
 <script lang="ts">
-  import LayerModal from '$lib/components/LayerModal.svelte';
+  import LayerModal from '$lib/components/modals/LayerModal.svelte';
   import type { Layer } from '$lib/types/layer';
   import { deleteLayer } from '$lib/api';
 

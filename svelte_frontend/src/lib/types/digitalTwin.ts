@@ -1,4 +1,3 @@
-import type { Group } from '$lib/types/group';
 import type { LayerAssociation } from '$lib/types/digitalTwinAssociation';
 
 export interface DigitalTwin {
@@ -8,9 +7,18 @@ export interface DigitalTwin {
   subtitle: string;
   owner: string;
   private: boolean;
-  last_updated: Date;
+  last_updated: string;
   layer_associations: LayerAssociation[];
   tool_associations: Array<{ tool_id: number }>;
+}
+
+export interface CreateDigitalTwinInput {
+  name: string;
+  title: string;
+  subtitle: string;
+  owner: string;
+  private: boolean;
+  last_updated: string;
 }
 
 // Digital Twin viewer data

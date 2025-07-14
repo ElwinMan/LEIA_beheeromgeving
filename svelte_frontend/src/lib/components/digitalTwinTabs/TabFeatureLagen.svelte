@@ -18,8 +18,8 @@
   import type { Layer } from '$lib/types/layer';
   import type { Group } from '$lib/types/group';
   import AlertBanner from '$lib/components/AlertBanner.svelte';
-  import GroupModal from '$lib/components/GroupModal.svelte';
-  import DeleteModal from '$lib/components/DeleteModal.svelte';
+  import GroupModal from '$lib/components/modals/GroupModal.svelte';
+  import DeleteModal from '$lib/components/modals/DeleteModal.svelte';
 
   interface Props {
     digitalTwin: DigitalTwin | null;
