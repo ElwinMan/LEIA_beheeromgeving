@@ -20,6 +20,7 @@
   import AlertBanner from '$lib/components/AlertBanner.svelte';
   import GroupModal from '$lib/components/modals/GroupModal.svelte';
   import DeleteModal from '$lib/components/modals/DeleteModal.svelte';
+  import DeleteGroupModal from '$lib/components/modals/DeleteGroupModal.svelte';
 
   interface Props {
     digitalTwin: DigitalTwin | null;
@@ -31,6 +32,10 @@
   let deleteLayerModalShow = $state(false);
   let layerToDelete: LayerWithAssociation | null = null;
   let skipDeleteLayerConfirm = false;
+
+  let deleteGroupModalShow = $state(false);
+  let groupToDelete = $state<GroupWithLayers | null>(null);
+  let deleteGroupOption: 'delete' | 'move' = 'delete';
 
   onMount(() => {
     // Restore skipDeleteLayerConfirm from sessionStorage if set
@@ -946,6 +951,85 @@
     deleteLayerModalShow = false;
     layerToDelete = null;
   }
+
+  function confirmDeleteGroup(group: GroupWithLayers) {
+    groupToDelete = group;
+    deleteGroupOption = 'delete';
+    deleteGroupModalShow = true;
+  }
+
+  function handleDeleteGroupModalConfirm(option: 'delete' | 'move') {
+    if (!groupToDelete) {
+      deleteGroupModalShow = false;
+      return;
+    }
+    const group = groupToDelete;
+
+    // Remove group from rootGroups
+    rootGroups = rootGroups.filter((g) => g.id !== group.id);
+
+    // Remove group from all subgroups
+    function removeGroupFromSubgroups(groups: GroupWithLayers[]) {
+      groups.forEach((g) => {
+        g.subgroups = g.subgroups.filter((sg) => sg.id !== group.id);
+        removeGroupFromSubgroups(g.subgroups);
+      });
+    }
+    removeGroupFromSubgroups(rootGroups);
+
+    // Handle layers in the group
+    function collectAllLayers(groups: GroupWithLayers[]): LayerWithAssociation[] {
+      let result: LayerWithAssociation[] = [];
+      for (const g of groups) {
+        result = result.concat(g.layers);
+        result = result.concat(collectAllLayers(g.subgroups));
+      }
+      return result;
+    }
+    const layersInGroup = group.layers.concat(collectAllLayers(group.subgroups));
+
+    if (option === 'delete') {
+      // Remove from all arrays and mark for deletion
+      if (!window._deletedLayerIds) window._deletedLayerIds = [];
+      window._deletedLayerIds.push(...layersInGroup.map(l => l.layer_id));
+      layersWithDetails = layersWithDetails.filter(l => !layersInGroup.some(g => g.layer_id === l.layer_id));
+      ungroupedLayers = ungroupedLayers.filter(l => !layersInGroup.some(g => g.layer_id === l.layer_id));
+    } else if (option === 'move') {
+      // Move all layers to ungrouped
+      layersInGroup.forEach(l => {
+        l.group_id = null;
+        if (!ungroupedLayers.some(u => u.layer_id === l.layer_id)) {
+          ungroupedLayers.push(l);
+        }
+      });
+      // Remove from all group arrays
+      function removeLayersFromGroups(groups: GroupWithLayers[]) {
+        for (const g of groups) {
+          g.layers = g.layers.filter(l => !layersInGroup.some(gl => gl.layer_id === l.layer_id));
+          removeLayersFromGroups(g.subgroups);
+        }
+      }
+      removeLayersFromGroups(rootGroups);
+    }
+
+    // Track deleted group for bulk API call
+    if (!window._deletedGroupIds) window._deletedGroupIds = [];
+    window._deletedGroupIds.push(group.id);
+
+    // Update main arrays
+    layersWithDetails = [...layersWithDetails];
+    ungroupedLayers = [...ungroupedLayers];
+    rootGroups = [...rootGroups];
+
+    hasChanges = true;
+    deleteGroupModalShow = false;
+    groupToDelete = null;
+  }
+
+  function handleDeleteGroupModalCancel() {
+    deleteGroupModalShow = false;
+    groupToDelete = null;
+  }
 </script>
 
 <GroupModal
@@ -965,6 +1049,14 @@
   checkboxLabel="Niet meer vragen deze sessie"
   onconfirm={handleDeleteLayerModalConfirm}
   oncancel={handleDeleteLayerModalCancel}
+/>
+
+<DeleteGroupModal
+  show={deleteGroupModalShow}
+  groupTitle={groupToDelete?.title ?? ''}
+  layerCount={groupToDelete ? getTotalLayersInGroup(groupToDelete) : 0}
+  ondelete={handleDeleteGroupModalConfirm}
+  oncancel={handleDeleteGroupModalCancel}
 />
 
 <div class="flex h-full gap-4">
@@ -1090,6 +1182,13 @@
                 <img src="/icons/save.svg" alt="Opslaan" class="h-4 w-4" />
               {/if}
               Opslaan
+            </button>
+            <button
+              class="btn btn-outline btn-sm ml-2"
+              type="button"
+              onclick={() => console.log('Associated layers:', layersWithDetails)}
+            >
+              Debug: Log associated layers
             </button>
           </div>
         {/if}
@@ -1283,6 +1382,14 @@
             aria-label="Title wijzigen"
           >
             <img src="/icons/pencil.svg" alt="Wijzig groep naam" class="h-3 w-3" />
+          </button>
+          <button
+            class="btn btn-ghost btn-xs ml-1"
+            title="Verwijder groep"
+            onclick={() => confirmDeleteGroup(group)}
+            aria-label="Verwijder groep"
+          >
+            <img src="/icons/trash-2.svg" alt="Verwijder groep" class="h-4 w-4 text-error" />
           </button>
         {/if}
         <span class="text-base-content/50 text-xs">
