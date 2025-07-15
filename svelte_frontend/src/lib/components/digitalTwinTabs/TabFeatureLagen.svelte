@@ -1030,13 +1030,51 @@
     deleteGroupModalShow = false;
     groupToDelete = null;
   }
+
+  function handleGroupCreated(newGroup: Group) {
+    allGroups = [...allGroups, newGroup];
+
+    if (newGroup.parent_id == null) {
+      // Find max sort_order among root groups
+      const maxSortOrder = rootGroups.length > 0
+        ? Math.max(...rootGroups.map(g => g.sort_order ?? 0))
+        : -1;
+      const groupWithOrder = {
+        ...newGroup,
+        sort_order: maxSortOrder + 1,
+        depth: 0,
+        layers: [],
+        subgroups: []
+      };
+      rootGroups = [...rootGroups, groupWithOrder];
+    } else {
+      // Find parent and add as subgroup
+      const parent = findGroupById(rootGroups, newGroup.parent_id);
+      if (parent) {
+        // Find max sort_order among subgroups
+        const maxSortOrder = parent.subgroups.length > 0
+          ? Math.max(...parent.subgroups.map(g => g.sort_order ?? 0))
+          : -1;
+        const groupWithOrder = {
+          ...newGroup,
+          sort_order: maxSortOrder + 1,
+          depth: (parent.depth ?? 0) + 1,
+          layers: [],
+          subgroups: []
+        };
+        parent.subgroups = [...parent.subgroups, groupWithOrder];
+        rootGroups = [...rootGroups];
+      }
+    }
+    hasChanges = true;
+  }
 </script>
 
 <GroupModal
   bind:this={groupModalRef}
   availableGroups={allGroups}
   digitalTwinId={Number(digitalTwinId)}
-  on:created={() => fetchAllData()}
+  on:created={(event) => handleGroupCreated(event.detail)}
 />
 
 <DeleteModal
