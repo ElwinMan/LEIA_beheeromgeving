@@ -1,8 +1,8 @@
 import { fetchLayer } from '$lib/api';
 
-export async function load({ params }) {
+export async function load({ params, fetch }) {
   try {
-    const layer = await fetchLayer(params.id);
+    const layer = await fetchLayer(params.id, fetch);
     return {
       id: params.id,
       layer,

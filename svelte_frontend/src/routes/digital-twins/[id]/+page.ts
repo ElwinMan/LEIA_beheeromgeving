@@ -1,8 +1,8 @@
 import { fetchDigitalTwin } from '$lib/api';
 
-export async function load({ params }) {
+export async function load({ fetch, params }) {
   try {
-    const digitalTwin = await fetchDigitalTwin(params.id);
+    const digitalTwin = await fetchDigitalTwin(params.id, fetch);
     return {
       id: params.id,
       digitalTwin,

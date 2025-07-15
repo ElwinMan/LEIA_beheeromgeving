@@ -3,14 +3,16 @@ import type { DigitalTwin, DigitalTwinViewerResponse, ViewerContent, CreateDigit
 import type { BulkAssociationsPayload, BulkToolOperation } from '$lib/types/digitalTwinAssociation';
 import type { Layer } from '$lib/types/layer';
 
-export async function fetchDigitalTwins() {
-  const res = await fetch(`${API_BASE}/digital-twins`);
+export async function fetchDigitalTwins(fetchFn?: typeof fetch) {
+  const _fetch = fetchFn ?? fetch;
+  const res = await _fetch(`${API_BASE}/digital-twins`);
   if (!res.ok) throw new Error('Failed to fetch digital twins');
   return await res.json();
 }
 
-export async function fetchDigitalTwin(id: string) {
-  const res = await fetch(`${API_BASE}/digital-twins/${id}`);
+export async function fetchDigitalTwin(id: string, fetchFn?: typeof fetch) {
+  const _fetch = fetchFn ?? fetch;
+  const res = await _fetch(`${API_BASE}/digital-twins/${id}`);
   if (!res.ok) throw new Error(`Failed to fetch digital twin with ID ${id}`);
   return await res.json();
 }
@@ -58,14 +60,16 @@ export async function updateDigitalTwinViewer(
   return await res.json();
 }
 
-export async function fetchLayers() {
-  const res = await fetch(`${API_BASE}/layers`);
+export async function fetchLayers(fetchFn?: typeof fetch) {
+  const _fetch = fetchFn ?? fetch;
+  const res = await _fetch(`${API_BASE}/layers`);
   if (!res.ok) throw new Error('Failed to fetch layers');
   return await res.json();
 }
 
-export async function fetchLayer(id: string) {
-  const res = await fetch(`${API_BASE}/layers/${id}`);
+export async function fetchLayer(id: string, fetchFn?: typeof fetch) {
+  const _fetch = fetchFn ?? fetch;
+  const res = await _fetch(`${API_BASE}/layers/${id}`);
   if (!res.ok) throw new Error(`Failed to fetch layer with ID ${id}`);
   return await res.json();
 }
@@ -86,14 +90,16 @@ export async function fetchGroups(digitalTwinId: string) {
   return await res.json();
 }
 
-export async function fetchTools() {
-  const res = await fetch(`${API_BASE}/tools`);
-  if (!res.ok) throw new Error('Failed to fetch layers');
+export async function fetchTools(fetchFn?: typeof fetch) {
+  const _fetch = fetchFn ?? fetch;
+  const res = await _fetch(`${API_BASE}/tools`);
+  if (!res.ok) throw new Error('Failed to fetch tools');
   return await res.json();
 }
 
-export async function fetchTool(id: string) {
-  const res = await fetch(`${API_BASE}/tools/${id}`);
+export async function fetchTool(id: string, fetchFn?: typeof fetch) {
+  const _fetch = fetchFn ?? fetch;
+  const res = await _fetch(`${API_BASE}/tools/${id}`);
   if (!res.ok) throw new Error(`Failed to fetch tool with ID ${id}`);
   return await res.json();
 }

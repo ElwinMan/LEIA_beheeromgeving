@@ -1,8 +1,8 @@
 import { fetchTool } from '$lib/api';
 
-export async function load({ params }) {
+export async function load({ params, fetch }) {
   try {
-    const tool = await fetchTool(params.id);
+    const tool = await fetchTool(params.id, fetch);
     return {
       tool,
       error: null
