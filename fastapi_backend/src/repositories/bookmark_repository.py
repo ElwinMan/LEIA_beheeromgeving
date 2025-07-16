@@ -1,28 +1,28 @@
 from sqlalchemy.orm import Session
-from models.tool_associations import BookmarksSnippets
+from models.tool_associations import Bookmarks
 
-def get_by_id(db: Session, snippet_id: int):
-    return db.query(BookmarksSnippets).filter_by(id=snippet_id).first()
+def get_by_id(db: Session, bookmark_id: int):
+    return db.query(Bookmarks).filter_by(id=bookmark_id).first()
 
 def get_all(db: Session):
-    return db.query(BookmarksSnippets).all()
+    return db.query(Bookmarks).all()
 
-def create(db: Session, snippet: BookmarksSnippets):
-    db.add(snippet)
+def create(db: Session, bookmark: Bookmarks):
+    db.add(bookmark)
     db.commit()
-    db.refresh(snippet)
-    return snippet
+    db.refresh(bookmark)
+    return bookmark
 
-def update(db: Session, snippet: BookmarksSnippets, updates: dict):
+def update(db: Session, bookmark: Bookmarks, updates: dict):
     for key, value in updates.items():
-        setattr(snippet, key, value)
+        setattr(bookmark, key, value)
     db.commit()
-    db.refresh(snippet)
-    return snippet
+    db.refresh(bookmark)
+    return bookmark
 
-def delete(db: Session, snippet_id: int):
-    snippet = db.query(BookmarksSnippets).filter_by(id=snippet_id).first()
-    if snippet:
-        db.delete(snippet)
+def delete(db: Session, bookmark_id: int):
+    bookmark = db.query(Bookmarks).filter_by(id=bookmark_id).first()
+    if bookmark:
+        db.delete(bookmark)
         db.commit()
-    return snippet
+    return bookmark

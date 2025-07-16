@@ -1,10 +1,10 @@
 from db.database import SessionLocal
-from models.tool_associations import StoriesSnippets
+from models.tool_associations import Stories
 from sqlalchemy.orm import Session
 
 def seed(db: Session):
     try:
-        stories_snippets = [
+        stories = [
             {
                 "name": "My story",
                 "description": "Description of my story",
@@ -33,11 +33,11 @@ def seed(db: Session):
                 }
             }
         ]
-        for s in stories_snippets:
-            if not db.query(StoriesSnippets).filter_by(name=s["name"]).first():
-                db.add(StoriesSnippets(**s))
+        for s in stories:
+            if not db.query(Stories).filter_by(name=s["name"]).first():
+                db.add(Stories(**s))
         db.commit()
-        print("Stories snippets seeded.")
+        print("Stories seeded.")
     finally:
         db.close()
 

@@ -1,20 +1,20 @@
 from pydantic import BaseModel
 from typing import Optional, Any
 
-class BookmarkSnippetBase(BaseModel):
+class BookmarkBase(BaseModel):
     title: str
     description: Optional[str] = None
     content: Optional[Any] = None
 
-class BookmarkSnippetCreate(BookmarkSnippetBase):
+class BookmarkCreate(BookmarkBase):
     pass
 
-class BookmarkSnippetUpdate(BaseModel):
+class BookmarkUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     content: Optional[Any] = None
 
-class BookmarkSnippetResponse(BookmarkSnippetBase):
+class BookmarkResponse(BookmarkBase):
     id: int
 
     class Config:

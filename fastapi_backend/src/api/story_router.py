@@ -3,38 +3,38 @@ from sqlalchemy.orm import Session
 from db.database import get_db
 import services.story_service as service
 from schemas.story_schema import (
-    StorySnippetCreate,
-    StorySnippetUpdate,
-    StorySnippetResponse,
+    StoryCreate,
+    StoryUpdate,
+    StoryResponse,
 )
 
-router = APIRouter(prefix="/stories-snippets", tags=["StoriesSnippets"])
+router = APIRouter(prefix="/stories", tags=["Stories"])
 
-@router.get("/", response_model=list[StorySnippetResponse])
-def get_all_snippets(db: Session = Depends(get_db)):
-    return service.get_all_snippets(db)
+@router.get("/", response_model=list[StoryResponse])
+def get_all_stories(db: Session = Depends(get_db)):
+    return service.get_all_stories(db)
 
-@router.get("/{snippet_id}", response_model=StorySnippetResponse)
-def get_snippet(snippet_id: int, db: Session = Depends(get_db)):
-    snippet = service.get_snippet(db, snippet_id)
-    if not snippet:
-        raise HTTPException(status_code=404, detail="Snippet not found")
-    return snippet
+@router.get("/{story_id}", response_model=StoryResponse)
+def get_story(story_id: int, db: Session = Depends(get_db)):
+    story = service.get_story(db, story_id)
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    return story
 
-@router.post("/", response_model=StorySnippetResponse)
-def create_snippet(data: StorySnippetCreate, db: Session = Depends(get_db)):
-    return service.create_snippet(db, data)
+@router.post("/", response_model=StoryResponse)
+def create_story(data: StoryCreate, db: Session = Depends(get_db)):
+    return service.create_story(db, data)
 
-@router.put("/{snippet_id}", response_model=StorySnippetResponse)
-def update_snippet(snippet_id: int, data: StorySnippetUpdate, db: Session = Depends(get_db)):
-    updated = service.update_snippet(db, snippet_id, data)
+@router.put("/{story_id}", response_model=StoryResponse)
+def update_story(story_id: int, data: StoryUpdate, db: Session = Depends(get_db)):
+    updated = service.update_story(db, story_id, data)
     if not updated:
-        raise HTTPException(status_code=404, detail="Snippet not found")
+        raise HTTPException(status_code=404, detail="Story not found")
     return updated
 
-@router.delete("/{snippet_id}")
-def delete_snippet(snippet_id: int, db: Session = Depends(get_db)):
-    deleted = service.delete_snippet(db, snippet_id)
+@router.delete("/{story_id}")
+def delete_story(story_id: int, db: Session = Depends(get_db)):
+    deleted = service.delete_story(db, story_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail="Snippet not found")
+        raise HTTPException(status_code=404, detail="Story not found")
     return {"detail": "Deleted"}

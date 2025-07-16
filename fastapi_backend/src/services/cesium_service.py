@@ -1,26 +1,26 @@
 from sqlalchemy.orm import Session
 import repositories.cesium_repository as repo
-from models.tool_associations import TerrainProvidersSnippets
+from models.tool_associations import Cesium
 from schemas.cesium_schema import (
-    CesiumSnippetCreate,
-    CesiumSnippetUpdate,
+    CesiumCreate,
+    CesiumUpdate,
 )
 
-def get_snippet(db: Session, snippet_id: int) -> TerrainProvidersSnippets | None:
-    return repo.get_by_id(db, snippet_id)
+def get_cesium(db: Session, cesium_id: int) -> Cesium | None:
+    return repo.get_by_id(db, cesium_id)
 
-def get_all_snippets(db: Session) -> list[TerrainProvidersSnippets]:
+def get_all_cesiums(db: Session) -> list[Cesium]:
     return repo.get_all(db)
 
-def create_snippet(db: Session, data: CesiumSnippetCreate) -> TerrainProvidersSnippets:
-    snippet = TerrainProvidersSnippets(**data.dict())
-    return repo.create(db, snippet)
+def create_cesium(db: Session, data: CesiumCreate) -> Cesium:
+    cesium = Cesium(**data.dict())
+    return repo.create(db, cesium)
 
-def update_snippet(db: Session, snippet_id: int, updates: CesiumSnippetUpdate) -> TerrainProvidersSnippets | None:
-    snippet = repo.get_by_id(db, snippet_id)
-    if not snippet:
+def update_cesium(db: Session, cesium_id: int, updates: CesiumUpdate) -> Cesium | None:
+    cesium = repo.get_by_id(db, cesium_id)
+    if not cesium:
         return None
-    return repo.update(db, snippet, updates.dict(exclude_unset=True))
+    return repo.update(db, cesium, updates.dict(exclude_unset=True))
 
-def delete_snippet(db: Session, snippet_id: int) -> bool:
-    return repo.delete(db, snippet_id)
+def delete_cesium(db: Session, cesium_id: int) -> bool:
+    return repo.delete(db, cesium_id)

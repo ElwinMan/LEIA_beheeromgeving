@@ -1,28 +1,28 @@
 from sqlalchemy.orm import Session
-from models.tool_associations import ProjectsSnippets
+from models.tool_associations import Projects
 
-def get_by_id(db: Session, snippet_id: int):
-    return db.query(ProjectsSnippets).filter_by(id=snippet_id).first()
+def get_by_id(db: Session, project_id: int):
+    return db.query(Projects).filter_by(id=project_id).first()
 
 def get_all(db: Session):
-    return db.query(ProjectsSnippets).all()
+    return db.query(Projects).all()
 
-def create(db: Session, snippet: ProjectsSnippets):
-    db.add(snippet)
+def create(db: Session, project: Projects):
+    db.add(project)
     db.commit()
-    db.refresh(snippet)
-    return snippet
+    db.refresh(project)
+    return project
 
-def update(db: Session, snippet: ProjectsSnippets, updates: dict):
+def update(db: Session, project: Projects, updates: dict):
     for key, value in updates.items():
-        setattr(snippet, key, value)
+        setattr(project, key, value)
     db.commit()
-    db.refresh(snippet)
-    return snippet
+    db.refresh(project)
+    return project
 
-def delete(db: Session, snippet_id: int):
-    snippet = db.query(ProjectsSnippets).filter_by(id=snippet_id).first()
-    if snippet:
-        db.delete(snippet)
+def delete(db: Session, project_id: int):
+    project = db.query(Projects).filter_by(id=project_id).first()
+    if project:
+        db.delete(project)
         db.commit()
-    return snippet
+    return project

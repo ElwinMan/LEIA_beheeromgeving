@@ -1,20 +1,20 @@
 from pydantic import BaseModel
 from typing import Optional, Any
 
-class CesiumSnippetBase(BaseModel):
+class CesiumBase(BaseModel):
     url: str
     vertexNormals: Optional[str] = None
     content: Optional[Any] = None
 
-class CesiumSnippetCreate(CesiumSnippetBase):
+class CesiumCreate(CesiumBase):
     pass
 
-class CesiumSnippetUpdate(BaseModel):
+class CesiumUpdate(BaseModel):
     url: Optional[str] = None
     vertexNormals: Optional[str] = None
     content: Optional[Any] = None
 
-class CesiumSnippetResponse(CesiumSnippetBase):
+class CesiumResponse(CesiumBase):
     id: int
 
     class Config:

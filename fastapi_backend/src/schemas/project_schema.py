@@ -1,20 +1,20 @@
 from pydantic import BaseModel
 from typing import Optional, Any
 
-class ProjectSnippetBase(BaseModel):
+class ProjectBase(BaseModel):
     name: str
     description: Optional[str] = None
     content: Optional[Any] = None
 
-class ProjectSnippetCreate(ProjectSnippetBase):
+class ProjectCreate(ProjectBase):
     pass
 
-class ProjectSnippetUpdate(BaseModel):
+class ProjectUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     content: Optional[Any] = None
 
-class ProjectSnippetResponse(ProjectSnippetBase):
+class ProjectResponse(ProjectBase):
     id: int
 
     class Config:

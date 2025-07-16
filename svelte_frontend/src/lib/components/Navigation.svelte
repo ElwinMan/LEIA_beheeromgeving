@@ -10,7 +10,17 @@
     { href: '/digital-twins', label: 'Digital Twins', icon: '/icons/database.svg' },
     { href: '/background-layers', label: 'Background Layers', icon: '/icons/layers.svg' },
     { href: '/feature-layers', label: 'Feature Layers', icon: '/icons/layers.svg' },
-    { href: '/tools', label: 'Tools', icon: '/icons/wrench.svg' }
+    {
+      href: '/tools',
+      label: 'Tools',
+      icon: '/icons/wrench.svg',
+      children: [
+        { href: '/tools/projects', label: 'Projects' },
+        { href: '/tools/bookmarks', label: 'Bookmarks' },
+        { href: '/tools/cesium', label: 'Cesium' },
+        { href: '/tools/stories', label: 'Stories' }
+      ]
+    }
   ];
 
   function isActive(href: string) {
@@ -63,6 +73,20 @@
                 <img src={item.icon} alt={item.label} class="h-5 w-5" />
                 {item.label}
               </a>
+              {#if item.children}
+                <ul class="ml-4 mt-2 space-y-2">
+                  {#each item.children as child}
+                    <li>
+                      <a
+                        href={child.href}
+                        class="flex items-center gap-3 {isActive(child.href) ? 'active' : ''}"
+                      >
+                        <span class="text-sm">{child.label}</span>
+                      </a>
+                    </li>
+                  {/each}
+                </ul>
+              {/if}
             </li>
           {/each}
         </ul>

@@ -1,20 +1,20 @@
 from pydantic import BaseModel
 from typing import Optional, Any
 
-class StorySnippetBase(BaseModel):
+class StoryBase(BaseModel):
     name: str
     description: Optional[str] = None
     content: Optional[Any] = None
 
-class StorySnippetCreate(StorySnippetBase):
+class StoryCreate(StoryBase):
     pass
 
-class StorySnippetUpdate(BaseModel):
+class StoryUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     content: Optional[Any] = None
 
-class StorySnippetResponse(StorySnippetBase):
+class StoryResponse(StoryBase):
     id: int
 
     class Config:

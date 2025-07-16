@@ -3,38 +3,38 @@ from sqlalchemy.orm import Session
 from db.database import get_db
 import services.project_service as service
 from schemas.project_schema import (
-    ProjectSnippetCreate,
-    ProjectSnippetUpdate,
-    ProjectSnippetResponse,
+    ProjectCreate,
+    ProjectUpdate,
+    ProjectResponse,
 )
 
-router = APIRouter(prefix="/projects-snippets", tags=["ProjectsSnippets"])
+router = APIRouter(prefix="/projects", tags=["Projects"])
 
-@router.get("/", response_model=list[ProjectSnippetResponse])
-def get_all_snippets(db: Session = Depends(get_db)):
-    return service.get_all_snippets(db)
+@router.get("/", response_model=list[ProjectResponse])
+def get_all_projects(db: Session = Depends(get_db)):
+    return service.get_all_projects(db)
 
-@router.get("/{snippet_id}", response_model=ProjectSnippetResponse)
-def get_snippet(snippet_id: int, db: Session = Depends(get_db)):
-    snippet = service.get_snippet(db, snippet_id)
-    if not snippet:
-        raise HTTPException(status_code=404, detail="Snippet not found")
-    return snippet
+@router.get("/{project_id}", response_model=ProjectResponse)
+def get_project(project_id: int, db: Session = Depends(get_db)):
+    project = service.get_project(db, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return project
 
-@router.post("/", response_model=ProjectSnippetResponse)
-def create_snippet(data: ProjectSnippetCreate, db: Session = Depends(get_db)):
-    return service.create_snippet(db, data)
+@router.post("/", response_model=ProjectResponse)
+def create_project(data: ProjectCreate, db: Session = Depends(get_db)):
+    return service.create_project(db, data)
 
-@router.put("/{snippet_id}", response_model=ProjectSnippetResponse)
-def update_snippet(snippet_id: int, data: ProjectSnippetUpdate, db: Session = Depends(get_db)):
-    updated = service.update_snippet(db, snippet_id, data)
+@router.put("/{project_id}", response_model=ProjectResponse)
+def update_project(project_id: int, data: ProjectUpdate, db: Session = Depends(get_db)):
+    updated = service.update_project(db, project_id, data)
     if not updated:
-        raise HTTPException(status_code=404, detail="Snippet not found")
+        raise HTTPException(status_code=404, detail="Project not found")
     return updated
 
-@router.delete("/{snippet_id}")
-def delete_snippet(snippet_id: int, db: Session = Depends(get_db)):
-    deleted = service.delete_snippet(db, snippet_id)
+@router.delete("/{project_id}")
+def delete_project(project_id: int, db: Session = Depends(get_db)):
+    deleted = service.delete_project(db, project_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail="Snippet not found")
+        raise HTTPException(status_code=404, detail="Project not found")
     return {"detail": "Deleted"}

@@ -298,3 +298,175 @@ export async function createLayer(data: {
 export function digitalTwinExport(digitalTwinId: number | string): string {
   return `${API_BASE}/digital-twins/${digitalTwinId}/export/download.json`;
 }
+
+// --- Bookmarks ---
+export async function fetchBookmarks(fetchFn?: typeof fetch) {
+  const _fetch = fetchFn ?? fetch;
+  const res = await _fetch(`${API_BASE}/bookmarks`);
+  if (!res.ok) throw new Error('Failed to fetch bookmarks');
+  return await res.json();
+}
+
+export async function fetchBookmark(id: string, fetchFn?: typeof fetch) {
+  const _fetch = fetchFn ?? fetch;
+  const res = await _fetch(`${API_BASE}/bookmarks/${id}`);
+  if (!res.ok) throw new Error(`Failed to fetch bookmark with ID ${id}`);
+  return await res.json();
+}
+
+export async function createBookmark(data: any) {
+  const res = await fetch(`${API_BASE}/bookmarks`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error('Failed to create bookmark');
+  return await res.json();
+}
+
+export async function updateBookmark(id: string, data: any) {
+  const res = await fetch(`${API_BASE}/bookmarks/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error(`Failed to update bookmark with ID ${id}`);
+  return await res.json();
+}
+
+export async function deleteBookmark(id: string) {
+  const res = await fetch(`${API_BASE}/bookmarks/${id}`, {
+    method: 'DELETE'
+  });
+  if (!res.ok) throw new Error(`Failed to delete bookmark with ID ${id}`);
+  return true;
+}
+
+// --- Projects ---
+export async function fetchProjects(fetchFn?: typeof fetch) {
+  const _fetch = fetchFn ?? fetch;
+  const res = await _fetch(`${API_BASE}/projects`);
+  if (!res.ok) throw new Error('Failed to fetch projects');
+  return await res.json();
+}
+
+export async function fetchProject(id: string, fetchFn?: typeof fetch) {
+  const _fetch = fetchFn ?? fetch;
+  const res = await _fetch(`${API_BASE}/projects/${id}`);
+  if (!res.ok) throw new Error(`Failed to fetch project with ID ${id}`);
+  return await res.json();
+}
+
+export async function createProject(data: any) {
+  const res = await fetch(`${API_BASE}/projects`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error('Failed to create project');
+  return await res.json();
+}
+
+export async function updateProject(id: string, data: any) {
+  const res = await fetch(`${API_BASE}/projects/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error(`Failed to update project with ID ${id}`);
+  return await res.json();
+}
+
+export async function deleteProject(id: string) {
+  const res = await fetch(`${API_BASE}/projects/${id}`, {
+    method: 'DELETE'
+  });
+  if (!res.ok) throw new Error(`Failed to delete project with ID ${id}`);
+  return true;
+}
+
+// --- Stories ---
+export async function fetchStories(fetchFn?: typeof fetch) {
+  const _fetch = fetchFn ?? fetch;
+  const res = await _fetch(`${API_BASE}/stories`);
+  if (!res.ok) throw new Error('Failed to fetch stories');
+  return await res.json();
+}
+
+export async function fetchStory(id: string, fetchFn?: typeof fetch) {
+  const _fetch = fetchFn ?? fetch;
+  const res = await _fetch(`${API_BASE}/stories/${id}`);
+  if (!res.ok) throw new Error(`Failed to fetch story with ID ${id}`);
+  return await res.json();
+}
+
+export async function createStory(data: any) {
+  const res = await fetch(`${API_BASE}/stories`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error('Failed to create story');
+  return await res.json();
+}
+
+export async function updateStory(id: string, data: any) {
+  const res = await fetch(`${API_BASE}/stories/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error(`Failed to update story with ID ${id}`);
+  return await res.json();
+}
+
+export async function deleteStory(id: string) {
+  const res = await fetch(`${API_BASE}/stories/${id}`, {
+    method: 'DELETE'
+  });
+  if (!res.ok) throw new Error(`Failed to delete story with ID ${id}`);
+  return true;
+}
+
+// --- Cesium ---
+export async function fetchCesiums(fetchFn?: typeof fetch) {
+  const _fetch = fetchFn ?? fetch;
+  const res = await _fetch(`${API_BASE}/cesiums`);
+  if (!res.ok) throw new Error('Failed to fetch cesium ');
+  return await res.json();
+}
+
+export async function fetchCesium(id: string, fetchFn?: typeof fetch) {
+  const _fetch = fetchFn ?? fetch;
+  const res = await _fetch(`${API_BASE}/cesium/${id}`);
+  if (!res.ok) throw new Error(`Failed to fetch cesium with ID ${id}`);
+  return await res.json();
+}
+
+export async function createCesium(data: any) {
+  const res = await fetch(`${API_BASE}/cesium`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error('Failed to create cesium');
+  return await res.json();
+}
+
+export async function updateCesium(id: string, data: any) {
+  const res = await fetch(`${API_BASE}/cesium/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error(`Failed to update cesium with ID ${id}`);
+  return await res.json();
+}
+
+export async function deleteCesium(id: string) {
+  const res = await fetch(`${API_BASE}/cesium/${id}`, {
+    method: 'DELETE'
+  });
+  if (!res.ok) throw new Error(`Failed to delete cesium with ID ${id}`);
+  return true;
+}

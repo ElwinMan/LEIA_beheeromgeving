@@ -1,10 +1,10 @@
 from db.database import SessionLocal
-from models.tool_associations import TerrainProvidersSnippets
+from models.tool_associations import Cesium
 from sqlalchemy.orm import Session
 
 def seed(db: Session):
     try:
-        cesium_snippets = [
+        cesium = [
             {
                 "url": "https://api.pdok.nl/kadaster/3d-basisvoorziening/ogc/v1_0/collections/digitaalterreinmodel/quantized-mesh",
                 "vertexNormals": True,
@@ -33,11 +33,11 @@ def seed(db: Session):
                 }
             }
         ]
-        for c in cesium_snippets:
-            if not db.query(TerrainProvidersSnippets).filter_by(url=c["url"]).first():
-                db.add(TerrainProvidersSnippets(**c))
+        for c in cesium:
+            if not db.query(Cesium).filter_by(url=c["url"]).first():
+                db.add(Cesium(**c))
         db.commit()
-        print("Cesium snippets seeded.")
+        print("Cesium seeded.")
     finally:
         db.close()
 

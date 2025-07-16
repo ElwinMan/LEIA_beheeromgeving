@@ -3,38 +3,38 @@ from sqlalchemy.orm import Session
 from db.database import get_db
 import services.cesium_service as service
 from schemas.cesium_schema import (
-    CesiumSnippetCreate,
-    CesiumSnippetUpdate,
-    CesiumSnippetResponse,
+    CesiumCreate,
+    CesiumUpdate,
+    CesiumResponse,
 )
 
-router = APIRouter(prefix="/cesium-snippets", tags=["CesiumSnippets"])
+router = APIRouter(prefix="/cesiums", tags=["Cesium"])
 
-@router.get("/", response_model=list[CesiumSnippetResponse])
-def get_all_snippets(db: Session = Depends(get_db)):
-    return service.get_all_snippets(db)
+@router.get("/", response_model=list[CesiumResponse])
+def get_all_cesiums(db: Session = Depends(get_db)):
+    return service.get_all_cesiums(db)
 
-@router.get("/{snippet_id}", response_model=CesiumSnippetResponse)
-def get_snippet(snippet_id: int, db: Session = Depends(get_db)):
-    snippet = service.get_snippet(db, snippet_id)
-    if not snippet:
-        raise HTTPException(status_code=404, detail="Snippet not found")
-    return snippet
+@router.get("/{cesium_id}", response_model=CesiumResponse)
+def get_cesium(cesium_id: int, db: Session = Depends(get_db)):
+    cesium = service.get_cesium(db, cesium_id)
+    if not cesium:
+        raise HTTPException(status_code=404, detail="Cesium not found")
+    return cesium
 
-@router.post("/", response_model=CesiumSnippetResponse)
-def create_snippet(data: CesiumSnippetCreate, db: Session = Depends(get_db)):
-    return service.create_snippet(db, data)
+@router.post("/", response_model=CesiumResponse)
+def create_cesium(data: CesiumCreate, db: Session = Depends(get_db)):
+    return service.create_cesium(db, data)
 
-@router.put("/{snippet_id}", response_model=CesiumSnippetResponse)
-def update_snippet(snippet_id: int, data: CesiumSnippetUpdate, db: Session = Depends(get_db)):
-    updated = service.update_snippet(db, snippet_id, data)
+@router.put("/{cesium_id}", response_model=CesiumResponse)
+def update_cesium(cesium_id: int, data: CesiumUpdate, db: Session = Depends(get_db)):
+    updated = service.update_cesium(db, cesium_id, data)
     if not updated:
-        raise HTTPException(status_code=404, detail="Snippet not found")
+        raise HTTPException(status_code=404, detail="Cesium not found")
     return updated
 
-@router.delete("/{snippet_id}")
-def delete_snippet(snippet_id: int, db: Session = Depends(get_db)):
-    deleted = service.delete_snippet(db, snippet_id)
+@router.delete("/{cesium_id}")
+def delete_cesium(cesium_id: int, db: Session = Depends(get_db)):
+    deleted = service.delete_cesium(db, cesium_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail="Snippet not found")
+        raise HTTPException(status_code=404, detail="Cesium not found")
     return {"detail": "Deleted"}

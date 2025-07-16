@@ -1,26 +1,26 @@
 from sqlalchemy.orm import Session
 import repositories.bookmark_repository as repository
-from models.tool_associations import BookmarksSnippets
+from models.tool_associations import Bookmarks
 from schemas.bookmark_schema import (
-    BookmarkSnippetCreate,
-    BookmarkSnippetUpdate,
+    BookmarkCreate,
+    BookmarkUpdate,
 )
 
-def get_snippet(db: Session, snippet_id: int) -> BookmarksSnippets | None:
-    return repository.get_by_id(db, snippet_id)
+def get_bookmark(db: Session, bookmark_id: int) -> Bookmarks | None:
+    return repository.get_by_id(db, bookmark_id)
 
-def get_all_snippets(db: Session) -> list[BookmarksSnippets]:
+def get_all_bookmarks(db: Session) -> list[Bookmarks]:
     return repository.get_all(db)
 
-def create_snippet(db: Session, data: BookmarkSnippetCreate) -> BookmarksSnippets:
-    snippet = BookmarksSnippets(**data.dict())
-    return repository.create(db, snippet)
+def create_bookmark(db: Session, data: BookmarkCreate) -> Bookmarks:
+    bookmark = Bookmarks(**data.dict())
+    return repository.create(db, bookmark)
 
-def update_snippet(db: Session, snippet_id: int, updates: BookmarkSnippetUpdate) -> BookmarksSnippets | None:
-    snippet = repository.get_by_id(db, snippet_id)
-    if not snippet:
+def update_bookmark(db: Session, bookmark_id: int, updates: BookmarkUpdate) -> Bookmarks | None:
+    bookmark = repository.get_by_id(db, bookmark_id)
+    if not bookmark:
         return None
-    return repository.update(db, snippet, updates.dict(exclude_unset=True))
+    return repository.update(db, bookmark, updates.dict(exclude_unset=True))
 
-def delete_snippet(db: Session, snippet_id: int) -> bool:
-    return repository.delete(db, snippet_id)
+def delete_bookmark(db: Session, bookmark_id: int) -> bool:
+    return repository.delete(db, bookmark_id)

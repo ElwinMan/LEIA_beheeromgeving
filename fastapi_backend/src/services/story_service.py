@@ -1,26 +1,26 @@
 from sqlalchemy.orm import Session
 import repositories.story_repository as repository
-from models.tool_associations import StoriesSnippets
+from models.tool_associations import Stories
 from schemas.story_schema import (
-    StorySnippetCreate,
-    StorySnippetUpdate,
+    StoryCreate,
+    StoryUpdate,
 )
 
-def get_snippet(db: Session, snippet_id: int) -> StoriesSnippets | None:
-    return repository.get_by_id(db, snippet_id)
+def get_story(db: Session, story_id: int) -> Stories | None:
+    return repository.get_by_id(db, story_id)
 
-def get_all_snippets(db: Session) -> list[StoriesSnippets]:
+def get_all_stories(db: Session) -> list[Stories]:
     return repository.get_all(db)
 
-def create_snippet(db: Session, data: StorySnippetCreate) -> StoriesSnippets:
-    snippet = StoriesSnippets(**data.dict())
-    return repository.create(db, snippet)
+def create_story(db: Session, data: StoryCreate) -> Stories:
+    story = Stories(**data.dict())
+    return repository.create(db, story)
 
-def update_snippet(db: Session, snippet_id: int, updates: StorySnippetUpdate) -> StoriesSnippets | None:
-    snippet = repository.get_by_id(db, snippet_id)
-    if not snippet:
+def update_story(db: Session, story_id: int, updates: StoryUpdate) -> Stories | None:
+    story = repository.get_by_id(db, story_id)
+    if not story:
         return None
-    return repository.update(db, snippet, updates.dict(exclude_unset=True))
+    return repository.update(db, story, updates.dict(exclude_unset=True))
 
-def delete_snippet(db: Session, snippet_id: int) -> bool:
-    return repository.delete(db, snippet_id)
+def delete_story(db: Session, story_id: int) -> bool:
+    return repository.delete(db, story_id)

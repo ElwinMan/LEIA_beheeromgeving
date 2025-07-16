@@ -1,10 +1,10 @@
 from db.database import SessionLocal
-from models.tool_associations import BookmarksSnippets
+from models.tool_associations import Bookmarks
 from sqlalchemy.orm import Session
 
 def seed(db: Session):
     try:
-        bookmarks_snippets = [
+        bookmarks = [
             {
                 "title": "Heinenoordtunnel",
                 "description": "Bookmark set for Heinenoordtunnel",
@@ -22,11 +22,11 @@ def seed(db: Session):
                 ]
             }
         ]
-        for b in bookmarks_snippets:
-            if not db.query(BookmarksSnippets).filter_by(title=b["title"]).first():
-                db.add(BookmarksSnippets(**b))
+        for b in bookmarks:
+            if not db.query(Bookmarks).filter_by(title=b["title"]).first():
+                db.add(Bookmarks(**b))
         db.commit()
-        print("Bookmarks snippets seeded.")
+        print("Bookmarks seeded.")
     finally:
         db.close()
 
