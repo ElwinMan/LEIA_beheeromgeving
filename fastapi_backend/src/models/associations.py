@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, ForeignKey, Boolean, String
 from sqlalchemy.orm import relationship
 from db.database import Base
 
@@ -16,8 +16,10 @@ class DigitalTwinLayerAssociation(Base):
 
 class DigitalTwinToolAssociation(Base):
     __tablename__ = "digital_twin_tool_association"
-    digital_twin_id = Column(Integer, ForeignKey("digital_twin.id"), primary_key=True)
-    tool_id = Column(Integer, ForeignKey("tool.id"), primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    digital_twin_id = Column(Integer, ForeignKey("digital_twin.id"), nullable=False)
+    tool_id = Column(Integer, ForeignKey("tool.id"), nullable=False)
+    content_id = Column(Integer, nullable=True)
 
     digital_twin = relationship("DigitalTwin", back_populates="tool_associations")
     tool = relationship("Tool")

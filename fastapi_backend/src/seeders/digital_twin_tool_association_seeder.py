@@ -5,38 +5,18 @@ from models.associations import DigitalTwinToolAssociation
 from sqlalchemy.orm import Session
 
 def seed(db: Session):
-    # Map of digital twin names to the tool name they should be linked to
     connections = {
         "bodem": [
-            "layerlibrary", 
-            "layermanager",
-            "featureinfo",
-            "info",
-            "help",
-            "bookmarks",
-            "cesium",
-            "stories",
-            "measure",
-            "search",
-            "geocoder",
+            "layerlibrary", "layermanager", "featureinfo", "info", "help",
+            "bookmarks", "cesium", "stories", "measure", "search", "geocoder",
         ],
         "fier": [
-            "layerlibrary", 
-            "layermanager",
-            "featureinfo",
-            "info",
-            "help",
-            "bookmarks",
-            "cesium",
-            "stories",
-            "measure",
-            "search",
-            "geocoder",
+            "layerlibrary", "layermanager", "featureinfo", "info", "help",
+            "bookmarks", "cesium", "stories", "measure", "search", "geocoder",
         ]
     }
 
-    for twin_name in connections:
-        tool_names = connections.get(twin_name, [])
+    for twin_name, tool_names in connections.items():
         digital_twin = db.query(DigitalTwin).filter_by(name=twin_name).first()
         if not digital_twin:
             print(f"Digital twin '{twin_name}' not found!")
@@ -51,8 +31,9 @@ def seed(db: Session):
             assoc = DigitalTwinToolAssociation(
                 digital_twin_id=digital_twin.id,
                 tool_id=tool.id,
+                # content_type_id and content_id left as None for simple tools
             )
-            db.merge(assoc)
+            db.add(assoc)  # Use add, not merge
 
     db.commit()
     print("Digital Twin-Tool associations seeded.")

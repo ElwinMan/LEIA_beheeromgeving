@@ -15,13 +15,13 @@ def create_group(digital_twin_id: int, group_create: GroupCreate, db: Session) -
     return repo.insert_group(db, data)
 
 def update_group(digital_twin_id: int, group_id: int, group_update: GroupUpdate, db: Session) -> Group | None:
-    group = repo.get_group(db, group_id)
+    group = repo.get_group_by_id(db, group_id)
     if not group or group.digital_twin_id != digital_twin_id:
         return None
     return repo.update_group(db, group, group_update.dict(exclude_unset=True))
 
 def delete_group(digital_twin_id: int, group_id: int, db: Session) -> bool:
-    group = repo.get_group(db, group_id)
+    group = repo.get_group_by_id(db, group_id)
     if not group or group.digital_twin_id != digital_twin_id:
         return False
     repo.delete_group(db, group)

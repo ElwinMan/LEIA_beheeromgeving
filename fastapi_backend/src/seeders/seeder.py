@@ -8,6 +8,10 @@ from .layer_seeder import seed as seed_layer
 from .group_seeder import seed as seed_group
 from .digital_twin_layer_association_seeder import seed as seed_digital_twin_layer_association
 from .tool_seeder import seed as seed_tool
+from .bookmark_seeder import seed as seed_bookmark
+from .cesium_seeder import seed as seed_cesium
+from .project_seeder import seed as seed_project
+from .story_seeder import seed as seed_story
 from .digital_twin_tool_association_seeder import seed as seed_digital_twin_tool_association
 from db.database import get_db
 
@@ -41,6 +45,15 @@ def main():
 
         seed_tool(db)
         print("Seeded tools.")
+
+        seed_bookmark(db)
+        print("Seeded bookmarks.")
+        seed_cesium(db)
+        print("Seeded cesiums.")
+        seed_story(db)
+        print("Seeded stories.")
+        seed_project(db)
+        print("Seeded projects.")
 
         seed_digital_twin_tool_association(db)
         print("Seeded digital twin-tool associations.")
