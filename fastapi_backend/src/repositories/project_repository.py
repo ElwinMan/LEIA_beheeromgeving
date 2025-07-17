@@ -1,19 +1,19 @@
 from sqlalchemy.orm import Session
-from models.tool_associations import Projects
+from models.tool_associations import Project
 
 def get_by_id(db: Session, project_id: int):
-    return db.query(Projects).filter_by(id=project_id).first()
+    return db.query(Project).filter_by(id=project_id).first()
 
 def get_all(db: Session):
-    return db.query(Projects).all()
+    return db.query(Project).all()
 
-def create(db: Session, project: Projects):
+def create(db: Session, project: Project):
     db.add(project)
     db.commit()
     db.refresh(project)
     return project
 
-def update(db: Session, project: Projects, updates: dict):
+def update(db: Session, project: Project, updates: dict):
     for key, value in updates.items():
         setattr(project, key, value)
     db.commit()
@@ -21,7 +21,7 @@ def update(db: Session, project: Projects, updates: dict):
     return project
 
 def delete(db: Session, project_id: int):
-    project = db.query(Projects).filter_by(id=project_id).first()
+    project = db.query(Project).filter_by(id=project_id).first()
     if project:
         db.delete(project)
         db.commit()

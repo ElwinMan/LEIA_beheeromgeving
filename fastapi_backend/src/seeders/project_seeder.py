@@ -1,5 +1,5 @@
 from db.database import SessionLocal
-from models.tool_associations import Projects
+from models.tool_associations import Project
 from sqlalchemy.orm import Session
 
 def seed(db: Session):
@@ -32,8 +32,8 @@ def seed(db: Session):
             }
         ]
         for p in projects:
-            if not db.query(Projects).filter_by(name=p["name"]).first():
-                db.add(Projects(**p))
+            if not db.query(Project).filter_by(name=p["name"]).first():
+                db.add(Project(**p))
         db.commit()
         print("Projects seeded.")
     finally:

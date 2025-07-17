@@ -9,7 +9,7 @@ from .group_seeder import seed as seed_group
 from .digital_twin_layer_association_seeder import seed as seed_digital_twin_layer_association
 from .tool_seeder import seed as seed_tool
 from .bookmark_seeder import seed as seed_bookmark
-from .cesium_seeder import seed as seed_cesium
+from .terrain_provider_seeder import seed as seed_terrain_provider
 from .project_seeder import seed as seed_project
 from .story_seeder import seed as seed_story
 from .digital_twin_tool_association_seeder import seed as seed_digital_twin_tool_association
@@ -48,8 +48,8 @@ def main():
 
         seed_bookmark(db)
         print("Seeded bookmarks.")
-        seed_cesium(db)
-        print("Seeded cesiums.")
+        seed_terrain_provider(db)
+        print("Seeded terrain providers.")
         seed_story(db)
         print("Seeded stories.")
         seed_project(db)

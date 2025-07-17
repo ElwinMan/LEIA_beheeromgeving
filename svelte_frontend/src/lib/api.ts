@@ -428,45 +428,45 @@ export async function deleteStory(id: string) {
   return true;
 }
 
-// --- Cesium ---
-export async function fetchCesiums(fetchFn?: typeof fetch) {
+// --- Terrain Provider ---
+export async function fetchTerrainProviders(fetchFn?: typeof fetch) {
   const _fetch = fetchFn ?? fetch;
-  const res = await _fetch(`${API_BASE}/cesiums`);
-  if (!res.ok) throw new Error('Failed to fetch cesium ');
+  const res = await _fetch(`${API_BASE}/terrain-providers`);
+  if (!res.ok) throw new Error('Failed to fetch terrain provider ');
   return await res.json();
 }
 
-export async function fetchCesium(id: string, fetchFn?: typeof fetch) {
+export async function fetchTerrainProvider(id: string, fetchFn?: typeof fetch) {
   const _fetch = fetchFn ?? fetch;
-  const res = await _fetch(`${API_BASE}/cesium/${id}`);
-  if (!res.ok) throw new Error(`Failed to fetch cesium with ID ${id}`);
+  const res = await _fetch(`${API_BASE}/terrain_-roviders/${id}`);
+  if (!res.ok) throw new Error(`Failed to fetch terrain provider with ID ${id}`);
   return await res.json();
 }
 
-export async function createCesium(data: any) {
-  const res = await fetch(`${API_BASE}/cesium`, {
+export async function createTerrainProvider(data: any) {
+  const res = await fetch(`${API_BASE}/terrain-providers`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
-  if (!res.ok) throw new Error('Failed to create cesium');
+  if (!res.ok) throw new Error('Failed to create terrain provider');
   return await res.json();
 }
 
-export async function updateCesium(id: string, data: any) {
-  const res = await fetch(`${API_BASE}/cesium/${id}`, {
+export async function updateTerrainProvider(id: string, data: any) {
+  const res = await fetch(`${API_BASE}/terrain-providers/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
-  if (!res.ok) throw new Error(`Failed to update cesium with ID ${id}`);
+  if (!res.ok) throw new Error(`Failed to update terrain provider with ID ${id}`);
   return await res.json();
 }
 
-export async function deleteCesium(id: string) {
-  const res = await fetch(`${API_BASE}/cesium/${id}`, {
+export async function deleteTerrainProvider(id: string) {
+  const res = await fetch(`${API_BASE}/terrain-providers/${id}`, {
     method: 'DELETE'
   });
-  if (!res.ok) throw new Error(`Failed to delete cesium with ID ${id}`);
+  if (!res.ok) throw new Error(`Failed to delete terrain provider with ID ${id}`);
   return true;
 }

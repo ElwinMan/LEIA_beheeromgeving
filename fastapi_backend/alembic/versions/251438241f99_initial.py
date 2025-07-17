@@ -1,8 +1,8 @@
-"""Initial
+"""initial
 
-Revision ID: 11cc8f717c1b
+Revision ID: 251438241f99
 Revises: 
-Create Date: 2025-07-16 16:35:30.953108
+Create Date: 2025-07-17 11:53:43.870117
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '11cc8f717c1b'
+revision: str = '251438241f99'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -25,13 +25,6 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('title', sa.String(length=255), nullable=False),
     sa.Column('description', sa.String(length=255), nullable=True),
-    sa.Column('content', sa.JSON(), nullable=True),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_table('cesiums',
-    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('url', sa.String(length=255), nullable=False),
-    sa.Column('vertexNormals', sa.String(length=255), nullable=True),
     sa.Column('content', sa.JSON(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
@@ -71,6 +64,13 @@ def upgrade() -> None:
     sa.Column('name', sa.String(length=255), nullable=False),
     sa.Column('description', sa.String(length=255), nullable=True),
     sa.Column('content', sa.JSON(), nullable=True),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('terrain_providers',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('title', sa.String(length=255), nullable=False),
+    sa.Column('url', sa.String(length=255), nullable=False),
+    sa.Column('vertexNormals', sa.Boolean(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('tool',
@@ -146,12 +146,12 @@ def downgrade() -> None:
     op.drop_table('users')
     op.drop_index(op.f('ix_tool_id'), table_name='tool')
     op.drop_table('tool')
+    op.drop_table('terrain_providers')
     op.drop_table('stories')
     op.drop_table('projects')
     op.drop_index(op.f('ix_layer_id'), table_name='layer')
     op.drop_table('layer')
     op.drop_index(op.f('ix_digital_twin_id'), table_name='digital_twin')
     op.drop_table('digital_twin')
-    op.drop_table('cesiums')
     op.drop_table('bookmarks')
     # ### end Alembic commands ###

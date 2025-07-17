@@ -1,5 +1,5 @@
 from db.database import SessionLocal
-from models.tool_associations import Bookmarks
+from models.tool_associations import Bookmark
 from sqlalchemy.orm import Session
 
 def seed(db: Session):
@@ -23,8 +23,8 @@ def seed(db: Session):
             }
         ]
         for b in bookmarks:
-            if not db.query(Bookmarks).filter_by(title=b["title"]).first():
-                db.add(Bookmarks(**b))
+            if not db.query(Bookmark).filter_by(title=b["title"]).first():
+                db.add(Bookmark(**b))
         db.commit()
         print("Bookmarks seeded.")
     finally:

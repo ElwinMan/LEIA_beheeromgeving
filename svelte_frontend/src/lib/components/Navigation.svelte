@@ -17,7 +17,7 @@
       children: [
         { href: '/tools/projects', label: 'Projects' },
         { href: '/tools/bookmarks', label: 'Bookmarks' },
-        { href: '/tools/cesium', label: 'Cesium' },
+        { href: '/tools/terrain-providers', label: 'Terrain Providers' },
         { href: '/tools/stories', label: 'Stories' }
       ]
     }

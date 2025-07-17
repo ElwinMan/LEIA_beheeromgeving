@@ -1,19 +1,19 @@
 from sqlalchemy.orm import Session
-from models.tool_associations import Stories
+from models.tool_associations import Story
 
 def get_by_id(db: Session, story_id: int):
-    return db.query(Stories).filter_by(id=story_id).first()
+    return db.query(Story).filter_by(id=story_id).first()
 
 def get_all(db: Session):
-    return db.query(Stories).all()
+    return db.query(Story).all()
 
-def create(db: Session, story: Stories):
+def create(db: Session, story: Story):
     db.add(story)
     db.commit()
     db.refresh(story)
     return story
 
-def update(db: Session, story: Stories, updates: dict):
+def update(db: Session, story: Story, updates: dict):
     for key, value in updates.items():
         setattr(story, key, value)
     db.commit()
@@ -21,7 +21,7 @@ def update(db: Session, story: Stories, updates: dict):
     return story
 
 def delete(db: Session, story_id: int):
-    story = db.query(Stories).filter_by(id=story_id).first()
+    story = db.query(Story).filter_by(id=story_id).first()
     if story:
         db.delete(story)
         db.commit()

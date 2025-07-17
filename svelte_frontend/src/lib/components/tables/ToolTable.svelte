@@ -40,7 +40,8 @@
         </tbody>
       </table>
 
-      <!-- Extra ruimte voor dropdowns -->
+      <!-- Add padding at the bottom for dropdown space -->
+      <!-- Temp fix till dropdown fix for absolute position -->
       <div class="h-32"></div>
 
       {#if tools.length === 0}

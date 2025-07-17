@@ -84,6 +84,9 @@ def seed(db: Session):
         Tool(
             name="geocoder"
         ),
+        Tool(
+            name="projects"
+        ),
     ]
 
     for tool in tools:

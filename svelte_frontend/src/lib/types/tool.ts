@@ -20,12 +20,12 @@ export interface Project {
   content?: any;
 }
 
-// Cesium
-export interface Cesium {
+// Terrain Provider
+export interface TerrainProvider {
   id: number;
+  title: string;
   url: string;
   vertexNormals?: string;
-  content?: any;
 }
 
 // Story

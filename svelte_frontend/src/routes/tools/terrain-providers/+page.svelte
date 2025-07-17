@@ -1,10 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import CesiumTable from '$lib/components/tables/CesiumTable.svelte';
-  import type { Cesium } from '$lib/types/tool';
+  import TerrainProviderTable from '$lib/components/tables/TerrainProviderTable.svelte';
+  import type { TerrainProvider } from '$lib/types/tool';
 
   interface Data {
-    cesiums: Cesium[];
+    terrain_providers: TerrainProvider[];
     error: string | null;
   }
 
@@ -19,13 +19,13 @@
 </script>
 
 <svelte:head>
-  <title>LEIA Beheeromgeving – Cesium</title>
+  <title>LEIA Beheeromgeving – TerrainProvider</title>
 </svelte:head>
 
 <div class="space-y-6">
   <div>
-    <h1 class="text-3xl font-bold">Cesium</h1>
-    <p class="text-base-content/70 mt-2">Beheer en bekijk alle Cesiums</p>
+    <h1 class="text-3xl font-bold">TerrainProvider</h1>
+    <p class="text-base-content/70 mt-2">Beheer en bekijk alle terrain providers</p>
   </div>
 
   {#if isLoading}
@@ -38,6 +38,6 @@
       <span>{data.error}</span>
     </div>
   {:else}
-    <CesiumTable cesiums={data.cesiums} />
+    <TerrainProviderTable terrain_providers={data.terrain_providers} />
   {/if}
 </div>
