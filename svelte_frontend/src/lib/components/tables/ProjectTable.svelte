@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Project } from "$lib/types/tool";
-  import ProjectModal from "$lib/components/modals/ProjectModal.svelte";
+  import UpdateProjectModal from "$lib/components/modals/UpdateProjectModal.svelte";
   import { deleteProject } from "$lib/api";
 
   export let projects: Project[] = [];
@@ -33,7 +33,7 @@
   }
 </script>
 
-<ProjectModal bind:this={modalComponent} on:updated={handleUpdated} />
+<UpdateProjectModal bind:this={modalComponent} on:updated={handleUpdated} />
 
 <div class="card bg-base-100 shadow-xl">
   <div class="card-body p-0">

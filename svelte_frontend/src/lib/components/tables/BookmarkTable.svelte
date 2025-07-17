@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Bookmark } from "$lib/types/tool";
-  import BookmarkModal from "$lib/components/modals/BookmarkModal.svelte";
+  import UpdateBookmarkModal from "$lib/components/modals/UpdateBookmarkModal.svelte";
   import { deleteBookmark } from "$lib/api";
 
   export let bookmarks: Bookmark[] = [];
@@ -33,7 +33,7 @@
   }
 </script>
 
-<BookmarkModal bind:this={modalComponent} on:updated={handleUpdated} />
+<UpdateBookmarkModal bind:this={modalComponent} on:updated={handleUpdated} />
 
 <div class="card bg-base-100 shadow-xl">
   <div class="card-body p-0">

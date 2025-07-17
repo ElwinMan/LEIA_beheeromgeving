@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { TerrainProvider } from "$lib/types/tool";
-  import TerrainProviderModal from "$lib/components/modals/TerrainProviderModal.svelte";
+  import UpdateTerrainProviderModal from "$lib/components/modals/UpdateTerrainProviderModal.svelte";
   import { deleteTerrainProvider } from "$lib/api";
 
   export let terrain_providers: TerrainProvider[] = [];
@@ -33,7 +33,7 @@
   }
 </script>
 
-<TerrainProviderModal bind:this={modalComponent} on:updated={handleUpdated} />
+<UpdateTerrainProviderModal bind:this={modalComponent} on:updated={handleUpdated} />
 
 <div class="card bg-base-100 shadow-xl">
   <div class="card-body p-0">

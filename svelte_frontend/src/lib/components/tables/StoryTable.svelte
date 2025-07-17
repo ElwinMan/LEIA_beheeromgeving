@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Story } from '$lib/types/tool';
-  import StoryModal from '$lib/components/modals/StoryModal.svelte';
+  import UpdateStoryModal from '$lib/components/modals/UpdateStoryModal.svelte';
   import { deleteStory } from '$lib/api';
 
   export let stories: Story[] = [];
@@ -33,7 +33,7 @@
   }
 </script>
 
-<StoryModal bind:this={modalComponent} on:updated={handleUpdated} />
+<UpdateStoryModal bind:this={modalComponent} on:updated={handleUpdated} />
 
 <div class="card bg-base-100 shadow-xl">
   <div class="card-body p-0">

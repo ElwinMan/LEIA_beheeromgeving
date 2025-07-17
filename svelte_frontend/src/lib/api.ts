@@ -90,20 +90,6 @@ export async function fetchGroups(digitalTwinId: string) {
   return await res.json();
 }
 
-export async function fetchTools(fetchFn?: typeof fetch) {
-  const _fetch = fetchFn ?? fetch;
-  const res = await _fetch(`${API_BASE}/tools`);
-  if (!res.ok) throw new Error('Failed to fetch tools');
-  return await res.json();
-}
-
-export async function fetchTool(id: string, fetchFn?: typeof fetch) {
-  const _fetch = fetchFn ?? fetch;
-  const res = await _fetch(`${API_BASE}/tools/${id}`);
-  if (!res.ok) throw new Error(`Failed to fetch tool with ID ${id}`);
-  return await res.json();
-}
-
 export async function bulkUpdateDigitalTwinAssociations(
   digitalTwinId: string,
   payload: BulkAssociationsPayload
@@ -297,6 +283,49 @@ export async function createLayer(data: {
 
 export function digitalTwinExport(digitalTwinId: number | string): string {
   return `${API_BASE}/digital-twins/${digitalTwinId}/export/download.json`;
+}
+
+// --- Tools ---
+export async function fetchTools(fetchFn?: typeof fetch) {
+  const _fetch = fetchFn ?? fetch;
+  const res = await _fetch(`${API_BASE}/tools`);
+  if (!res.ok) throw new Error('Failed to fetch tools');
+  return await res.json();
+}
+
+export async function fetchTool(id: string, fetchFn?: typeof fetch) {
+  const _fetch = fetchFn ?? fetch;
+  const res = await _fetch(`${API_BASE}/tools/${id}`);
+  if (!res.ok) throw new Error(`Failed to fetch tool with ID ${id}`);
+  return await res.json();
+}
+
+export async function createTool(data: any) {
+  const res = await fetch(`${API_BASE}/tools`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error('Failed to create tool');
+  return await res.json();
+}
+
+export async function updateTool(id: string, data: any) {
+  const res = await fetch(`${API_BASE}/tools/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error(`Failed to update tool with ID ${id}`);
+  return await res.json();
+}
+
+export async function deleteTool(id: string) {
+  const res = await fetch(`${API_BASE}/tools/${id}`, {
+    method: 'DELETE'
+  });
+  if (!res.ok) throw new Error(`Failed to delete tool with ID ${id}`);
+  return true;
 }
 
 // --- Bookmarks ---

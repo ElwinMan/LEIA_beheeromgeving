@@ -18,7 +18,7 @@
   import type { Layer } from '$lib/types/layer';
   import type { Group } from '$lib/types/group';
   import AlertBanner from '$lib/components/AlertBanner.svelte';
-  import GroupModal from '$lib/components/modals/GroupModal.svelte';
+  import GroupModal from '$lib/components/modals/CreateGroupModal.svelte';
   import DeleteModal from '$lib/components/modals/DeleteModal.svelte';
   import DeleteGroupModal from '$lib/components/modals/DeleteGroupModal.svelte';
 

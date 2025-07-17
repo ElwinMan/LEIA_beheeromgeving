@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { TerrainProvider } from '$lib/types/tool';
   import { createEventDispatcher } from 'svelte';
-  // You need to implement updateTerrainProvider in your api.ts
   import { updateTerrainProvider } from '$lib/api';
 
   export let terrainProvider: TerrainProvider | null = null;
