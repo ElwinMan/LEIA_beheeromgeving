@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import TerrainProviderTable from '$lib/components/tables/TerrainProviderTable.svelte';
+  import CreateTerrainProviderModal from '$lib/components/modals/CreateTerrainProviderModal.svelte';
+  import { fetchTerrainProviders } from '$lib/api';
   import type { TerrainProvider } from '$lib/types/tool';
 
   interface Data {
@@ -10,12 +12,20 @@
 
   let { data }: { data: Data } = $props();
   let isLoading = $state(true);
+  let createModal: CreateTerrainProviderModal;
 
-  onMount(() => {
-    setTimeout(() => {
+  async function reloadTerrainProviders() {
+    isLoading = true;
+    try {
+      data.terrain_providers = await fetchTerrainProviders();
+    } catch (e) {
+      data.error = 'Kon terrain providers niet laden';
+    } finally {
       isLoading = false;
-    }, 100);
-  });
+    }
+  }
+
+  onMount(reloadTerrainProviders);
 </script>
 
 <svelte:head>
@@ -23,10 +33,17 @@
 </svelte:head>
 
 <div class="space-y-6">
-  <div>
-    <h1 class="text-3xl font-bold">TerrainProvider</h1>
-    <p class="text-base-content/70 mt-2">Beheer en bekijk alle terrain providers</p>
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-3xl font-bold">TerrainProvider</h1>
+      <p class="text-base-content/70 mt-2">Beheer en bekijk alle terrain providers</p>
+    </div>
+    <button class="btn btn-primary" onclick={() => createModal.showModal()}>
+      Nieuwe TerrainProvider
+    </button>
   </div>
+
+  <CreateTerrainProviderModal bind:this={createModal} on:created={reloadTerrainProviders} />
 
   {#if isLoading}
     <div class="flex items-center justify-center py-12">

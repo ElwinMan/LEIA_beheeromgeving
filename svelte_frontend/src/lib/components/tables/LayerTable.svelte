@@ -3,6 +3,9 @@
   import type { Layer } from '$lib/types/layer';
   import { deleteLayer } from '$lib/api';
   import CreateLayerModal from '$lib/components/modals/CreateLayerModal.svelte';
+  import { createEventDispatcher } from 'svelte';
+
+  const dispatch = createEventDispatcher();
 
   export let layers: Layer[] = [];
   export let isBackgroundPage: boolean = false;
@@ -27,28 +30,20 @@
 
   function handleUpdated(event: CustomEvent<Layer>) {
     const updatedLayer = event.detail;
-
-    // Remove updated layer from table if it changed isBackground status
-    if (updatedLayer.isBackground !== isBackgroundPage) {
-      layers = layers.filter((layer) => layer.id !== updatedLayer.id);
-      return;
-    }
-
-    // Otherwise, update the layer
     const idx = layers.findIndex((layer) => layer.id === updatedLayer.id);
+    let newLayers = [...layers];
     if (idx > -1) {
-      layers[idx] = updatedLayer;
-      layers = [...layers];
-    } else {
-      layers = [...layers, updatedLayer];
+      newLayers[idx] = updatedLayer;
     }
+    dispatch('updateLayers', newLayers);
   }
 
   async function handleDelete(layerId: number) {
     if (confirm('Weet je zeker dat je deze layer wilt verwijderen?')) {
       try {
         await deleteLayer(layerId);
-        layers = layers.filter((layer) => layer.id !== layerId);
+        const newLayers = layers.filter((layer) => layer.id !== layerId);
+        dispatch('updateLayers', newLayers);
       } catch (err) {
         alert('Verwijderen mislukt. Controleer de server.');
         console.error(err);

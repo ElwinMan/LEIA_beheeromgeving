@@ -49,7 +49,7 @@
           {#each tools as tool}
             <tr class="hover">
               <td class="w-full text-sm font-bold">{tool.name || '-'}</td>
-              <td>
+              <td class="text-sm">
                 <details class="dropdown dropdown-end text-right">
                   <summary class="btn btn-sm btn-ghost">
                     Opties

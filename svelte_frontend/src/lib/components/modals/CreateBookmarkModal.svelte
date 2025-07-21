@@ -1,26 +1,31 @@
 <script lang="ts">
-  import type { Project } from '$lib/types/tool';
   import { createEventDispatcher } from 'svelte';
-  import { updateProject } from '$lib/api';
+  import { createBookmark } from '$lib/api';
+  import type { Bookmark } from '$lib/types/tool';
   import AlertBanner from '$lib/components/AlertBanner.svelte';
 
-  export let project: Project | null = null;
   let modalRef: HTMLDialogElement;
+  const dispatch = createEventDispatcher<{ created: Bookmark }>();
 
-  let name = '';
+  let title = '';
   let description = '';
   let content = '';
 
   let errorBanner: InstanceType<typeof AlertBanner> | null = null;
   let successBanner: InstanceType<typeof AlertBanner> | null = null;
 
-  const dispatch = createEventDispatcher();
+  const jsonPlaceholder = `{
+  "key": "value",
+  "anotherKey": 123,
+  "array": [
+    { "itemKey": "itemValue" }
+  ]
+}`;
 
-  export function showModal(p: Project) {
-    project = p;
-    name = p.name || '';
-    description = p.description || '';
-    content = p.content ? JSON.stringify(p.content, null, 2) : '';
+  export function showModal() {
+    title = '';
+    description = '';
+    content = '';
     errorBanner?.hide?.();
     successBanner?.hide?.();
     modalRef.showModal();
@@ -28,9 +33,8 @@
 
   async function handleSubmit(event: Event) {
     event.preventDefault();
-    if (!project) return;
 
-    let payload: any = { name, description };
+    let payload: any = { title, description };
     if (content && content.trim() !== '') {
       try {
         payload.content = JSON.parse(content);
@@ -41,14 +45,14 @@
     }
 
     try {
-      const updated = await updateProject(String(project.id), payload);
-      dispatch('updated', updated);
+      const newBookmark = await createBookmark(payload);
+      dispatch('created', newBookmark);
       successBanner?.show();
       modalRef.close();
       successBanner?.hide?.();
     } catch (error) {
       errorBanner?.show();
-      console.error('Update failed', error);
+      console.error('Bookmark creation failed', error);
     }
   }
 </script>
@@ -56,7 +60,7 @@
 <AlertBanner
   bind:this={successBanner}
   type="success"
-  message="Project succesvol bijgewerkt!"
+  message="Bookmark succesvol aangemaakt!"
 />
 
 <dialog bind:this={modalRef} class="modal">
@@ -66,14 +70,17 @@
     message="Content moet geldig JSON zijn!"
   />
 
-  <form on:submit|preventDefault={handleSubmit} class="modal-box grid w-full max-w-4xl grid-cols-4 items-center gap-4">
-    <h3 class="col-span-4 mb-4 text-lg font-bold">Project bewerken</h3>
+  <form
+    on:submit|preventDefault={handleSubmit}
+    class="modal-box grid w-full max-w-4xl grid-cols-4 items-center gap-4"
+  >
+    <h3 class="col-span-4 mb-4 text-lg font-bold">Nieuwe Bookmark Aanmaken</h3>
 
-    <label for="name" class="pr-4 text-right font-semibold">Naam:</label>
-    <input id="name" type="text" class="input input-bordered col-span-3 w-full" bind:value={name} required />
+    <label for="title" class="pr-4 text-right font-semibold">Titel:</label>
+    <input id="title" class="input input-bordered col-span-3 w-full" bind:value={title} required />
 
     <label for="description" class="pr-4 text-right font-semibold">Beschrijving:</label>
-    <input id="description" type="text" class="input input-bordered col-span-3 w-full" bind:value={description} />
+    <input id="description" class="input input-bordered col-span-3 w-full" bind:value={description} />
 
     <label for="content" class="pr-4 text-right font-semibold">Content (JSON):</label>
     <textarea
@@ -81,11 +88,12 @@
       class="textarea textarea-bordered col-span-3 w-full min-h-[12rem]"
       bind:value={content}
       rows="10"
+      placeholder={jsonPlaceholder}
     ></textarea>
 
     <div class="col-span-4 mt-6 flex justify-end gap-2">
       <button type="button" class="btn btn-ghost" on:click={() => modalRef.close()}>Annuleren</button>
-      <button type="submit" class="btn btn-primary">Opslaan</button>
+      <button type="submit" class="btn btn-primary">Aanmaken</button>
     </div>
   </form>
 </dialog>

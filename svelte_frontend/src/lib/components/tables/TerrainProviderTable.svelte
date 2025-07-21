@@ -50,9 +50,9 @@
         <tbody>
           {#each terrain_providers as terrain_provider}
             <tr>
-              <td>{terrain_provider.title}</td>
-              <td>{terrain_provider.url}</td>
-              <td>{terrain_provider.vertexNormals ? 'Ja' : 'Nee'}</td>
+              <td class="text-sm font-bold">{terrain_provider.title || '-'}</td>
+              <td class="text-sm">{terrain_provider.url || '-'}</td>
+              <td class="text-sm">{terrain_provider.vertexNormals ? 'Ja' : 'Nee'}</td>
               <td class="relative">
                 <details class="dropdown dropdown-end">
                   <summary class="btn btn-sm btn-ghost">

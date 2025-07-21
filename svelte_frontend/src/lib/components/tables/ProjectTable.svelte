@@ -49,9 +49,9 @@
         <tbody>
           {#each projects as project}
             <tr>
-              <td>{project.name}</td>
-              <td>{project.description}</td>
-              <td class="relative">
+              <td class="text-sm font-bold">{project.name}</td>
+              <td class="text-sm">{project.description}</td>
+              <td class="text-sm relative">
                 <details class="dropdown dropdown-end">
                   <summary class="btn btn-sm btn-ghost">
                     Opties

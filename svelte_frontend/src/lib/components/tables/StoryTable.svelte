@@ -49,9 +49,9 @@
         <tbody>
           {#each stories as story}
             <tr>
-              <td>{story.name}</td>
-              <td>{story.description}</td>
-              <td class="relative">
+              <td class="text-sm font-bold">{story.name}</td>
+              <td class="text-sm">{story.description}</td>
+              <td class="text-sm relative">
                 <details class="dropdown dropdown-end">
                   <summary class="btn btn-sm btn-ghost">
                     Opties

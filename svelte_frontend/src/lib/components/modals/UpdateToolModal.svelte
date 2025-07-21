@@ -14,7 +14,7 @@
   export function showModal(t: Tool) {
     tool = t;
     name = t.name || '';
-    content = t.content || '';
+    content = t.content ? JSON.stringify(t.content, null, 2) : '';
     modalRef.showModal();
   }
 
@@ -22,11 +22,18 @@
     event.preventDefault();
     if (!tool) return;
 
+    let payload: any = { name };
+    if (content && content.trim() !== '') {
+      try {
+        payload.content = JSON.parse(content);
+      } catch (e) {
+        alert('Content moet geldig JSON zijn!');
+        return;
+      }
+    }
+
     try {
-      const updated = await updateTool(String(tool.id), {
-        name,
-        content
-      });
+      const updated = await updateTool(String(tool.id), payload);
       dispatch('updated', updated);
       modalRef.close();
     } catch (error) {
@@ -43,7 +50,12 @@
     <input id="name" type="text" class="input input-bordered col-span-3 w-full" bind:value={name} required />
 
     <label for="content" class="pr-4 text-right font-semibold">Content:</label>
-    <textarea id="content" class="textarea textarea-bordered col-span-3 w-full" bind:value={content}></textarea>
+    <textarea
+      id="content"
+      class="textarea textarea-bordered col-span-3 w-full min-h-[12rem]"
+      bind:value={content}
+      rows="10"
+    ></textarea>
 
     <div class="col-span-4 mt-6 flex justify-end gap-2">
       <button type="button" class="btn btn-ghost" on:click={() => modalRef.close()}>Annuleren</button>

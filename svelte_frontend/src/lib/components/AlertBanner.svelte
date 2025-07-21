@@ -1,7 +1,7 @@
 <script lang="ts">
   export let type: 'success' | 'error' | 'info' = 'info';
   export let message = '';
-  export let duration = 3000;
+  export let duration = 4000;
 
   let visible = false;
 

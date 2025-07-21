@@ -52,5 +52,8 @@
 {:else if data.error}
   <div class="alert alert-error">...error display...</div>
 {:else}
-  <LayerTable {layers} {isBackgroundPage} />
+  <LayerTable
+    layers={layers}
+    on:updateLayers={event => layers = event.detail}
+  />
 {/if}

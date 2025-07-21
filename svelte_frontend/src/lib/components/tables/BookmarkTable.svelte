@@ -49,9 +49,9 @@
         <tbody>
           {#each bookmarks as bookmark}
             <tr>
-              <td>{bookmark.title}</td>
-              <td>{bookmark.description}</td>
-              <td class="relative">
+              <td class="text-sm font-bold">{bookmark.title}</td>
+              <td class="text-sm">{bookmark.description}</td>
+              <td class="text-sm relative">
                 <details class="dropdown dropdown-end">
                   <summary class="btn btn-sm btn-ghost">
                     Opties
