@@ -4,14 +4,20 @@
   import { deleteLayer } from '$lib/api';
   import CreateLayerModal from '$lib/components/modals/CreateLayerModal.svelte';
   import { createEventDispatcher } from 'svelte';
+  import { portal } from 'svelte-portal';
+  import { tick } from 'svelte';
 
   const dispatch = createEventDispatcher();
 
-  export let layers: Layer[] = [];
-  export let isBackgroundPage: boolean = false;
+  let { layers = [], isBackgroundPage = false } = $props();
 
   let modalComponent: any;
   let createModal: any;
+
+  let openIndex = $state<number | null>(null);
+  let summaryRefs = $state<Array<HTMLElement | null>>([]);
+  let dropdownLeft = $state(0);
+  let dropdownTop = $state(0);
 
   function handleOpenModal(layer: Layer) {
     modalComponent.showModal(layer);
@@ -50,6 +56,31 @@
       }
     }
   }
+
+  function handleSummaryClick(idx: number) {
+    if (openIndex === idx) {
+      openIndex = null;
+      window.removeEventListener('mousedown', handleClickOutside);
+      return;
+    }
+    openIndex = idx;
+    tick().then(() => {
+      const ref = summaryRefs[idx];
+      if (ref) {
+        const rect = ref.getBoundingClientRect();
+        dropdownLeft = rect.right - 208; // 208px for w-52
+        dropdownTop = rect.bottom;
+        window.addEventListener('mousedown', handleClickOutside);
+      }
+    });
+  }
+
+  function handleClickOutside(event: MouseEvent) {
+    if (!event.target || !(event.target as HTMLElement).closest('.dropdown-content')) {
+      openIndex = null;
+      window.removeEventListener('mousedown', handleClickOutside);
+    }
+  }
 </script>
 
 <CreateLayerModal bind:this={createModal} on:created={handleCreated} />
@@ -69,40 +100,47 @@
           </tr>
         </thead>
         <tbody>
-          {#each layers as layer}
+          {#each layers as layer, idx}
             <tr class="hover">
               <td class="text-sm font-bold">{layer.title || '-'}</td>
               <td class="text-sm">{layer.type || '-'}</td>
               <td class="text-sm">{truncate(layer.url, 30) || '-'}</td>
               <td class="text-sm">{layer.featureName || '-'}</td>
-              <td class="relative">
-                <details class="dropdown dropdown-end">
-                  <summary class="btn btn-sm btn-ghost">
+              <td>
+                <div class="dropdown dropdown-end">
+                  <button
+                    bind:this={summaryRefs[idx]}
+                    type="button"
+                    class="btn btn-sm btn-ghost"
+                    onclick={() => handleSummaryClick(idx)}
+                  >
                     Opties
                     <img src="/icons/chevron-down.svg" alt="Chevron Down" class="ml-1 h-4 w-4" />
-                  </summary>
-                  <ul class="menu dropdown-content bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
-                    <li>
-                      <button on:click={() => handleOpenModal(layer)} class="flex items-center gap-2">
-                        Bewerken
-                      </button>
-                    </li>
-                    <li>
-                      <button on:click={() => handleDelete(layer.id)} class="flex items-center gap-2 text-error">
-                        Verwijderen
-                      </button>
-                    </li>
-                  </ul>
-                </details>
+                  </button>
+                  {#if openIndex === idx}
+                    <ul
+                      use:portal={'body'}
+                      class="dropdown-content menu bg-base-100 rounded-box z-[1000] w-52 p-2 shadow"
+                      style="position: absolute; left: {dropdownLeft}px; top: {dropdownTop}px;"
+                    >
+                      <li>
+                        <button onclick={() => { handleOpenModal(layer); openIndex = null; }} class="flex items-center gap-2">
+                          Bewerken
+                        </button>
+                      </li>
+                      <li>
+                        <button onclick={() => { handleDelete(layer.id); openIndex = null; }} class="flex items-center gap-2 text-error">
+                          Verwijderen
+                        </button>
+                      </li>
+                    </ul>
+                  {/if}
+                </div>
               </td>
             </tr>
           {/each}
         </tbody>
       </table>
-
-      <!-- Add padding at the bottom for dropdown space -->
-      <!-- Temp fix till dropdown fix for absolute position -->
-      <div class="h-32"></div>
 
       {#if layers.length === 0}
         <div class="py-12 text-center">

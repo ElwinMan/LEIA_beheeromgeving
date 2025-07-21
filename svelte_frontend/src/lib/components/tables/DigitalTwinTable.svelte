@@ -1,5 +1,38 @@
 <script lang="ts">
+  import { tick } from 'svelte';
+  import { portal } from 'svelte-portal';
+
   let { digitalTwins = [] } = $props();
+
+  let openIndex = $state<number | null>(null);
+  let summaryRefs = $state<Array<HTMLElement | null>>([]);
+  let dropdownLeft = $state(0);
+  let dropdownTop = $state(0);
+
+  function handleSummaryClick(idx: number) {
+    if (openIndex === idx) {
+      openIndex = null;
+      window.removeEventListener('mousedown', handleClickOutside);
+      return;
+    }
+    openIndex = idx;
+    tick().then(() => {
+      const ref = summaryRefs[idx];
+      if (ref) {
+        const rect = ref.getBoundingClientRect();
+        dropdownLeft = rect.right - 208; // 208px for w-52
+        dropdownTop = rect.bottom;
+        window.addEventListener('mousedown', handleClickOutside);
+      }
+    });
+  }
+
+  function handleClickOutside(event: MouseEvent) {
+    if (!event.target || !(event.target as HTMLElement).closest('.dropdown-content')) {
+      openIndex = null;
+      window.removeEventListener('mousedown', handleClickOutside);
+    }
+  }
 </script>
 
 <div class="card bg-base-100 shadow-xl">
@@ -17,7 +50,7 @@
           </tr>
         </thead>
         <tbody>
-          {#each digitalTwins as twin}
+          {#each digitalTwins as twin, idx}
             <tr class="hover">
               <td class="sticky left-0 z-10">
                 <div>
@@ -30,40 +63,52 @@
               <td class="text-sm">{twin.private || '-'}</td>
               <td class="text-sm">{twin.last_updated || '-'}</td>
               <td>
-                <details class="dropdown dropdown-end">
-                  <summary class="btn btn-sm btn-ghost">
+                <div class="dropdown dropdown-end">
+                  <button
+                    bind:this={summaryRefs[idx]}
+                    type="button"
+                    class="btn btn-sm btn-ghost"
+                    onclick={() => handleSummaryClick(idx)}
+                  >
                     Opties
                     <img src="/icons/chevron-down.svg" alt="Chevron Down" class="ml-1 h-4 w-4" />
-                  </summary>
-                  <ul class="menu dropdown-content bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
-                    <li>
-                      <a
-                        href={`https://virtueel.zeeland.nl/${twin.name}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="flex items-center gap-2"
-                      >
-                        <img src="/icons/external-link.svg" alt="Open" class="h-4 w-4" />
-                        Bekijk kaart
-                      </a>
-                    </li>
-                    <li>
-                      <a href={`/digital-twins/${twin.id}`} class="flex items-center gap-2">
-                        <img src="/icons/settings.svg" alt="Settings" class="h-4 w-4" />
-                        Digital Twin Configuratie
-                      </a>
-                    </li>
-                  </ul>
-                </details>
+                  </button>
+                  {#if openIndex === idx}
+                    <ul
+                      use:portal={'body'}
+                      class="dropdown-content menu bg-base-100 rounded-box z-[1000] w-52 p-2 shadow"
+                      style="position: absolute; left: {dropdownLeft}px; top: {dropdownTop}px;"
+                    >
+                      <li>
+                        <a
+                          href={`https://virtueel.zeeland.nl/${twin.name}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="flex items-center gap-2"
+                          onclick={() => openIndex = null}
+                        >
+                          <img src="/icons/external-link.svg" alt="Open" class="h-4 w-4" />
+                          Bekijk kaart
+                        </a>
+                      </li>
+                      <li>
+                        <a
+                          href={`/digital-twins/${twin.id}`}
+                          class="flex items-center gap-2"
+                          onclick={() => openIndex = null}
+                        >
+                          <img src="/icons/settings.svg" alt="Settings" class="h-4 w-4" />
+                          Digital Twin Configuratie
+                        </a>
+                      </li>
+                    </ul>
+                  {/if}
+                </div>
               </td>
             </tr>
           {/each}
         </tbody>
       </table>
-
-      <!-- Add padding at the bottom for dropdown space -->
-      <!-- Temp fix till dropdown fix for absolute position -->
-      <div class="h-32"></div>
 
       {#if digitalTwins.length === 0}
         <div class="py-12 text-center">
