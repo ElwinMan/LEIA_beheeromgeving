@@ -1149,7 +1149,7 @@
                 ondragstart={(e) => handleCatalogDragStart(e, layer)}
                 role="listitem"
               >
-                <img src="/icons/file.svg" alt="Laag" class="h-4 w-4 flex-shrink-0 text-purple-600" />
+                <img src="/icons/file-catalog.svg" alt="Laag" class="h-4 w-4 flex-shrink-0" />
                 <div class="min-w-0 flex-1">
                   <div class="truncate font-medium">{layer.title}</div>
                   {#if layer.type}
@@ -1268,7 +1268,7 @@
                         role="listitem"
                       >
                         <img src="/icons/grip-vertical.svg" alt="Grip" class="text-base-content/30 h-4 w-4 flex-shrink-0" />
-                        <img src="/icons/file.svg" alt="Laag" class="h-4 w-4 flex-shrink-0 text-blue-600" />
+                        <img src="/icons/file-ungrouped.svg" alt="Laag" class="h-4 w-4 flex-shrink-0" />
                         <span class="flex-1">
                           <span class="font-medium">{layer.title}</span>
                           {#if layer.is_default}
@@ -1474,7 +1474,7 @@
                 role="listitem"
               >
                 <img src="/icons/grip-vertical.svg" alt="Grip" class="text-base-content/30 h-4 w-4 flex-shrink-0" />
-                <img src="/icons/file.svg" alt="File" class="h-4 w-4 flex-shrink-0 text-green-600" />
+                <img src="/icons/file-grouped.svg" alt="File" class="h-4 w-4 flex-shrink-0" />
                 <span class="flex-1">
                   <span class="font-medium">{layer.title}</span>
                   {#if layer.is_default}

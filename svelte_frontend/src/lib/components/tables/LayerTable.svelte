@@ -1,11 +1,12 @@
 <script lang="ts">
   import LayerModal from '$lib/components/modals/UpdateLayerModal.svelte';
   import type { Layer } from '$lib/types/layer';
-  import { deleteLayer } from '$lib/api';
+  import { deleteLayer, fetchDigitalTwinsForLayer } from '$lib/api';
   import CreateLayerModal from '$lib/components/modals/CreateLayerModal.svelte';
   import { createEventDispatcher } from 'svelte';
   import { portal } from 'svelte-portal';
   import { tick } from 'svelte';
+  import ShowLayerUsageModal from '../modals/ShowLayerUsageModal.svelte';
 
   const dispatch = createEventDispatcher();
 
@@ -13,11 +14,14 @@
 
   let modalComponent: any;
   let createModal: any;
+  let digitalTwinsModal: any;
 
   let openIndex = $state<number | null>(null);
   let summaryRefs = $state<Array<HTMLElement | null>>([]);
   let dropdownLeft = $state(0);
   let dropdownTop = $state(0);
+  let digitalTwinsForLayer = $state<Array<{ id: number; name: string; title: string }>>([]);
+  let selectedLayerTitle = $state('');
 
   function handleOpenModal(layer: Layer) {
     modalComponent.showModal(layer);
@@ -81,10 +85,22 @@
       window.removeEventListener('mousedown', handleClickOutside);
     }
   }
+
+  async function showLayerUsageModal(layerId: number) {
+    selectedLayerTitle = layers.find((l) => l.id === layerId)?.title || '';
+    // Fetch digital twins for this layer from your API
+    digitalTwinsForLayer = await fetchDigitalTwinsForLayer(layerId);
+    digitalTwinsModal.showModal();
+  }
 </script>
 
 <CreateLayerModal bind:this={createModal} on:created={handleCreated} />
 <LayerModal bind:this={modalComponent} on:updated={handleUpdated} />
+<ShowLayerUsageModal
+  bind:this={digitalTwinsModal}
+  {digitalTwinsForLayer}
+  {selectedLayerTitle}
+/>
 
 <div class="card bg-base-100 shadow-xl">
   <div class="card-body p-0">
@@ -125,11 +141,19 @@
                     >
                       <li>
                         <button onclick={() => { handleOpenModal(layer); openIndex = null; }} class="flex items-center gap-2">
+                          <img src="/icons/settings.svg" alt="Settings" class="h-4 w-4" />
                           Bewerken
                         </button>
                       </li>
                       <li>
+                        <button onclick={() => showLayerUsageModal(layer.id)} class="flex items-center gap-2">
+                          <img src="/icons/link.svg" alt="Digital Twins" class="h-4 w-4" />
+                          Gebruikt door Digital Twins
+                        </button>
+                      </li>
+                      <li>
                         <button onclick={() => { handleDelete(layer.id); openIndex = null; }} class="flex items-center gap-2 text-error">
+                          <img src="/icons/trash-2.svg" alt="Settings" class="h-4 w-4" />
                           Verwijderen
                         </button>
                       </li>

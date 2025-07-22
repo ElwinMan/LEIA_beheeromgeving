@@ -45,3 +45,12 @@ class DigitalTwinResponse(DigitalTwinBase):
 class BulkAssociationsPayload(BaseModel):
     layer_payload: DigitalTwinLayerBulkOperation
     group_payload: DigitalTwinGroupBulkOperation
+
+class DigitalTwinSummary(BaseModel):
+    id: int
+    name: str
+    title: str
+
+    class Config:
+        orm_mode = True
+

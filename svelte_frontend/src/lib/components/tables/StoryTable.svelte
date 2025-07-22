@@ -107,11 +107,13 @@
                     >
                       <li>
                         <button onclick={() => { handleOpenModal(story); openIndex = null; }} class="flex items-center gap-2">
+                          <img src="/icons/settings.svg" alt="Settings" class="h-4 w-4" />
                           Bewerken
                         </button>
                       </li>
                       <li>
                         <button class="text-error" onclick={() => { handleDelete(story.id); openIndex = null; }}>
+                          <img src="/icons/trash-2.svg" alt="Settings" class="h-4 w-4" />
                           Verwijderen
                         </button>
                       </li>

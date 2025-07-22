@@ -1,5 +1,7 @@
 from sqlalchemy.orm import Session
 from models.layer import Layer
+from models.associations import DigitalTwinLayerAssociation
+from models.digital_twin import DigitalTwin
 from typing import Dict, Any
 
 def get_layer_by_id(db: Session, layer_id: int):
@@ -27,3 +29,11 @@ def update_layer(db: Session, layer: Layer, updates: dict):
 def delete_layer(db: Session, layer: Layer):
     db.delete(layer)
     db.commit()
+
+def get_digital_twins_for_layer(db: Session, layer_id: int):
+    associations = db.query(DigitalTwinLayerAssociation).filter_by(layer_id=layer_id).all()
+    twin_ids = [assoc.digital_twin_id for assoc in associations]
+    if not twin_ids:
+        return []
+    twins = db.query(DigitalTwin).filter(DigitalTwin.id.in_(twin_ids)).all()
+    return twins

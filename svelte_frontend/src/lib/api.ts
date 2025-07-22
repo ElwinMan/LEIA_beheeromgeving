@@ -499,3 +499,9 @@ export async function deleteTerrainProvider(id: string) {
   if (!res.ok) throw new Error(`Failed to delete terrain provider with ID ${id}`);
   return true;
 }
+
+export async function fetchDigitalTwinsForLayer(layerId: number): Promise<Array<{ id: number; name: string; title: string }>> {
+  const res = await fetch(`${API_BASE}/layers/${layerId}/digital-twins`);
+  if (!res.ok) return [];
+  return await res.json();
+}

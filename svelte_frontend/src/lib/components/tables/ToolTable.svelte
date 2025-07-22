@@ -111,6 +111,7 @@
                       </li>
                       <li>
                         <button class="text-error" onclick={() => { handleDelete(tool.id); openIndex = null; }}>
+                          <img src="/icons/trash-2.svg" alt="Settings" class="h-4 w-4" />
                           Verwijderen
                         </button>
                       </li>

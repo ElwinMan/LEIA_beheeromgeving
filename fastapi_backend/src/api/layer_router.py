@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from db.database import get_db
 from schemas.layer_schema import LayerCreate, LayerUpdate, LayerResponse
+from schemas.digital_twin_schema import DigitalTwinSummary
 import services.layer_service as service
 
 router = APIRouter(prefix="/layers", tags=["Layers"])
@@ -37,3 +38,8 @@ def delete_layer(layer_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Layer not found")
 
     service.delete_layer(existing_layer, db)
+
+@router.get("/{layer_id}/digital-twins", response_model=list[DigitalTwinSummary])
+def get_digital_twins_for_layer(layer_id: int, db: Session = Depends(get_db)):
+    twins = service.get_digital_twins_for_layer(layer_id, db)
+    return twins

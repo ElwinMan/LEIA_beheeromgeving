@@ -18,3 +18,6 @@ def update_layer(existing_layer, layer_update: LayerUpdate, db: Session):
 
 def delete_layer(existing_layer, db: Session):
     repo.delete_layer(db, existing_layer)
+
+def get_digital_twins_for_layer(layer_id: int, db: Session):
+    return repo.get_digital_twins_for_layer(db, layer_id)
