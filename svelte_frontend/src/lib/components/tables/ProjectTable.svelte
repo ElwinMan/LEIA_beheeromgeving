@@ -55,7 +55,7 @@
       const ref = summaryRefs[idx];
       if (ref) {
         const rect = ref.getBoundingClientRect();
-        dropdownLeft = rect.right - 160; // 160px for w-40
+        dropdownLeft = rect.right - 160;
         dropdownTop = rect.bottom;
         window.addEventListener('mousedown', handleClickOutside);
       }
@@ -125,8 +125,6 @@
           {/each}
         </tbody>
       </table>
-      
-      <div class="h-32"></div>
 
       {#if projects.length === 0}
         <div class="py-12 text-center opacity-70">Geen projecten gevonden.</div>

@@ -82,47 +82,6 @@ def delete_viewer(digital_twin_id: int, db: Session = Depends(get_db)):
     if not success:
         raise HTTPException(status_code=404, detail="Viewer not found")
 
-# Layer relation junction table routes for adding layers, groups and sorting order
-@router.post("/{digital_twin_id}/layer")
-def add_layer_to_digital_twin(
-    digital_twin_id: int,
-    layer_data: DigitalTwinLayerAssociationCreate,
-    db: Session = Depends(get_db)
-):
-    db_twin = service.get_digital_twin(digital_twin_id, db)
-    if not db_twin:
-        raise HTTPException(status_code=404, detail="Digital twin not found")
-
-    layer_service.add_layer_association(digital_twin_id, layer_data, db)
-    return {"message": "Layer association created"}
-
-@router.put("/{digital_twin_id}/layer/{layer_id}")
-def update_relation_to_digital_twin(
-    digital_twin_id: int,
-    layer_id: int,
-    update_data: DigitalTwinLayerRelationUpdate,
-    db: Session = Depends(get_db)
-):
-    db_twin = service.get_digital_twin(digital_twin_id, db)
-    if not db_twin:
-        raise HTTPException(status_code=404, detail="Digital twin not found")
-
-    updated = layer_service.update_layer_relation(digital_twin_id, layer_id, update_data, db)
-    if not updated:
-        raise HTTPException(status_code=404, detail="Layer relation not found")
-
-    return {"message": "Relation updated"}
-
-@router.delete("/{digital_twin_id}/layer/{layer_id}", status_code=204)
-def delete_relation_from_digital_twin(
-    digital_twin_id: int,
-    layer_id: int,
-    db: Session = Depends(get_db)
-):
-    deleted = layer_service.delete_layer_relation(digital_twin_id, layer_id, db)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Relation not found")
-
 # Layer junction table bulk edit
 @router.put("/{digital_twin_id}/associations/bulk")
 def bulk_modify_layer_associations(
