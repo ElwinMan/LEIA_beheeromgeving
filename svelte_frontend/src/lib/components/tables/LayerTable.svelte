@@ -23,6 +23,35 @@
   let digitalTwinsForLayer = $state<Array<{ id: number; name: string; title: string }>>([]);
   let selectedLayerTitle = $state('');
 
+  // Sorting state
+  let sortColumn = $state('title');
+  let sortDirection = $state<'asc' | 'desc'>('asc');
+
+  function setSort(column: string) {
+    if (sortColumn === column) {
+      sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortColumn = column;
+      sortDirection = 'asc';
+    }
+  }
+
+  function getSortedLayers() {
+    return [...layers].sort((a, b) => {
+      let aValue = a[sortColumn];
+      let bValue = b[sortColumn];
+      if (aValue == null) aValue = '';
+      if (bValue == null) bValue = '';
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+
   function handleOpenModal(layer: Layer) {
     modalComponent.showModal(layer);
   }
@@ -108,15 +137,99 @@
       <table class="table-xs table-pin-rows table">
         <thead>
           <tr>
-            <th class="bg-base-200 sticky font-bold">Titel</th>
-            <th class="bg-base-200 font-bold">Type</th>
-            <th class="bg-base-200 font-bold">Url</th>
-            <th class="bg-base-200 font-bold">Feature Name</th>
+            <th class="bg-base-200 sticky font-bold">
+              <button
+                class="flex items-center gap-1"
+                onclick={() => setSort('title')}
+                type="button"
+              >
+                Titel
+                {#if sortColumn === 'title'}
+                  <img
+                    src={"/icons/" + (sortDirection === 'asc' ? 'chevron-up' : 'chevron-down') + ".svg"}
+                    alt="Sort Icon"
+                    class="h-4 w-4"
+                  />
+                {:else}
+                  <img
+                    src="/icons/chevrons-up-down.svg"
+                    alt="Niet gesorteerd"
+                    class="h-4 w-4 opacity-50"
+                  />
+                {/if}
+              </button>
+            </th>
+            <th class="bg-base-200 font-bold">
+              <button
+                class="flex items-center gap-1"
+                onclick={() => setSort('type')}
+                type="button"
+              >
+                Type
+                {#if sortColumn === 'type'}
+                  <img
+                    src={"/icons/" + (sortDirection === 'asc' ? 'chevron-up' : 'chevron-down') + ".svg"}
+                    alt="Sort Icon"
+                    class="h-4 w-4"
+                  />
+                {:else}
+                  <img
+                    src="/icons/chevrons-up-down.svg"
+                    alt="Niet gesorteerd"
+                    class="h-4 w-4 opacity-50"
+                  />
+                {/if}
+              </button>
+            </th>
+            <th class="bg-base-200 font-bold">
+              <button
+                class="flex items-center gap-1"
+                onclick={() => setSort('url')}
+                type="button"
+              >
+                Url
+                {#if sortColumn === 'url'}
+                  <img
+                    src={"/icons/" + (sortDirection === 'asc' ? 'chevron-up' : 'chevron-down') + ".svg"}
+                    alt="Sort Icon"
+                    class="h-4 w-4"
+                  />
+                {:else}
+                  <img
+                    src="/icons/chevrons-up-down.svg"
+                    alt="Niet gesorteerd"
+                    class="h-4 w-4 opacity-50"
+                  />
+                {/if}
+              </button>
+            </th>
+            <th class="bg-base-200 font-bold">
+              <button
+                class="flex items-center gap-1"
+                onclick={() => setSort('featureName')}
+                type="button"
+              >
+                Feature Name
+                {#if sortColumn === 'featureName'}
+                  <img
+                    src={"/icons/" + (sortDirection === 'asc' ? 'chevron-up' : 'chevron-down') + ".svg"}
+                    alt="Sort Icon"
+                    class="h-4 w-4"
+                  />
+                {:else}
+                  <img
+                    src="/icons/chevrons-up-down.svg"
+                    alt="Niet gesorteerd"
+                    class="h-4 w-4 opacity-50"
+                  />
+                {/if}
+              </button>
+            </th>
             <th class="bg-base-200 font-bold">Acties</th>
           </tr>
         </thead>
         <tbody>
-          {#each layers as layer, idx}
+          {#each getSortedLayers() as layer, idx}
             <tr class="hover">
               <td class="text-sm font-bold">{layer.title || '-'}</td>
               <td class="text-sm">{layer.type || '-'}</td>

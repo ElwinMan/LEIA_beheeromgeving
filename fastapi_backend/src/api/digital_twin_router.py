@@ -25,6 +25,7 @@ from schemas.digital_twin_layer_association_schema import (
 from schemas.digital_twin_tool_association_schema import (
     DigitalTwinToolBulkOperation
 )
+from sqlalchemy.exc import IntegrityError
 
 router = APIRouter(prefix="/digital-twins", tags=["Digital Twins"])
 
@@ -41,7 +42,16 @@ def read_digital_twin(digital_twin_id: int, db: Session = Depends(get_db)):
 
 @router.post("/", response_model=DigitalTwinResponse)
 def create_digital_twin(data: DigitalTwinCreate, db: Session = Depends(get_db)):
-    return service.create_digital_twin(data, db)
+    try:
+        return service.create_digital_twin(data, db)
+    except IntegrityError as e:
+        # Check for unique constraint violation
+        if 'unique constraint' in str(e).lower() or 'duplicate key' in str(e).lower():
+            raise HTTPException(
+                status_code=409,
+                detail="Deze naam is al in gebruik. Kies een andere naam."
+            )
+        raise
 
 @router.put("/{digital_twin_id}", response_model=DigitalTwinResponse)
 def update_digital_twin(digital_twin_id: int, data: DigitalTwinUpdate, db: Session = Depends(get_db)):

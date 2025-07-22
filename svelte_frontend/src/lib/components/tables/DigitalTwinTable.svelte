@@ -9,6 +9,35 @@
   let dropdownLeft = $state(0);
   let dropdownTop = $state(0);
 
+  // Sorting state
+  let sortColumn = $state('name');
+  let sortDirection = $state<'asc' | 'desc'>('asc');
+
+  function setSort(column: string) {
+    if (sortColumn === column) {
+      sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortColumn = column;
+      sortDirection = 'asc';
+    }
+  }
+
+  function getSortedTwins() {
+    return [...digitalTwins].sort((a, b) => {
+      let aValue = a[sortColumn];
+      let bValue = b[sortColumn];
+      if (aValue == null) aValue = '';
+      if (bValue == null) bValue = '';
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+
   function handleSummaryClick(idx: number) {
     if (openIndex === idx) {
       openIndex = null;
@@ -41,16 +70,71 @@
       <table class="table-xs table-pin-rows table">
         <thead>
           <tr>
-            <th class="bg-base-200 sticky left-0 z-10 font-bold">Digital Twin</th>
-            <th class="bg-base-200 font-bold">Subtitle</th>
-            <th class="bg-base-200 font-bold">Eigenaar</th>
-            <th class="bg-base-200 font-bold">Lijstweergaven</th>
-            <th class="bg-base-200 font-bold">Gewijzigd</th>
+            <th class="bg-base-200 sticky left-0 z-10 font-bold cursor-pointer" onclick={() => setSort('name')}>
+              Digital Twin
+              {#if sortColumn === 'name'}
+                {#if sortDirection === 'asc'}
+                  <img src="/icons/chevron-up.svg" alt="Sorteren oplopend" class="inline w-4 h-4" />
+                {:else}
+                  <img src="/icons/chevron-down.svg" alt="Sorteren aflopend" class="inline w-4 h-4" />
+                {/if}
+              {:else}
+                <img src="/icons/chevrons-up-down.svg" alt="Niet gesorteerd" class="inline w-4 h-4 opacity-50" />
+              {/if}
+            </th>
+            <th class="bg-base-200 font-bold cursor-pointer" onclick={() => setSort('subtitle')}>
+              Subtitle
+              {#if sortColumn === 'subtitle'}
+                {#if sortDirection === 'asc'}
+                  <img src="/icons/chevron-up.svg" alt="Sorteren oplopend" class="inline w-4 h-4" />
+                {:else}
+                  <img src="/icons/chevron-down.svg" alt="Sorteren aflopend" class="inline w-4 h-4" />
+                {/if}
+              {:else}
+                <img src="/icons/chevrons-up-down.svg" alt="Niet gesorteerd" class="inline w-4 h-4 opacity-50" />
+              {/if}
+            </th>
+            <th class="bg-base-200 font-bold cursor-pointer" onclick={() => setSort('owner')}>
+              Eigenaar
+              {#if sortColumn === 'owner'}
+                {#if sortDirection === 'asc'}
+                  <img src="/icons/chevron-up.svg" alt="Sorteren oplopend" class="inline w-4 h-4" />
+                {:else}
+                  <img src="/icons/chevron-down.svg" alt="Sorteren aflopend" class="inline w-4 h-4" />
+                {/if}
+              {:else}
+                <img src="/icons/chevrons-up-down.svg" alt="Niet gesorteerd" class="inline w-4 h-4 opacity-50" />
+              {/if}
+            </th>
+            <th class="bg-base-200 font-bold cursor-pointer" onclick={() => setSort('private')}>
+              Lijstweergaven
+              {#if sortColumn === 'private'}
+                {#if sortDirection === 'asc'}
+                  <img src="/icons/chevron-up.svg" alt="Sorteren oplopend" class="inline w-4 h-4" />
+                {:else}
+                  <img src="/icons/chevron-down.svg" alt="Sorteren aflopend" class="inline w-4 h-4" />
+                {/if}
+              {:else}
+                <img src="/icons/chevrons-up-down.svg" alt="Niet gesorteerd" class="inline w-4 h-4 opacity-50" />
+              {/if}
+            </th>
+            <th class="bg-base-200 font-bold cursor-pointer" onclick={() => setSort('last_updated')}>
+              Gewijzigd
+              {#if sortColumn === 'last_updated'}
+                {#if sortDirection === 'asc'}
+                  <img src="/icons/chevron-up.svg" alt="Sorteren oplopend" class="inline w-4 h-4" />
+                {:else}
+                  <img src="/icons/chevron-down.svg" alt="Sorteren aflopend" class="inline w-4 h-4" />
+                {/if}
+              {:else}
+                <img src="/icons/chevrons-up-down.svg" alt="Niet gesorteerd" class="inline w-4 h-4 opacity-50" />
+              {/if}
+            </th>
             <th class="bg-base-200 font-bold">Acties</th>
           </tr>
         </thead>
         <tbody>
-          {#each digitalTwins as twin, idx}
+          {#each getSortedTwins() as twin, idx}
             <tr class="hover">
               <td class="sticky left-0 z-10">
                 <div>

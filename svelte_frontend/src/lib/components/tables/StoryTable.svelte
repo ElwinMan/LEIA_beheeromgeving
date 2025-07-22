@@ -8,6 +8,35 @@
 
   let { stories = [] } = $props();
 
+  // Sorting state
+  let sortColumn = $state('name');
+  let sortDirection = $state<'asc' | 'desc'>('asc');
+
+  function setSort(column: string) {
+    if (sortColumn === column) {
+      sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortColumn = column;
+      sortDirection = 'asc';
+    }
+  }
+
+  function getSortedStories() {
+    return [...stories].sort((a, b) => {
+      let aValue = a[sortColumn];
+      let bValue = b[sortColumn];
+      if (aValue == null) aValue = '';
+      if (bValue == null) bValue = '';
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+
   let modalComponent: any;
 
   let openIndex = $state<number | null>(null);
@@ -78,13 +107,27 @@
       <table class="table-xs table-pin-rows table">
         <thead>
           <tr>
-            <th class="bg-base-200 font-bold">Naam</th>
-            <th class="bg-base-200 font-bold">Beschrijving</th>
+            <th class="bg-base-200 font-bold cursor-pointer" onclick={() => setSort('name')}>
+              Naam
+              {#if sortColumn === 'name'}
+                <img src={sortDirection === 'asc' ? "/icons/chevron-up.svg" : "/icons/chevron-down.svg"} alt="Sorteren" class="inline w-4 h-4" />
+              {:else}
+                <img src="/icons/chevrons-up-down.svg" alt="Niet gesorteerd" class="inline w-4 h-4 opacity-50" />
+              {/if}
+            </th>
+            <th class="bg-base-200 font-bold cursor-pointer" onclick={() => setSort('description')}>
+              Beschrijving
+              {#if sortColumn === 'description'}
+                <img src={sortDirection === 'asc' ? "/icons/chevron-up.svg" : "/icons/chevron-down.svg"} alt="Sorteren" class="inline w-4 h-4" />
+              {:else}
+                <img src="/icons/chevrons-up-down.svg" alt="Niet gesorteerd" class="inline w-4 h-4 opacity-50" />
+              {/if}
+            </th>
             <th class="bg-base-200 font-bold">Acties</th>
           </tr>
         </thead>
         <tbody>
-          {#each stories as story, idx}
+          {#each getSortedStories() as story, idx}
             <tr>
               <td class="text-sm font-bold">{story.name}</td>
               <td class="text-sm">{story.description}</td>

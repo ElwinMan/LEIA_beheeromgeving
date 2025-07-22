@@ -163,7 +163,17 @@ export async function createDigitalTwin(data: CreateDigitalTwinInput): Promise<D
   });
 
   if (!response.ok) {
-    throw new Error('Failed to create digital twin');
+    // Try to get the backend error message
+    let errorText = '';
+    try {
+      errorText = await response.text();
+    } catch {
+      errorText = 'Unknown error';
+    }
+    // Create an error object with status and message
+    const error: any = new Error(errorText || 'Failed to create digital twin');
+    error.status = response.status;
+    throw error;
   }
 
   const result = await response.json();

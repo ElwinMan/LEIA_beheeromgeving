@@ -6,10 +6,13 @@
   import type { Tool } from '$lib/types/tool';
   import type { LayerBulkOperation } from '$lib/types/digitalTwinAssociation';
   import type { Layer } from '$lib/types/layer';
+  import AlertBanner from '$lib/components/AlertBanner.svelte';
 
   const dispatch = createEventDispatcher<{ created: DigitalTwin }>();
 
   let modalRef: HTMLDialogElement | null = null;
+  let errorBanner: InstanceType<typeof AlertBanner> | null = null;
+  let successBanner: InstanceType<typeof AlertBanner> | null = null;
 
   // Form fields
   let name = '';
@@ -17,6 +20,9 @@
   let subtitle = '';
   let owner = '';
   let isPrivate = false;
+
+  // Error message
+  let errorMessage = "Er is iets misgegaan bij het aanmaken van de Digital Twin.";
 
   // List of tool names to associate
   const defaultToolNames = [
@@ -110,6 +116,8 @@
 
   export function showModal() {
     resetForm();
+    errorBanner?.hide?.();
+    successBanner?.hide?.();
     modalRef?.showModal();
   }
 
@@ -167,14 +175,40 @@
       }
 
       dispatch('created', newTwin);
+      successBanner?.show();
       modalRef?.close();
-    } catch (error) {
+      successBanner?.hide?.();
+    } catch (error: any) {
+      // Check for duplicate name error (status 409 or message contains known phrases)
+      if (
+        error?.status === 409 ||
+        (error?.message && (
+          error.message.includes('duplicate key')
+        ))
+      ) {
+        errorMessage = "Deze naam is al in gebruik. Kies een andere naam.";
+      } else {
+        errorMessage = "Er is iets misgegaan bij het aanmaken van de Digital Twin.";
+      }
+      errorBanner?.show?.();
       console.error('Failed to create digital twin, viewer, tools, or layers', error);
     }
   }
 </script>
 
+<AlertBanner
+  bind:this={successBanner}
+  type="success"
+  message="Digital Twin succesvol aangemaakt!"
+/>
+
 <dialog bind:this={modalRef} class="modal">
+  <AlertBanner
+    bind:this={errorBanner}
+    type="error"
+    message={errorMessage}
+  />
+
   <form on:submit|preventDefault={handleSubmit} class="modal-box space-y-4">
     <h3 class="text-lg font-bold">Digital Twin Aanmaken</h3>
 

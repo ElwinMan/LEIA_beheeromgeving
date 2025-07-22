@@ -17,6 +17,9 @@
 
   const dispatch = createEventDispatcher<{ updated: void }>();
 
+  let sortColumn = $state('title');
+  let sortDirection = $state<'asc' | 'desc'>('asc');
+
   function handleOpenModal(tp: TerrainProvider) {
     modalComponent.showModal(tp);
   }
@@ -68,6 +71,31 @@
       window.removeEventListener('mousedown', handleClickOutside);
     }
   }
+
+  function setSort(column: string) {
+    if (sortColumn === column) {
+      sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortColumn = column;
+      sortDirection = 'asc';
+    }
+  }
+
+  function getSortedProviders() {
+    return [...terrain_providers].sort((a, b) => {
+      let aValue = a[sortColumn];
+      let bValue = b[sortColumn];
+      if (aValue == null) aValue = '';
+      if (bValue == null) bValue = '';
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
 </script>
 
 <UpdateTerrainProviderModal bind:this={modalComponent} on:updated={handleUpdated} />
@@ -78,14 +106,35 @@
       <table class="table-xs table-pin-rows table">
         <thead>
           <tr>
-            <th class="bg-base-200 font-bold">Title</th>
-            <th class="bg-base-200 font-bold">URL</th>
-            <th class="bg-base-200 font-bold">Vertex Normals</th>
+            <th class="bg-base-200 font-bold cursor-pointer" onclick={() => setSort('title')}>
+              Title
+              {#if sortColumn === 'title'}
+                <img src={sortDirection === 'asc' ? "/icons/chevron-up.svg" : "/icons/chevron-down.svg"} alt="Sorteren" class="inline w-4 h-4" />
+              {:else}
+                <img src="/icons/chevrons-up-down.svg" alt="Niet gesorteerd" class="inline w-4 h-4 opacity-50" />
+              {/if}
+            </th>
+            <th class="bg-base-200 font-bold cursor-pointer" onclick={() => setSort('url')}>
+              URL
+              {#if sortColumn === 'url'}
+                <img src={sortDirection === 'asc' ? "/icons/chevron-up.svg" : "/icons/chevron-down.svg"} alt="Sorteren" class="inline w-4 h-4" />
+              {:else}
+                <img src="/icons/chevrons-up-down.svg" alt="Niet gesorteerd" class="inline w-4 h-4 opacity-50" />
+              {/if}
+            </th>
+            <th class="bg-base-200 font-bold cursor-pointer" onclick={() => setSort('vertexNormals')}>
+              Vertex Normals
+              {#if sortColumn === 'vertexNormals'}
+                <img src={sortDirection === 'asc' ? "/icons/chevron-up.svg" : "/icons/chevron-down.svg"} alt="Sorteren" class="inline w-4 h-4" />
+              {:else}
+                <img src="/icons/chevrons-up-down.svg" alt="Niet gesorteerd" class="inline w-4 h-4 opacity-50" />
+              {/if}
+            </th>
             <th class="bg-base-200 font-bold">Acties</th>
           </tr>
         </thead>
         <tbody>
-          {#each terrain_providers as terrain_provider, idx}
+          {#each getSortedProviders() as terrain_provider, idx}
             <tr>
               <td class="text-sm font-bold">{terrain_provider.title || '-'}</td>
               <td class="text-sm">{terrain_provider.url || '-'}</td>
