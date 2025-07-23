@@ -21,6 +21,10 @@
   import GroupModal from '$lib/components/modals/CreateGroupModal.svelte';
   import DeleteModal from '$lib/components/modals/DeleteModal.svelte';
   import DeleteGroupModal from '$lib/components/modals/DeleteGroupModal.svelte';
+  import { isDescendant } from '$lib/utils/isDescendantPrevention';
+  import { canDropGeneric } from '$lib/utils/dragDropPermission';
+  import type { DropZone } from '$lib/utils/dragDropPermission';
+
 
   interface Props {
     digitalTwin: DigitalTwin | null;
@@ -165,6 +169,39 @@
   }
 
   onMount(fetchAllData);
+
+  const dropConfig = {
+    allowed: {
+      'catalog-layer': {
+        group: ['middle'] as DropZone[],
+        layer: ['top', 'middle', 'bottom'] as DropZone[],
+      },
+      layer: {
+        group: ['middle'] as DropZone[],
+        layer: ['top', 'middle', 'bottom'] as DropZone[],
+      },
+      group: {
+        group: ['top', 'middle', 'bottom'] as DropZone[],
+      },
+    },
+    custom: (
+      dragged: { type: string; id: number },
+      target: { type: string; id: number },
+      rootGroups: GroupWithLayers[]
+    ) => {
+      // Prevent group-to-group drops on descendants
+      if (dragged.type === 'group' && target.type === 'group') {
+        if (isDescendant(rootGroups, dragged.id, target.id)) {
+          return { allowed: false, reason: 'Cannot drop a group on its descendant' };
+        }
+      }
+      // Prevent group-to-layer drops
+      if (dragged.type === 'group' && target.type === 'layer') {
+        return { allowed: false, reason: 'Cannot drop a group on a layer' };
+      }
+      return undefined;
+    }
+  };
 
   function buildNestedGroups(
     groups: Group[],
@@ -370,48 +407,14 @@
     if (!draggedItem) return;
 
     const zone = getDropZone(e, e.currentTarget as HTMLElement);
+    const target = { type, id, groupId, zone };
+    const { allowed } = canDropGeneric(draggedItem, target, rootGroups, dropConfig);
 
-    // Handle catalog layer drops
-    if (draggedItem.type === 'catalog-layer') {
-      // Only allow dropping catalog layers in the middle of groups or anywhere on layers
-      if (type === 'group' && (zone === 'top' || zone === 'bottom')) {
-        draggedOverItem = null;
-        if (e.dataTransfer) e.dataTransfer.dropEffect = 'none';
-        return;
-      }
-
-      draggedOverItem = { type, id, groupId, zone };
-      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
-      return;
-    }
-
-    // Don't allow dropping on itself
-    if (draggedItem.type === type && draggedItem.id === id) {
+    if (!allowed) {
       draggedOverItem = null;
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'none';
       return;
     }
-
-    // Prevent group-to-layer drops
-    if (draggedItem.type === 'group' && type === 'layer') {
-      draggedOverItem = null;
-      return;
-    }
-
-    // For group-to-group drops, prevent ANY drop on descendants
-    if (draggedItem.type === 'group' && type === 'group') {
-      // Check if target is a descendant of dragged item
-      if (isDescendantGroup(draggedItem.id, id)) {
-        draggedOverItem = null;
-        return;
-      }
-    }
-
-    if (draggedItem.type === 'layer' && type === 'group' && (zone === 'top' || zone === 'bottom')) {
-      draggedOverItem = null;
-      return;
-    }
-
-    // Allow all zones for valid drops
     draggedOverItem = { type, id, groupId, zone };
   }
 
@@ -705,24 +708,7 @@
     // Force reactivity
     rootGroups = [...rootGroups];
   }
-
-  function isDescendantGroup(draggedGroupId: number, targetGroupId: number): boolean {
-    // Find the dragged group (the one being moved)
-    const draggedGroup = findGroupById(rootGroups, draggedGroupId);
-    if (!draggedGroup) return false;
-
-    // Check if the target group is anywhere in the dragged group's subgroup tree
-    function checkSubgroups(groups: GroupWithLayers[]): boolean {
-      for (const group of groups) {
-        if (group.id === targetGroupId) return true;
-        if (checkSubgroups(group.subgroups)) return true;
-      }
-      return false;
-    }
-
-    return checkSubgroups(draggedGroup.subgroups);
-  }
-
+  
   function updateGroupSortOrders(groups: GroupWithLayers[]) {
     groups.forEach((group, index) => {
       group.sort_order = index;
