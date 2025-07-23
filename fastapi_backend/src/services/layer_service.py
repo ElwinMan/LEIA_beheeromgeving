@@ -21,3 +21,22 @@ def delete_layer(existing_layer, db: Session):
 
 def get_digital_twins_for_layer(layer_id: int, db: Session):
     return repo.get_digital_twins_for_layer(db, layer_id)
+
+def get_layers_filtered_paginated(
+    db: Session,
+    search: str = "",
+    page: int = 1,
+    page_size: int = 10,
+    sort_column: str = "title",
+    sort_direction: str = "asc",
+    is_background: bool | None = None
+):
+    return repo.get_filtered_paginated(
+        db,
+        search,
+        page,
+        page_size,
+        sort_column,
+        sort_direction,
+        is_background
+    )

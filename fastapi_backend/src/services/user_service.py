@@ -16,3 +16,20 @@ def update_user(existing_user, user_update: UserUpdate, db: Session):
 
 def delete_user(existing_user, db: Session):
     return repo.delete_user(db, existing_user)
+
+def get_users_filtered_paginated(
+    db: Session,
+    search: str = "",
+    page: int = 1,
+    page_size: int = 10,
+    sort_column: str = "name",
+    sort_direction: str = "asc"
+):
+    return repo.get_filtered_paginated(
+        db,
+        search,
+        page,
+        page_size,
+        sort_column,
+        sort_direction
+    )

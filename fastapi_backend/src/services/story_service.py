@@ -24,3 +24,20 @@ def update_story(db: Session, story_id: int, updates: StoryUpdate) -> Story | No
 
 def delete_story(db: Session, story_id: int) -> bool:
     return repo.delete(db, story_id)
+
+def get_stories_filtered_paginated(
+    db: Session,
+    search: str = "",
+    page: int = 1,
+    page_size: int = 10,
+    sort_column: str = "name",
+    sort_direction: str = "asc"
+):
+    return repo.get_filtered_paginated(
+        db,
+        search,
+        page,
+        page_size,
+        sort_column,
+        sort_direction
+    )

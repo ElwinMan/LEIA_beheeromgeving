@@ -55,6 +55,6 @@
       <span>{data.error}</span>
     </div>
   {:else}
-    <TerrainProviderTable terrain_providers={data.terrain_providers} />
+    <TerrainProviderTable />
   {/if}
 </div>

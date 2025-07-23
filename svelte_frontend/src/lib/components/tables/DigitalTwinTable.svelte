@@ -2,28 +2,28 @@
   import type { DigitalTwin } from '$lib/types/digitalTwin';
   import { tick } from 'svelte';
   import { portal } from 'svelte-portal';
-
-  let { digitalTwins = [] }: { digitalTwins: DigitalTwin[] } = $props();
+  import { fetchDigitalTwinsPaginated } from '$lib/api';
+  import SortableTableHeader from '$lib/components/tables/SortableTableHeader.svelte';
 
   let openIndex = $state<number | null>(null);
   let summaryRefs = $state<Array<HTMLElement | null>>([]);
   let dropdownLeft = $state(0);
   let dropdownTop = $state(0);
 
-  // Sorting state
-  let sortColumn = $state('last_updated');
-  let sortDirection = $state<'asc' | 'desc'>('desc');
-
-  // Pagination state
+  // Pagination and search state
   let page = $state(1);
   let pageSize = $state(10);
-
-  // Search state
+  let total = $state(0);
   let search = $state('');
   let debouncedSearch = $state('');
   let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  // Watch for changes to `search` using a manual function
+  let digitalTwins: DigitalTwin[] = $state([]);
+
+  // Sorting state
+  let sortColumn = $state('name');
+  let sortDirection = $state<'asc' | 'desc'>('asc');
+
   function onSearchChange(newValue: string) {
     if (searchTimeout) clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
@@ -32,52 +32,34 @@
     }, 1000);
   }
 
-  type SortableTwinKey = 'name' | 'subtitle' | 'owner' | 'private' | 'last_updated';
-
-  function setSort(column: string) {
-    if (sortColumn === column) {
-      sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-    } else {
-      sortColumn = column;
-      sortDirection = 'asc';
-    }
-  }
-
-  function getSortedTwins() {
-    let filtered = digitalTwins;
-    if (debouncedSearch.trim() !== '') {
-      const s = debouncedSearch.trim().toLowerCase();
-      filtered = digitalTwins.filter(twin =>
-        (twin.name && twin.name.toLowerCase().includes(s)) ||
-        (twin.subtitle && twin.subtitle.toLowerCase().includes(s)) ||
-        (twin.owner && twin.owner.toLowerCase().includes(s)) ||
-        (twin.title && twin.title.toLowerCase().includes(s))
+  async function loadDigitalTwins() {
+    try {
+      const data = await fetchDigitalTwinsPaginated(
+        debouncedSearch,
+        page,
+        pageSize,
+        sortColumn,
+        sortDirection
       );
+      digitalTwins = data.results;
+      total = data.total;
+    } catch (err) {
+      digitalTwins = [];
+      total = 0;
     }
-    return [...filtered].sort((a, b) => {
-      const col = sortColumn as SortableTwinKey;
-      let aValue = a[col];
-      let bValue = b[col];
-      if (aValue == null) aValue = '';
-      if (bValue == null) bValue = '';
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        aValue = aValue.toLowerCase();
-        bValue = bValue.toLowerCase();
-      }
-      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
   }
 
-  const totalPages = $derived(() => Math.max(1, Math.ceil(getSortedTwins().length / pageSize)));
-  const paginatedTwins = $derived(() =>
-    getSortedTwins().slice((page - 1) * pageSize, page * pageSize)
-  );
+  $effect(() => {
+    loadDigitalTwins();
+  });
 
   function gotoPage(p: number) {
     if (p < 1 || p > totalPages()) return;
     page = p;
+  }
+
+  function totalPages() {
+    return Math.max(1, Math.ceil(total / pageSize));
   }
 
   function handleSummaryClick(idx: number) {
@@ -91,7 +73,7 @@
       const ref = summaryRefs[idx];
       if (ref) {
         const rect = ref.getBoundingClientRect();
-        dropdownLeft = rect.right - 208 + window.scrollX; // 208px for w-52
+        dropdownLeft = rect.right - 208 + window.scrollX;
         dropdownTop = rect.bottom + window.scrollY;
         window.addEventListener('mousedown', handleClickOutside);
       }
@@ -103,6 +85,16 @@
       openIndex = null;
       window.removeEventListener('mousedown', handleClickOutside);
     }
+  }
+
+  function setSort(column: string) {
+    if (sortColumn === column) {
+      sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortColumn = column;
+      sortDirection = 'asc';
+    }
+    page = 1;
   }
 </script>
 
@@ -122,71 +114,47 @@
       <table class="table-xs table-pin-rows table">
         <thead>
           <tr>
-            <th class="bg-base-200 sticky left-0 z-10 font-bold cursor-pointer" onclick={() => setSort('name')}>
-              Digital Twin
-              {#if sortColumn === 'name'}
-                {#if sortDirection === 'asc'}
-                  <img src="/icons/chevron-up.svg" alt="Sorteren oplopend" class="inline w-4 h-4" />
-                {:else}
-                  <img src="/icons/chevron-down.svg" alt="Sorteren aflopend" class="inline w-4 h-4" />
-                {/if}
-              {:else}
-                <img src="/icons/chevrons-up-down.svg" alt="Niet gesorteerd" class="inline w-4 h-4 opacity-50" />
-              {/if}
-            </th>
-            <th class="bg-base-200 font-bold cursor-pointer" onclick={() => setSort('subtitle')}>
-              Subtitle
-              {#if sortColumn === 'subtitle'}
-                {#if sortDirection === 'asc'}
-                  <img src="/icons/chevron-up.svg" alt="Sorteren oplopend" class="inline w-4 h-4" />
-                {:else}
-                  <img src="/icons/chevron-down.svg" alt="Sorteren aflopend" class="inline w-4 h-4" />
-                {/if}
-              {:else}
-                <img src="/icons/chevrons-up-down.svg" alt="Niet gesorteerd" class="inline w-4 h-4 opacity-50" />
-              {/if}
-            </th>
-            <th class="bg-base-200 font-bold cursor-pointer" onclick={() => setSort('owner')}>
-              Eigenaar
-              {#if sortColumn === 'owner'}
-                {#if sortDirection === 'asc'}
-                  <img src="/icons/chevron-up.svg" alt="Sorteren oplopend" class="inline w-4 h-4" />
-                {:else}
-                  <img src="/icons/chevron-down.svg" alt="Sorteren aflopend" class="inline w-4 h-4" />
-                {/if}
-              {:else}
-                <img src="/icons/chevrons-up-down.svg" alt="Niet gesorteerd" class="inline w-4 h-4 opacity-50" />
-              {/if}
-            </th>
-            <th class="bg-base-200 font-bold cursor-pointer" onclick={() => setSort('private')}>
-              Lijstweergaven
-              {#if sortColumn === 'private'}
-                {#if sortDirection === 'asc'}
-                  <img src="/icons/chevron-up.svg" alt="Sorteren oplopend" class="inline w-4 h-4" />
-                {:else}
-                  <img src="/icons/chevron-down.svg" alt="Sorteren aflopend" class="inline w-4 h-4" />
-                {/if}
-              {:else}
-                <img src="/icons/chevrons-up-down.svg" alt="Niet gesorteerd" class="inline w-4 h-4 opacity-50" />
-              {/if}
-            </th>
-            <th class="bg-base-200 font-bold cursor-pointer" onclick={() => setSort('last_updated')}>
-              Gewijzigd
-              {#if sortColumn === 'last_updated'}
-                {#if sortDirection === 'asc'}
-                  <img src="/icons/chevron-up.svg" alt="Sorteren oplopend" class="inline w-4 h-4" />
-                {:else}
-                  <img src="/icons/chevron-down.svg" alt="Sorteren aflopend" class="inline w-4 h-4" />
-                {/if}
-              {:else}
-                <img src="/icons/chevrons-up-down.svg" alt="Niet gesorteerd" class="inline w-4 h-4 opacity-50" />
-              {/if}
-            </th>
+            <SortableTableHeader
+              column="name"
+              label="Digital Twin"
+              {sortColumn}
+              {sortDirection}
+              {setSort}
+              className="bg-base-200 sticky left-0 z-10 font-bold cursor-pointer"
+            />
+            <SortableTableHeader
+              column="subtitle"
+              label="Subtitle"
+              {sortColumn}
+              {sortDirection}
+              {setSort}
+            />
+            <SortableTableHeader
+              column="owner"
+              label="Eigenaar"
+              {sortColumn}
+              {sortDirection}
+              {setSort}
+            />
+            <SortableTableHeader
+              column="private"
+              label="Lijstweergaven"
+              {sortColumn}
+              {sortDirection}
+              {setSort}
+            />
+            <SortableTableHeader
+              column="last_updated"
+              label="Gewijzigd"
+              {sortColumn}
+              {sortDirection}
+              {setSort}
+            />
             <th class="bg-base-200 font-bold">Acties</th>
           </tr>
         </thead>
         <tbody>
-          {#each paginatedTwins() as twin, idx}
+          {#each digitalTwins as twin, idx}
             <tr class="hover">
               <td class="sticky left-0 z-10">
                 <div>

@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 class LayerBase(BaseModel):
     type: str
@@ -25,3 +25,9 @@ class LayerResponse(LayerBase):
     model_config = {
         "from_attributes": True
     }
+
+class PaginatedLayersResponse(BaseModel):
+    results: List[LayerResponse]
+    total: int
+    page: int
+    page_size: int

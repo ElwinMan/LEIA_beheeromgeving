@@ -315,6 +315,25 @@ export async function deleteBookmark(id: string) {
   return true;
 }
 
+export async function fetchBookmarksPaginated(
+  search = '',
+  page = 1,
+  pageSize = 10,
+  sortColumn = 'title',
+  sortDirection = 'asc'
+) {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    page_size: pageSize.toString(),
+    sort_column: sortColumn,
+    sort_direction: sortDirection
+  });
+  if (search) params.append('search', search);
+  const res = await fetch(`${API_BASE}/bookmarks/search?${params}`);
+  if (!res.ok) throw new Error('Failed to fetch bookmarks');
+  return await res.json(); // { results, total, page, page_size }
+}
+
 // --- Projects ---
 export async function fetchProjects(fetchFn?: typeof fetch) {
   const _fetch = fetchFn ?? fetch;
@@ -447,5 +466,121 @@ export async function deleteTerrainProvider(id: string) {
 export async function fetchDigitalTwinsForLayer(layerId: number): Promise<Array<{ id: number; name: string; title: string }>> {
   const res = await fetch(`${API_BASE}/layers/${layerId}/digital-twins`);
   if (!res.ok) return [];
+  return await res.json();
+}
+
+export async function fetchDigitalTwinsPaginated(
+  search = '',
+  page = 1,
+  pageSize = 10,
+  sortColumn = 'name',
+  sortDirection = 'asc'
+) {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    page_size: pageSize.toString(),
+    sort_column: sortColumn,
+    sort_direction: sortDirection
+  });
+  if (search) params.append('search', search);
+  const res = await fetch(`${API_BASE}/digital-twins/search?${params}`);
+  if (!res.ok) throw new Error('Failed to fetch digital twins');
+  return await res.json();
+}
+
+export async function fetchStoriesPaginated(
+  search = '',
+  page = 1,
+  pageSize = 10,
+  sortColumn = 'name',
+  sortDirection = 'asc'
+) {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    page_size: pageSize.toString(),
+    sort_column: sortColumn,
+    sort_direction: sortDirection
+  });
+  if (search) params.append('search', search);
+  const res = await fetch(`${API_BASE}/stories/search?${params}`);
+  if (!res.ok) throw new Error('Failed to fetch stories');
+  return await res.json();
+}
+
+export async function fetchProjectsPaginated(
+  search = '',
+  page = 1,
+  pageSize = 10,
+  sortColumn = 'name',
+  sortDirection = 'asc'
+) {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    page_size: pageSize.toString(),
+    sort_column: sortColumn,
+    sort_direction: sortDirection
+  });
+  if (search) params.append('search', search);
+  const res = await fetch(`${API_BASE}/projects/search?${params}`);
+  if (!res.ok) throw new Error('Failed to fetch projects');
+  return await res.json();
+}
+
+export async function fetchTerrainProvidersPaginated(
+  search = '',
+  page = 1,
+  pageSize = 10,
+  sortColumn = 'title',
+  sortDirection = 'asc'
+) {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    page_size: pageSize.toString(),
+    sort_column: sortColumn,
+    sort_direction: sortDirection
+  });
+  if (search) params.append('search', search);
+  const res = await fetch(`${API_BASE}/terrain-providers/search?${params}`);
+  if (!res.ok) throw new Error('Failed to fetch terrain providers');
+  return await res.json();
+}
+
+export async function fetchToolsPaginated(
+  search = '',
+  page = 1,
+  pageSize = 10,
+  sortColumn = 'name',
+  sortDirection = 'asc'
+) {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    page_size: pageSize.toString(),
+    sort_column: sortColumn,
+    sort_direction: sortDirection
+  });
+  if (search) params.append('search', search);
+  const res = await fetch(`${API_BASE}/tools/search?${params}`);
+  if (!res.ok) throw new Error('Failed to fetch tools');
+  return await res.json();
+}
+
+export async function fetchLayersPaginated(
+  search = '',
+  page = 1,
+  pageSize = 10,
+  sortColumn = 'title',
+  sortDirection = 'asc',
+  isBackground: boolean | null = null
+) {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    page_size: pageSize.toString(),
+    sort_column: sortColumn,
+    sort_direction: sortDirection
+  });
+  if (search) params.append('search', search);
+  if (isBackground !== null) params.append('is_background', String(isBackground));
+  const res = await fetch(`${API_BASE}/layers/search?${params}`);
+  if (!res.ok) throw new Error('Failed to fetch layers');
   return await res.json();
 }

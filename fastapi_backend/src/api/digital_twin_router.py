@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from db.database import get_db
 import services.digital_twin_service as service
@@ -11,17 +11,15 @@ from schemas.digital_twin_schema import (
     DigitalTwinUpdate,
     DigitalTwinResponse,
     DigitalTwinListResponse,
-    BulkAssociationsPayload
+    BulkAssociationsPayload,
+    PaginatedDigitalTwinResponse
 )
 from schemas.viewer_schema import (
     ViewerCreate,
     ViewerUpdate,
     ViewerResponse
 )
-from schemas.digital_twin_layer_association_schema import (
-    DigitalTwinLayerAssociationCreate,
-    DigitalTwinLayerRelationUpdate,
-)
+
 from schemas.digital_twin_tool_association_schema import (
     DigitalTwinToolBulkOperation
 )
@@ -32,6 +30,31 @@ router = APIRouter(prefix="/digital-twins", tags=["Digital Twins"])
 @router.get("/", response_model=list[DigitalTwinListResponse])
 def read_all_digital_twins(db: Session = Depends(get_db)):
     return service.list_digital_twins(db)
+
+@router.get("/search", response_model=PaginatedDigitalTwinResponse)
+def get_digital_twins_search(
+    db: Session = Depends(get_db),
+    search: str | None = Query(None, description="Search term"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=100),
+    sort_column: str = Query("name", description="Sort column"),
+    sort_direction: str = Query("asc", description="Sort direction: asc or desc")
+):
+    results, total = service.get_digital_twins_filtered_paginated(
+        db,
+        search or "",
+        page,
+        page_size,
+        sort_column,
+        sort_direction
+    )
+    results = [DigitalTwinListResponse.model_validate(twin, from_attributes=True) for twin in results]
+    return PaginatedDigitalTwinResponse(
+        results=results,
+        total=total,
+        page=page,
+        page_size=page_size
+    )
 
 @router.get("/{digital_twin_id}", response_model=DigitalTwinResponse)
 def read_digital_twin(digital_twin_id: int, db: Session = Depends(get_db)):

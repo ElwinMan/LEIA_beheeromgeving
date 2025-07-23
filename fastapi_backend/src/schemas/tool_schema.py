@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 class ToolBase(BaseModel):
     name: str
@@ -18,3 +18,9 @@ class ToolResponse(ToolBase):
     model_config = {
         "from_attributes": True
     }
+
+class PaginatedToolsResponse(BaseModel):
+    results: List[ToolResponse]
+    total: int
+    page: int
+    page_size: int

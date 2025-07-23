@@ -26,3 +26,28 @@ def delete(db: Session, terrainProvider_id: int):
         db.delete(terrainProvider)
         db.commit()
     return terrainProvider
+
+def get_filtered_paginated(
+    db: Session,
+    search: str = "",
+    page: int = 1,
+    page_size: int = 10,
+    sort_column: str = "title",
+    sort_direction: str = "asc"
+):
+    query = db.query(TerrainProvider)
+    if search:
+        search_lower = f"%{search.lower()}%"
+        query = query.filter(
+            (TerrainProvider.title.ilike(search_lower)) |
+            (TerrainProvider.url.ilike(search_lower))
+        )
+    allowed_columns = ["title", "url", "vertexNormals", "id"]
+    if sort_column in allowed_columns:
+        sort_attr = getattr(TerrainProvider, sort_column)
+        if sort_direction == "desc":
+            sort_attr = sort_attr.desc()
+        query = query.order_by(sort_attr)
+    total = query.count()
+    results = query.offset((page - 1) * page_size).limit(page_size).all()
+    return results, total

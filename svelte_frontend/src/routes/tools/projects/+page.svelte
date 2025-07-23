@@ -55,6 +55,6 @@
       <span>{data.error}</span>
     </div>
   {:else}
-    <ProjectTable projects={data.projects} on:updated={reloadProjects} />
+    <ProjectTable on:updated={reloadProjects} />
   {/if}
 </div>

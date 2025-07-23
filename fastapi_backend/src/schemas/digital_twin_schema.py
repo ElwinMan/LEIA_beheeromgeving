@@ -54,3 +54,9 @@ class DigitalTwinSummary(BaseModel):
     class Config:
         orm_mode = True
 
+class PaginatedDigitalTwinResponse(BaseModel):
+    results: List[DigitalTwinListResponse]
+    total: int
+    page: int
+    page_size: int
+

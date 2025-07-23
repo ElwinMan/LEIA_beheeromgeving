@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, Any
+from typing import Optional, Any, List
 
 class BookmarkBase(BaseModel):
     title: str
@@ -19,3 +19,9 @@ class BookmarkResponse(BookmarkBase):
 
     class Config:
         orm_mode = True
+
+class PaginatedBookmarksResponse(BaseModel):
+    results: List[BookmarkResponse]
+    total: int
+    page: int
+    page_size: int

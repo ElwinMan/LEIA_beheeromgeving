@@ -16,3 +16,21 @@ def update_tool(existing_tool, tool_update: ToolUpdate, db: Session):
 
 def delete_tool(existing_tool, db: Session):
     repo.delete_tool(db, existing_tool)
+
+def get_tools_filtered_paginated(
+    db: Session,
+    search: str = "",
+    page: int = 1,
+    page_size: int = 10,
+    sort_column: str = "name",
+    sort_direction: str = "asc"
+):
+    import repositories.tool_repository as repo
+    return repo.get_filtered_paginated(
+        db,
+        search,
+        page,
+        page_size,
+        sort_column,
+        sort_direction
+    )

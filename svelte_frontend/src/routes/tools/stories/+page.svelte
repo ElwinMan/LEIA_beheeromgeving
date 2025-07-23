@@ -55,6 +55,6 @@
       <span>{data.error}</span>
     </div>
   {:else}
-    <StoryTable stories={data.stories} />
+    <StoryTable />
   {/if}
 </div>

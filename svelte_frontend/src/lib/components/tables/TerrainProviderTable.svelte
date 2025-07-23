@@ -1,12 +1,12 @@
 <script lang="ts">
   import type { TerrainProvider } from "$lib/types/tool";
   import UpdateTerrainProviderModal from "$lib/components/modals/UpdateTerrainProviderModal.svelte";
-  import { deleteTerrainProvider } from "$lib/api";
+  import { deleteTerrainProvider, fetchTerrainProvidersPaginated } from "$lib/api";
   import { portal } from 'svelte-portal';
   import { tick } from 'svelte';
   import { createEventDispatcher } from 'svelte';
-
-  let { terrain_providers = [] } = $props();
+  import TableControls from './TableControls.svelte';
+  import SortableTableHeader from "$lib/components/tables/SortableTableHeader.svelte";
 
   let modalComponent: any;
 
@@ -15,10 +15,23 @@
   let dropdownLeft = $state(0);
   let dropdownTop = $state(0);
 
-  const dispatch = createEventDispatcher<{ updated: void }>();
+  // State for search and debounce
+  let search = $state('');
+  let debouncedSearch = $state('');
+  let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
+  // Pagination state
+  let page = $state(1);
+  let pageSize = $state(10);
+  let total = $state(0);
+
+  // Sorting state
   let sortColumn = $state('title');
   let sortDirection = $state<'asc' | 'desc'>('asc');
+
+  let terrainProviders: TerrainProvider[] = $state([]);
+
+  const dispatch = createEventDispatcher<{ updated: void }>();
 
   function handleOpenModal(tp: TerrainProvider) {
     modalComponent.showModal(tp);
@@ -28,7 +41,7 @@
     if (confirm('Weet je zeker dat je deze terrain provider wilt verwijderen?')) {
       try {
         await deleteTerrainProvider(String(tpId));
-        terrain_providers = terrain_providers.filter(tp => tp.id !== tpId);
+        await loadTerrainProviders();
         dispatch('updated');
       } catch (err) {
         alert('Verwijderen mislukt. Controleer de server.');
@@ -38,13 +51,8 @@
   }
 
   function handleUpdated(event: CustomEvent<TerrainProvider>) {
-    const updatedTP = event.detail;
-    const idx = terrain_providers.findIndex(tp => tp.id === updatedTP.id);
-    if (idx > -1) {
-      terrain_providers[idx] = updatedTP;
-      terrain_providers = [...terrain_providers];
-      dispatch('updated');
-    }
+    loadTerrainProviders();
+    dispatch('updated');
   }
 
   function handleSummaryClick(idx: number) {
@@ -58,7 +66,7 @@
       const ref = summaryRefs[idx];
       if (ref) {
         const rect = ref.getBoundingClientRect();
-        dropdownLeft = rect.right - 160; // 160px for w-40
+        dropdownLeft = rect.right - 160;
         dropdownTop = rect.bottom;
         window.addEventListener('mousedown', handleClickOutside);
       }
@@ -72,6 +80,36 @@
     }
   }
 
+  // Debounce search input
+  function onSearchChange(newValue: string) {
+    if (searchTimeout) clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      debouncedSearch = newValue;
+      page = 1;
+    }, 1000);
+  }
+
+  async function loadTerrainProviders() {
+    try {
+      const data = await fetchTerrainProvidersPaginated(
+        debouncedSearch,
+        page,
+        pageSize,
+        sortColumn,
+        sortDirection
+      );
+      terrainProviders = data.results;
+      total = data.total;
+    } catch (err) {
+      terrainProviders = [];
+      total = 0;
+    }
+  }
+
+  $effect(() => {
+    loadTerrainProviders();
+  });
+
   function setSort(column: string) {
     if (sortColumn === column) {
       sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
@@ -79,26 +117,30 @@
       sortColumn = column;
       sortDirection = 'asc';
     }
+    page = 1;
   }
 
-  function getSortedProviders() {
-    return [...terrain_providers].sort((a, b) => {
-      let aValue = a[sortColumn];
-      let bValue = b[sortColumn];
-      if (aValue == null) aValue = '';
-      if (bValue == null) bValue = '';
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        aValue = aValue.toLowerCase();
-        bValue = bValue.toLowerCase();
-      }
-      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
+  function gotoPage(p: number) {
+    if (p < 1 || p > totalPages()) return;
+    page = p;
+  }
+
+  function totalPages() {
+    return Math.max(1, Math.ceil(total / pageSize));
   }
 </script>
 
 <UpdateTerrainProviderModal bind:this={modalComponent} on:updated={handleUpdated} />
+
+<TableControls
+  {search}
+  onSearch={onSearchChange}
+  {page}
+  totalPages={totalPages()}
+  {pageSize}
+  onPageChange={gotoPage}
+  onPageSizeChange={(size) => { pageSize = size; page = 1; }}
+/>
 
 <div class="card bg-base-100 shadow-xl">
   <div class="card-body p-0">
@@ -106,39 +148,36 @@
       <table class="table-xs table-pin-rows table">
         <thead>
           <tr>
-            <th class="bg-base-200 font-bold cursor-pointer" onclick={() => setSort('title')}>
-              Title
-              {#if sortColumn === 'title'}
-                <img src={sortDirection === 'asc' ? "/icons/chevron-up.svg" : "/icons/chevron-down.svg"} alt="Sorteren" class="inline w-4 h-4" />
-              {:else}
-                <img src="/icons/chevrons-up-down.svg" alt="Niet gesorteerd" class="inline w-4 h-4 opacity-50" />
-              {/if}
-            </th>
-            <th class="bg-base-200 font-bold cursor-pointer" onclick={() => setSort('url')}>
-              URL
-              {#if sortColumn === 'url'}
-                <img src={sortDirection === 'asc' ? "/icons/chevron-up.svg" : "/icons/chevron-down.svg"} alt="Sorteren" class="inline w-4 h-4" />
-              {:else}
-                <img src="/icons/chevrons-up-down.svg" alt="Niet gesorteerd" class="inline w-4 h-4 opacity-50" />
-              {/if}
-            </th>
-            <th class="bg-base-200 font-bold cursor-pointer" onclick={() => setSort('vertexNormals')}>
-              Vertex Normals
-              {#if sortColumn === 'vertexNormals'}
-                <img src={sortDirection === 'asc' ? "/icons/chevron-up.svg" : "/icons/chevron-down.svg"} alt="Sorteren" class="inline w-4 h-4" />
-              {:else}
-                <img src="/icons/chevrons-up-down.svg" alt="Niet gesorteerd" class="inline w-4 h-4 opacity-50" />
-              {/if}
-            </th>
+            <SortableTableHeader
+              column="title"
+              label="Title"
+              {sortColumn}
+              {sortDirection}
+              {setSort}
+            />
+            <SortableTableHeader
+              column="url"
+              label="URL"
+              {sortColumn}
+              {sortDirection}
+              {setSort}
+            />
+            <SortableTableHeader
+              column="vertexNormals"
+              label="Vertex Normals"
+              {sortColumn}
+              {sortDirection}
+              {setSort}
+            />
             <th class="bg-base-200 font-bold">Acties</th>
           </tr>
         </thead>
         <tbody>
-          {#each getSortedProviders() as terrain_provider, idx}
+          {#each terrainProviders as tp, idx}
             <tr>
-              <td class="text-sm font-bold">{terrain_provider.title || '-'}</td>
-              <td class="text-sm">{terrain_provider.url || '-'}</td>
-              <td class="text-sm">{terrain_provider.vertexNormals ? 'Ja' : 'Nee'}</td>
+              <td class="text-sm font-bold">{tp.title || '-'}</td>
+              <td class="text-sm">{tp.url || '-'}</td>
+              <td class="text-sm">{tp.vertexNormals ? 'Ja' : 'Nee'}</td>
               <td class="text-sm relative">
                 <div class="dropdown dropdown-end">
                   <button
@@ -157,13 +196,13 @@
                       style="position: absolute; left: {dropdownLeft}px; top: {dropdownTop}px;"
                     >
                       <li>
-                        <button onclick={() => { handleOpenModal(terrain_provider); openIndex = null; }} class="flex items-center gap-2">
+                        <button onclick={() => { handleOpenModal(tp); openIndex = null; }} class="flex items-center gap-2">
                           <img src="/icons/settings.svg" alt="Settings" class="h-4 w-4" />
                           Bewerken
                         </button>
                       </li>
                       <li>
-                        <button class="text-error" onclick={() => { handleDelete(terrain_provider.id); openIndex = null; }}>
+                        <button class="text-error" onclick={() => { handleDelete(tp.id); openIndex = null; }}>
                           <img src="/icons/trash-2.svg" alt="Settings" class="h-4 w-4" />
                           Verwijderen
                         </button>
@@ -176,8 +215,7 @@
           {/each}
         </tbody>
       </table>
-
-      {#if terrain_providers.length === 0}
+      {#if terrainProviders.length === 0}
         <div class="py-12 text-center opacity-70">Geen terrain providers gevonden.</div>
       {/if}
     </div>

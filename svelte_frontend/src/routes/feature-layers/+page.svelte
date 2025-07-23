@@ -64,7 +64,6 @@
   </div>
 {:else}
   <LayerTable
-    layers={layers}
-    on:updateLayers={event => layers = event.detail}
+    isBackgroundPage={isBackgroundPage}
   />
 {/if}

@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from db.database import get_db
-from schemas.tool_schema import ToolCreate, ToolUpdate, ToolResponse
+from schemas.tool_schema import ToolCreate, ToolUpdate, ToolResponse, PaginatedToolsResponse
 import services.tool_service as service
 
 router = APIRouter(prefix="/tools", tags=["Tools"])
@@ -9,6 +9,31 @@ router = APIRouter(prefix="/tools", tags=["Tools"])
 @router.get("/", response_model=list[ToolResponse])
 def get_tools(db: Session = Depends(get_db)):
     return service.list_tools(db)
+
+@router.get("/search", response_model=PaginatedToolsResponse)
+def get_tools_search(
+    db: Session = Depends(get_db),
+    search: str | None = Query(None, description="Search term"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=100),
+    sort_column: str = Query("name", description="Sort column"),
+    sort_direction: str = Query("asc", description="Sort direction: asc or desc")
+):
+    results, total = service.get_tools_filtered_paginated(
+        db,
+        search or "",
+        page,
+        page_size,
+        sort_column,
+        sort_direction
+    )
+    results = [ToolResponse.model_validate(tool, from_attributes=True) for tool in results]
+    return PaginatedToolsResponse(
+        results=results,
+        total=total,
+        page=page,
+        page_size=page_size
+    )
 
 @router.get("/{tool_id}", response_model=ToolResponse)
 def read_tool(tool_id: int, db: Session = Depends(get_db)):

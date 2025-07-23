@@ -19,3 +19,20 @@ def update_digital_twin(existing_digital_twin: DigitalTwin, data: DigitalTwinUpd
 
 def delete_digital_twin(existing_digital_twin: DigitalTwin, db: Session):
     repo.delete_digital_twin(db, existing_digital_twin)
+
+def get_digital_twins_filtered_paginated(
+    db: Session,
+    search: str = "",
+    page: int = 1,
+    page_size: int = 10,
+    sort_column: str = "name",
+    sort_direction: str = "asc"
+):
+    return repo.get_filtered_paginated(
+        db,
+        search,
+        page,
+        page_size,
+        sort_column,
+        sort_direction
+    )

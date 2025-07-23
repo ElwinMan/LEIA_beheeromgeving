@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, Any
+from typing import Optional, Any, List
 
 class ProjectBase(BaseModel):
     name: str
@@ -19,3 +19,9 @@ class ProjectResponse(ProjectBase):
 
     class Config:
         orm_mode = True
+
+class PaginatedProjectsResponse(BaseModel):
+    results: List[ProjectResponse]
+    total: int
+    page: int
+    page_size: int

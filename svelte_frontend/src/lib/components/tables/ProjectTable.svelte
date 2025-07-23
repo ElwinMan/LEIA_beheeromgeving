@@ -1,12 +1,12 @@
 <script lang="ts">
   import type { Project } from "$lib/types/tool";
   import UpdateProjectModal from "$lib/components/modals/UpdateProjectModal.svelte";
-  import { deleteProject } from "$lib/api";
+  import { deleteProject, fetchProjectsPaginated } from "$lib/api";
   import { portal } from 'svelte-portal';
   import { tick } from 'svelte';
   import { createEventDispatcher } from 'svelte';
-
-  let { projects = [] } = $props();
+  import TableControls from './TableControls.svelte';
+  import SortableTableHeader from "$lib/components/tables/SortableTableHeader.svelte";
 
   let modalComponent: any;
 
@@ -15,10 +15,23 @@
   let dropdownLeft = $state(0);
   let dropdownTop = $state(0);
 
-  const dispatch = createEventDispatcher<{ updated: void }>();
+  // State for search and debounce
+  let search = $state('');
+  let debouncedSearch = $state('');
+  let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
+  // Pagination state
+  let page = $state(1);
+  let pageSize = $state(10);
+  let total = $state(0);
+
+  // Sorting state
   let sortColumn = $state('name');
   let sortDirection = $state<'asc' | 'desc'>('asc');
+
+  let projects: Project[] = $state([]);
+
+  const dispatch = createEventDispatcher<{ updated: void }>();
 
   function handleOpenModal(project: Project) {
     modalComponent.showModal(project);
@@ -28,7 +41,7 @@
     if (confirm('Weet je zeker dat je dit project wilt verwijderen?')) {
       try {
         await deleteProject(String(projectId));
-        projects = projects.filter(p => p.id !== projectId);
+        await loadProjects();
         dispatch('updated');
       } catch (err) {
         alert('Verwijderen mislukt. Controleer de server.');
@@ -38,13 +51,8 @@
   }
 
   function handleUpdated(event: CustomEvent<Project>) {
-    const updatedProject = event.detail;
-    const idx = projects.findIndex(p => p.id === updatedProject.id);
-    if (idx > -1) {
-      projects[idx] = updatedProject;
-      projects = [...projects];
-      dispatch('updated');
-    }
+    loadProjects();
+    dispatch('updated');
   }
 
   function handleSummaryClick(idx: number) {
@@ -72,6 +80,36 @@
     }
   }
 
+  // Debounce search input
+  function onSearchChange(newValue: string) {
+    if (searchTimeout) clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      debouncedSearch = newValue;
+      page = 1;
+    }, 1000);
+  }
+
+  async function loadProjects() {
+    try {
+      const data = await fetchProjectsPaginated(
+        debouncedSearch,
+        page,
+        pageSize,
+        sortColumn,
+        sortDirection
+      );
+      projects = data.results;
+      total = data.total;
+    } catch (err) {
+      projects = [];
+      total = 0;
+    }
+  }
+
+  $effect(() => {
+    loadProjects();
+  });
+
   function setSort(column: string) {
     if (sortColumn === column) {
       sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
@@ -79,26 +117,30 @@
       sortColumn = column;
       sortDirection = 'asc';
     }
+    page = 1;
   }
 
-  function getSortedProjects() {
-    return [...projects].sort((a, b) => {
-      let aValue = a[sortColumn];
-      let bValue = b[sortColumn];
-      if (aValue == null) aValue = '';
-      if (bValue == null) bValue = '';
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        aValue = aValue.toLowerCase();
-        bValue = bValue.toLowerCase();
-      }
-      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
+  function gotoPage(p: number) {
+    if (p < 1 || p > totalPages()) return;
+    page = p;
+  }
+
+  function totalPages() {
+    return Math.max(1, Math.ceil(total / pageSize));
   }
 </script>
 
 <UpdateProjectModal bind:this={modalComponent} on:updated={handleUpdated} />
+
+<TableControls
+  {search}
+  onSearch={onSearchChange}
+  {page}
+  totalPages={totalPages()}
+  {pageSize}
+  onPageChange={gotoPage}
+  onPageSizeChange={(size) => { pageSize = size; page = 1; }}
+/>
 
 <div class="card bg-base-100 shadow-xl">
   <div class="card-body p-0">
@@ -106,27 +148,25 @@
       <table class="table-xs table-pin-rows table">
         <thead>
           <tr>
-            <th class="bg-base-200 font-bold cursor-pointer" onclick={() => setSort('name')}>
-              Naam
-              {#if sortColumn === 'name'}
-                <img src={sortDirection === 'asc' ? "/icons/chevron-up.svg" : "/icons/chevron-down.svg"} alt="Sorteren" class="inline w-4 h-4" />
-              {:else}
-                <img src="/icons/chevrons-up-down.svg" alt="Niet gesorteerd" class="inline w-4 h-4 opacity-50" />
-              {/if}
-            </th>
-            <th class="bg-base-200 font-bold cursor-pointer" onclick={() => setSort('description')}>
-              Beschrijving
-              {#if sortColumn === 'description'}
-                <img src={sortDirection === 'asc' ? "/icons/chevron-up.svg" : "/icons/chevron-down.svg"} alt="Sorteren" class="inline w-4 h-4" />
-              {:else}
-                <img src="/icons/chevrons-up-down.svg" alt="Niet gesorteerd" class="inline w-4 h-4 opacity-50" />
-              {/if}
-            </th>
+            <SortableTableHeader
+              column="name"
+              label="Naam"
+              {sortColumn}
+              {sortDirection}
+              {setSort}
+            />
+            <SortableTableHeader
+              column="description"
+              label="Beschrijving"
+              {sortColumn}
+              {sortDirection}
+              {setSort}
+            />
             <th class="bg-base-200 font-bold">Acties</th>
           </tr>
         </thead>
         <tbody>
-          {#each getSortedProjects() as project, idx}
+          {#each projects as project, idx}
             <tr>
               <td class="text-sm font-bold">{project.name}</td>
               <td class="text-sm">{project.description}</td>

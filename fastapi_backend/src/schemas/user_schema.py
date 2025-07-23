@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, List
 
 class UserBase(BaseModel):
     name: str
@@ -18,3 +18,9 @@ class UserResponse(UserBase):
 
     class Config:
         orm_mode = True
+
+class PaginatedUsersResponse(BaseModel):
+    results: List[UserResponse]
+    total: int
+    page: int
+    page_size: int

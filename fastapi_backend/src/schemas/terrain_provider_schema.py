@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, Any
+from typing import Optional, List
 
 class TerrainProviderBase(BaseModel):
     title: str
@@ -19,3 +19,9 @@ class TerrainProviderResponse(TerrainProviderBase):
 
     class Config:
         orm_mode = True
+
+class PaginatedTerrainProvidersResponse(BaseModel):
+    results: List[TerrainProviderResponse]
+    total: int
+    page: int
+    page_size: int

@@ -1,14 +1,14 @@
 <script lang="ts">
   import type { Tool } from '$lib/types/tool';
   import UpdateToolModal from '$lib/components/modals/UpdateToolModal.svelte';
-  import { deleteTool } from '$lib/api';
+  import { deleteTool, fetchToolsPaginated } from '$lib/api';
   import { createEventDispatcher } from 'svelte';
   import { portal } from 'svelte-portal';
   import { tick } from 'svelte';
+  import TableControls from './TableControls.svelte';
+  import SortableTableHeader from "$lib/components/tables/SortableTableHeader.svelte";
 
   const dispatch = createEventDispatcher<{ updated: void }>();
-
-  let { tools = [] } = $props();
 
   let modalComponent: any;
 
@@ -16,6 +16,22 @@
   let summaryRefs = $state<Array<HTMLElement | null>>([]);
   let dropdownLeft = $state(0);
   let dropdownTop = $state(0);
+
+  // State for search and debounce
+  let search = $state('');
+  let debouncedSearch = $state('');
+  let searchTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  // Pagination state
+  let page = $state(1);
+  let pageSize = $state(10);
+  let total = $state(0);
+
+  // Sorting state
+  let sortColumn = $state('name');
+  let sortDirection = $state<'asc' | 'desc'>('asc');
+
+  let tools: Tool[] = $state([]);
 
   function handleOpenModal(tool: Tool) {
     modalComponent.showModal(tool);
@@ -25,7 +41,7 @@
     if (confirm('Weet je zeker dat je deze tool wilt verwijderen?')) {
       try {
         await deleteTool(String(toolId));
-        tools = tools.filter(t => t.id !== toolId);
+        await loadTools();
         dispatch('updated');
       } catch (err) {
         alert('Verwijderen mislukt. Controleer de server.');
@@ -35,13 +51,8 @@
   }
 
   function handleUpdated(event: CustomEvent<Tool>) {
-    const updatedTool = event.detail;
-    const idx = tools.findIndex(t => t.id === updatedTool.id);
-    if (idx > -1) {
-      tools[idx] = updatedTool;
-      tools = [...tools];
-      dispatch('updated');
-    }
+    loadTools();
+    dispatch('updated');
   }
 
   function handleSummaryClick(idx: number) {
@@ -55,7 +66,7 @@
       const ref = summaryRefs[idx];
       if (ref) {
         const rect = ref.getBoundingClientRect();
-        dropdownLeft = rect.right - 208; // 208px for w-52
+        dropdownLeft = rect.right - 208;
         dropdownTop = rect.bottom;
         window.addEventListener('mousedown', handleClickOutside);
       }
@@ -68,9 +79,68 @@
       window.removeEventListener('mousedown', handleClickOutside);
     }
   }
+
+  // Debounce search input
+  function onSearchChange(newValue: string) {
+    if (searchTimeout) clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      debouncedSearch = newValue;
+      page = 1;
+    }, 1000);
+  }
+
+  async function loadTools() {
+    try {
+      const data = await fetchToolsPaginated(
+        debouncedSearch,
+        page,
+        pageSize,
+        sortColumn,
+        sortDirection
+      );
+      tools = data.results;
+      total = data.total;
+    } catch (err) {
+      tools = [];
+      total = 0;
+    }
+  }
+
+  $effect(() => {
+    loadTools();
+  });
+
+  function setSort(column: string) {
+    if (sortColumn === column) {
+      sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortColumn = column;
+      sortDirection = 'asc';
+    }
+    page = 1;
+  }
+
+  function gotoPage(p: number) {
+    if (p < 1 || p > totalPages()) return;
+    page = p;
+  }
+
+  function totalPages() {
+    return Math.max(1, Math.ceil(total / pageSize));
+  }
 </script>
 
 <UpdateToolModal bind:this={modalComponent} on:updated={handleUpdated} />
+
+<TableControls
+  {search}
+  onSearch={onSearchChange}
+  {page}
+  totalPages={totalPages()}
+  {pageSize}
+  onPageChange={gotoPage}
+  onPageSizeChange={(size) => { pageSize = size; page = 1; }}
+/>
 
 <div class="card bg-base-100 shadow-xl">
   <div class="card-body p-0">
@@ -78,7 +148,13 @@
       <table class="table-xs table-pin-rows table">
         <thead>
           <tr>
-            <th class="bg-base-200 sticky w-full font-bold">Name</th>
+            <SortableTableHeader
+              column="name"
+              label="Name"
+              {sortColumn}
+              {sortDirection}
+              {setSort}
+            />
             <th class="bg-base-200 pr-10 text-right font-bold">Acties</th>
           </tr>
         </thead>

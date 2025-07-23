@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, Any
+from typing import Optional, Any, List
 
 class StoryBase(BaseModel):
     name: str
@@ -19,3 +19,9 @@ class StoryResponse(StoryBase):
 
     class Config:
         orm_mode = True
+
+class PaginatedStoriesResponse(BaseModel):
+    results: List[StoryResponse]
+    total: int
+    page: int
+    page_size: int

@@ -62,6 +62,6 @@
       <span>{data.error}</span>
     </div>
   {:else}
-    <ToolTable tools={data.tools} on:updated={reloadTools} />
+    <ToolTable on:updated={reloadTools} />
   {/if}
 </div>

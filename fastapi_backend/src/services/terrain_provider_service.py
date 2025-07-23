@@ -24,3 +24,20 @@ def update_terrain_provider(db: Session, terrain_provider_id: int, updates: Terr
 
 def delete_terrain_provider(db: Session, terrain_provider_id: int) -> bool:
     return repo.delete(db, terrain_provider_id)
+
+def get_terrain_providers_filtered_paginated(
+    db: Session,
+    search: str = "",
+    page: int = 1,
+    page_size: int = 10,
+    sort_column: str = "title",
+    sort_direction: str = "asc"
+):
+    return repo.get_filtered_paginated(
+        db,
+        search,
+        page,
+        page_size,
+        sort_column,
+        sort_direction
+    )

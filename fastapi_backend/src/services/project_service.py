@@ -24,3 +24,20 @@ def update_project(db: Session, project_id: int, updates: ProjectUpdate) -> Proj
 
 def delete_project(db: Session, project_id: int) -> bool:
     return repository.delete(db, project_id)
+
+def get_projects_filtered_paginated(
+    db: Session,
+    search: str = "",
+    page: int = 1,
+    page_size: int = 10,
+    sort_column: str = "name",
+    sort_direction: str = "asc"
+):
+    return repository.get_filtered_paginated(
+        db,
+        search,
+        page,
+        page_size,
+        sort_column,
+        sort_direction
+    )

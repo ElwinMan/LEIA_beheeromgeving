@@ -37,3 +37,33 @@ def get_digital_twins_for_layer(db: Session, layer_id: int):
         return []
     twins = db.query(DigitalTwin).filter(DigitalTwin.id.in_(twin_ids)).all()
     return twins
+
+def get_filtered_paginated(
+    db: Session,
+    search: str = "",
+    page: int = 1,
+    page_size: int = 10,
+    sort_column: str = "title",
+    sort_direction: str = "asc",
+    is_background: bool | None = None
+):
+    query = db.query(Layer)
+    if search:
+        search_lower = f"%{search.lower()}%"
+        query = query.filter(
+            (Layer.title.ilike(search_lower)) |
+            (Layer.type.ilike(search_lower)) |
+            (Layer.url.ilike(search_lower)) |
+            (Layer.featureName.ilike(search_lower))
+        )
+    if is_background is not None:
+        query = query.filter(Layer.isBackground == is_background)
+    allowed_columns = ["title", "type", "url", "featureName", "id"]
+    if sort_column in allowed_columns:
+        sort_attr = getattr(Layer, sort_column)
+        if sort_direction == "desc":
+            sort_attr = sort_attr.desc()
+        query = query.order_by(sort_attr)
+    total = query.count()
+    results = query.offset((page - 1) * page_size).limit(page_size).all()
+    return results, total
