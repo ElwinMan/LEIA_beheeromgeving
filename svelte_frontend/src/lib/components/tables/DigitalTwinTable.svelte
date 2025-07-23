@@ -1,8 +1,9 @@
 <script lang="ts">
+  import type { DigitalTwin } from '$lib/types/digitalTwin';
   import { tick } from 'svelte';
   import { portal } from 'svelte-portal';
 
-  let { digitalTwins = [] } = $props();
+  let { digitalTwins = [] }: { digitalTwins: DigitalTwin[] } = $props();
 
   let openIndex = $state<number | null>(null);
   let summaryRefs = $state<Array<HTMLElement | null>>([]);
@@ -10,8 +11,28 @@
   let dropdownTop = $state(0);
 
   // Sorting state
-  let sortColumn = $state('name');
-  let sortDirection = $state<'asc' | 'desc'>('asc');
+  let sortColumn = $state('last_updated');
+  let sortDirection = $state<'asc' | 'desc'>('desc');
+
+  // Pagination state
+  let page = $state(1);
+  let pageSize = $state(10);
+
+  // Search state
+  let search = $state('');
+  let debouncedSearch = $state('');
+  let searchTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  // Watch for changes to `search` using a manual function
+  function onSearchChange(newValue: string) {
+    if (searchTimeout) clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      debouncedSearch = newValue;
+      page = 1;
+    }, 1000);
+  }
+
+  type SortableTwinKey = 'name' | 'subtitle' | 'owner' | 'private' | 'last_updated';
 
   function setSort(column: string) {
     if (sortColumn === column) {
@@ -23,9 +44,20 @@
   }
 
   function getSortedTwins() {
-    return [...digitalTwins].sort((a, b) => {
-      let aValue = a[sortColumn];
-      let bValue = b[sortColumn];
+    let filtered = digitalTwins;
+    if (debouncedSearch.trim() !== '') {
+      const s = debouncedSearch.trim().toLowerCase();
+      filtered = digitalTwins.filter(twin =>
+        (twin.name && twin.name.toLowerCase().includes(s)) ||
+        (twin.subtitle && twin.subtitle.toLowerCase().includes(s)) ||
+        (twin.owner && twin.owner.toLowerCase().includes(s)) ||
+        (twin.title && twin.title.toLowerCase().includes(s))
+      );
+    }
+    return [...filtered].sort((a, b) => {
+      const col = sortColumn as SortableTwinKey;
+      let aValue = a[col];
+      let bValue = b[col];
       if (aValue == null) aValue = '';
       if (bValue == null) bValue = '';
       if (typeof aValue === 'string' && typeof bValue === 'string') {
@@ -36,6 +68,16 @@
       if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
+  }
+
+  const totalPages = $derived(() => Math.max(1, Math.ceil(getSortedTwins().length / pageSize)));
+  const paginatedTwins = $derived(() =>
+    getSortedTwins().slice((page - 1) * pageSize, page * pageSize)
+  );
+
+  function gotoPage(p: number) {
+    if (p < 1 || p > totalPages()) return;
+    page = p;
   }
 
   function handleSummaryClick(idx: number) {
@@ -49,8 +91,8 @@
       const ref = summaryRefs[idx];
       if (ref) {
         const rect = ref.getBoundingClientRect();
-        dropdownLeft = rect.right - 208; // 208px for w-52
-        dropdownTop = rect.bottom;
+        dropdownLeft = rect.right - 208 + window.scrollX; // 208px for w-52
+        dropdownTop = rect.bottom + window.scrollY;
         window.addEventListener('mousedown', handleClickOutside);
       }
     });
@@ -67,6 +109,16 @@
 <div class="card bg-base-100 shadow-xl">
   <div class="card-body p-0">
     <div class="overflow-x-auto">
+      <div class="flex items-center gap-2 mb-0 p-4 bg-base-300 rounded">
+        <input
+          type="text"
+          class="input input-bordered w-full max-w-xs"
+          placeholder="Zoek digital twin..."
+          bind:value={search}
+          oninput={() => onSearchChange(search)}
+        />
+      </div>
+
       <table class="table-xs table-pin-rows table">
         <thead>
           <tr>
@@ -134,7 +186,7 @@
           </tr>
         </thead>
         <tbody>
-          {#each getSortedTwins() as twin, idx}
+          {#each paginatedTwins() as twin, idx}
             <tr class="hover">
               <td class="sticky left-0 z-10">
                 <div>
@@ -193,6 +245,57 @@
           {/each}
         </tbody>
       </table>
+
+      <!-- Pagination controls -->
+      <div class="flex justify-between items-center mt-4 p-6 bg-base-200 shadow">
+        <div>
+          Pagina {page} van {totalPages()}
+        </div>
+        <div>
+          <div class="join">
+            <button class="join-item btn btn-md" onclick={() => gotoPage(page - 1)} disabled={page === 1}>«</button>
+            {#if totalPages() <= 7}
+              {#each Array(totalPages()) as _, i}
+                <button
+                  class="join-item btn btn-md {page === i + 1 ? 'btn-active btn-primary' : ''}"
+                  onclick={() => gotoPage(i + 1)}
+                >{i + 1}</button>
+              {/each}
+            {:else}
+              <button
+                class="join-item btn btn-md {page === 1 ? 'btn-active btn-primary' : ''}"
+                onclick={() => gotoPage(1)}
+              >1</button>
+              {#if page > 4}
+                <button class="join-item btn btn-md btn-disabled">...</button>
+              {/if}
+              {#each [page - 1, page, page + 1] as p (p)}
+                {#if p > 1 && p < totalPages()}
+                  <button
+                    class="join-item btn btn-md {page === p ? 'btn-active btn-primary' : ''}"
+                    onclick={() => gotoPage(p)}
+                  >{p}</button>
+                {/if}
+              {/each}
+              {#if page < totalPages() - 3}
+                <button class="join-item btn btn-md btn-disabled">...</button>
+              {/if}
+              <button
+                class="join-item btn btn-md {page === totalPages() ? 'btn-active btn-primary' : ''}"
+                onclick={() => gotoPage(totalPages())}
+              >{totalPages()}</button>
+            {/if}
+            <button class="join-item btn btn-md" onclick={() => gotoPage(page + 1)} disabled={page === totalPages()}>»</button>
+          </div>
+        </div>
+        <div>
+          <select class="select select-mg" bind:value={pageSize} onchange={() => { page = 1; }}>
+            <option value={10}>10 per pagina</option>
+            <option value={20}>20 per pagina</option>
+            <option value={50}>50 per pagina</option>
+          </select>
+        </div>
+      </div>
 
       {#if digitalTwins.length === 0}
         <div class="py-12 text-center">
