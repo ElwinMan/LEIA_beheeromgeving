@@ -1233,120 +1233,110 @@
       </div>
 
       <div class="bg-base-100 border-base-300 rounded-lg border p-4">
-        {#if isLoading}
-          <div class="flex items-center justify-center py-8">
-            <span class="loading loading-spinner loading-md"></span>
-            <span class="ml-3">Laden...</span>
-          </div>
-        {:else if error}
-          <div class="alert alert-error">
-            <span>Fout bij het laden: {error}</span>
-          </div>
-        {:else}
-          <div class="space-y-4">
-            <!-- Nested Structure -->
-            <div class="space-y-1">
-              <!-- Ungrouped Layers -->
-              <div class="mb-4">
-                <h3 class="text-base-content/80 mb-2 flex items-center gap-2 text-sm font-semibold">
-                  <img src="/icons/file.svg" alt="Laag" class="h-4 w-4" />
-                  Ongegroepeerde Lagen ({ungroupedLayers.length})
-                </h3>
-                <div class="ml-6 space-y-1">
-                  {#each ungroupedLayers as layer}
-                    <div class="relative">
-                      <div
-                        class="hover:bg-base-200 flex cursor-move items-center gap-2 rounded px-2 py-1 text-sm {draggedItem?.type ===
-                          'layer' && draggedItem?.id === layer.layer_id
-                          ? 'opacity-50'
-                          : ''}"
-                        draggable="true"
-                        ondragstart={(e) => handleDragStart(e, 'layer', layer.layer_id, null)}
-                        ondragover={(e) => handleDragOver(e, 'layer', layer.layer_id, null)}
-                        ondragleave={handleDragLeave}
-                        ondrop={(e) => handleDrop(e, 'layer', layer.layer_id, null)}
-                        role="listitem"
-                      >
-                        <img src="/icons/grip-vertical.svg" alt="Grip" class="text-base-content/30 h-4 w-4 flex-shrink-0" />
-                        <img src="/icons/file-ungrouped.svg" alt="Laag" class="h-4 w-4 flex-shrink-0" />
-                        <span class="flex-1">
-                          <span class="font-medium">{layer.title}</span>
-                          {#if layer.is_default}
-                            <span class="badge badge-primary badge-xs ml-2">Standaard</span>
-                          {/if}
-                        </span>
-                        <span class="text-base-content/50 text-xs">#{layer.sort_order}</span>
-                        <button
-                          class="btn btn-ghost btn-xs"
-                          onclick={() => toggleDefault(layer.layer_id)}
-                          title={layer.is_default ? 'Verwijder van standaard' : 'Maak standaard'}
-                        >
-                          {#if layer.is_default}
-                            <img src="/icons/eye.svg" alt="Zichtbaar" class="h-3 w-3" />
-                          {:else}
-                            <img src="/icons/eye-off.svg" alt="Verborgen" class="h-3 w-3" />
-                          {/if}
-                        </button>
-                        <button
-                          class="btn btn-ghost btn-xs"
-                          onclick={() => confirmDeleteLayer(layer)}
-                          title="Verwijder laag"
-                          aria-label="Verwijder laag"
-                        >
-                          <img src="/icons/trash-2.svg" alt="Verwijder laag" class="h-5 w-5" />
-                        </button>
-                      </div>
-
-                      <!-- Absolute positioned drop indicators -->
-                      {#if getDropIndicatorStyle('layer', layer.layer_id, null).show}
-                        {@const indicator = getDropIndicatorStyle('layer', layer.layer_id, null)}
-                        {#if indicator.zone === 'top'}
-                          <div
-                            class="bg-primary absolute top-0 right-0 left-0 z-10 h-1 -translate-y-0.5 rounded-full"
-                          ></div>
-                        {:else if indicator.zone === 'bottom'}
-                          <div
-                            class="bg-primary absolute right-0 bottom-0 left-0 z-10 h-1 translate-y-0.5 rounded-full"
-                          ></div>
-                        {:else if indicator.zone === 'middle'}
-                          <div
-                            class="border-primary bg-primary/10 pointer-events-none absolute inset-0 z-10 rounded border-2"
-                          ></div>
+        <!-- Make this div scrollable -->
+        <div class="space-y-4 h-[calc(100vh-200px)] overflow-y-auto">
+          <!-- Nested Structure -->
+          <div class="space-y-1">
+            <!-- Ungrouped Layers -->
+            <div class="mb-4">
+              <h3 class="text-base-content/80 mb-2 flex items-center gap-2 text-sm font-semibold">
+                <img src="/icons/file.svg" alt="Laag" class="h-4 w-4" />
+                Ongegroepeerde Lagen ({ungroupedLayers.length})
+              </h3>
+              <div class="ml-6 space-y-1">
+                {#each ungroupedLayers as layer}
+                  <div class="relative">
+                    <div
+                      class="hover:bg-base-200 flex cursor-move items-center gap-2 rounded px-2 py-1 text-sm {draggedItem?.type ===
+                        'layer' && draggedItem?.id === layer.layer_id
+                        ? 'opacity-50'
+                        : ''}"
+                      draggable="true"
+                      ondragstart={(e) => handleDragStart(e, 'layer', layer.layer_id, null)}
+                      ondragover={(e) => handleDragOver(e, 'layer', layer.layer_id, null)}
+                      ondragleave={handleDragLeave}
+                      ondrop={(e) => handleDrop(e, 'layer', layer.layer_id, null)}
+                      role="listitem"
+                    >
+                      <img src="/icons/grip-vertical.svg" alt="Grip" class="text-base-content/30 h-4 w-4 flex-shrink-0" />
+                      <img src="/icons/file-ungrouped.svg" alt="Laag" class="h-4 w-4 flex-shrink-0" />
+                      <span class="flex-1">
+                        <span class="font-medium">{layer.title}</span>
+                        {#if layer.is_default}
+                          <span class="badge badge-primary badge-xs ml-2">Standaard</span>
                         {/if}
-                      {/if}
+                      </span>
+                      <span class="text-base-content/50 text-xs">#{layer.sort_order}</span>
+                      <button
+                        class="btn btn-ghost btn-xs"
+                        onclick={() => toggleDefault(layer.layer_id)}
+                        title={layer.is_default ? 'Verwijder van standaard' : 'Maak standaard'}
+                      >
+                        {#if layer.is_default}
+                          <img src="/icons/eye.svg" alt="Zichtbaar" class="h-3 w-3" />
+                        {:else}
+                          <img src="/icons/eye-off.svg" alt="Verborgen" class="h-3 w-3" />
+                        {/if}
+                      </button>
+                      <button
+                        class="btn btn-ghost btn-xs"
+                        onclick={() => confirmDeleteLayer(layer)}
+                        title="Verwijder laag"
+                        aria-label="Verwijder laag"
+                      >
+                        <img src="/icons/trash-2.svg" alt="Verwijder laag" class="h-5 w-5" />
+                      </button>
                     </div>
-                  {/each}
-                </div>
-              </div>
 
-              <!-- Root Groups -->
-              <div class="mb-4">
-                <h3 class="text-base-content/80 mb-2 flex items-center gap-2 text-sm font-semibold">
-                  <img src="/icons/folder.svg" alt="Map" class="h-4 w-4" />
-                  Groepen ({rootGroups.length})
-                  <button
-                    class="btn btn-sm btn-outline mb-2"
-                    onclick={() => groupModalRef.showModal()}
-                    disabled={isSaving}
-                  >
-                  <img src="/icons/plus.svg" alt="Nieuwe groep" class="mr-1 h-4 w-4" />
-                    Nieuwe groep
-                  </button>
-                </h3>
-                {#each rootGroups as group}
-                  {@render groupComponent(group)}
+                    <!-- Absolute positioned drop indicators -->
+                    {#if getDropIndicatorStyle('layer', layer.layer_id, null).show}
+                      {@const indicator = getDropIndicatorStyle('layer', layer.layer_id, null)}
+                      {#if indicator.zone === 'top'}
+                        <div
+                          class="bg-primary absolute top-0 right-0 left-0 z-10 h-1 -translate-y-0.5 rounded-full"
+                        ></div>
+                      {:else if indicator.zone === 'bottom'}
+                        <div
+                          class="bg-primary absolute right-0 bottom-0 left-0 z-10 h-1 translate-y-0.5 rounded-full"
+                        ></div>
+                      {:else if indicator.zone === 'middle'}
+                        <div
+                          class="border-primary bg-primary/10 pointer-events-none absolute inset-0 z-10 rounded border-2"
+                        ></div>
+                      {/if}
+                    {/if}
+                  </div>
                 {/each}
               </div>
-
-              {#if ungroupedLayers.length === 0 && rootGroups.length === 0}
-                <div class="text-base-content/50 py-8 text-center">
-                  <p>Geen lagen gevonden voor deze digital twin.</p>
-                  <p class="mt-2 text-xs">Sleep lagen vanuit de catalogus om te beginnen.</p>
-                </div>
-              {/if}
             </div>
+
+            <!-- Root Groups -->
+            <div class="mb-4">
+              <h3 class="text-base-content/80 mb-2 flex items-center gap-2 text-sm font-semibold">
+                <img src="/icons/folder.svg" alt="Map" class="h-4 w-4" />
+                Groepen ({rootGroups.length})
+                <button
+                  class="btn btn-sm btn-outline mb-2"
+                  onclick={() => groupModalRef.showModal()}
+                  disabled={isSaving}
+                >
+                <img src="/icons/plus.svg" alt="Nieuwe groep" class="mr-1 h-4 w-4" />
+                  Nieuwe groep
+                </button>
+              </h3>
+              {#each rootGroups as group}
+                {@render groupComponent(group)}
+              {/each}
+            </div>
+
+            {#if ungroupedLayers.length === 0 && rootGroups.length === 0}
+              <div class="text-base-content/50 py-8 text-center">
+                <p>Geen lagen gevonden voor deze digital twin.</p>
+                <p class="mt-2 text-xs">Sleep lagen vanuit de catalogus om te beginnen.</p>
+              </div>
+            {/if}
           </div>
-        {/if}
+        </div>
       </div>
     </div>
   </div>
