@@ -24,6 +24,8 @@
   import { isDescendant } from '$lib/utils/isDescendantPrevention';
   import { canDropGeneric } from '$lib/utils/dragDropPermission';
   import type { DropZone } from '$lib/utils/dragDropPermission';
+  import { addCatalogItemToList } from '$lib/utils/catalogAddUtil';
+  import { dragStartAction } from '$lib/utils/dragStartAction';
 
 
   interface Props {
@@ -170,6 +172,7 @@
 
   onMount(fetchAllData);
 
+  // dragDropPermission.ts
   const dropConfig = {
     allowed: {
       'catalog-layer': {
@@ -292,6 +295,7 @@
     return null;
   }
 
+  // catalogAddUtil.ts
   function addLayerToDigitalTwin(layer: Layer, groupId: number | null = null) {
     // Create new layer association
     const newLayerAssociation: LayerWithAssociation = {
@@ -326,42 +330,33 @@
     hasChanges = true;
   }
 
-  // Catalog drag handlers
-  function handleCatalogDragStart(e: DragEvent, layer: Layer) {
-    if (e.dataTransfer) {
-      e.dataTransfer.effectAllowed = 'copy';
-      const dragData = {
-        type: 'catalog-layer',
-        id: layer.id,
-        layer: layer
-      };
-      e.dataTransfer.setData('application/json', JSON.stringify(dragData));
-    }
-
-    // Set global fallback
-    (window as any).catalogDragData = {
-      type: 'catalog-layer',
-      id: layer.id,
-      layer: layer
+  function mapLayerToAssociation(layer: Layer, groupId: number | null, sortOrder: number): LayerWithAssociation {
+    return {
+      layer_id: layer.id,
+      is_default: false,
+      sort_order: sortOrder,
+      group_id: groupId,
+      title: layer.title,
+      beschrijving: layer.type || '',
+      featureName: layer.featureName || '',
+      isNew: true
     };
   }
 
   function handleCatalogAddLayer(layer: Layer) {
-    addLayerToDigitalTwin(layer, null);
-  }
-
-  // Drag and drop functions
-  function handleDragStart(
-    e: DragEvent,
-    type: 'layer' | 'group',
-    id: number,
-    groupId?: number | null
-  ) {
-    draggedItem = { type, id, groupId };
-    if (e.dataTransfer) {
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', ''); // Required for Firefox
-    }
+    addCatalogItemToList(
+      layer,
+      null,
+      ungroupedLayers,
+      rootGroups,
+      findGroupById,
+      mapLayerToAssociation
+    );
+    // Update arrays for reactivity
+    ungroupedLayers = [...ungroupedLayers];
+    layersWithDetails = [...layersWithDetails, mapLayerToAssociation(layer, null, ungroupedLayers.length - 1)];
+    rootGroups = [...rootGroups];
+    hasChanges = true;
   }
 
   function getDropZone(e: DragEvent, element: HTMLElement): 'top' | 'middle' | 'bottom' {
@@ -1131,8 +1126,18 @@
             {#each filteredCatalogLayers as layer}
               <div
                 class="hover:bg-base-200 hover:border-base-300 group flex cursor-move items-center gap-2 rounded border border-transparent px-3 py-2 text-sm transition-colors"
+                use:dragStartAction={{
+                  item: { type: 'catalog-layer' as 'catalog-layer', id: layer.id, layer },
+                  type: 'catalog-layer' as 'catalog-layer',
+                  dataKey: 'application/json',
+                  effectAllowed: 'copy',
+                  globalKey: 'catalogDragData',
+                  onDragStart: (item) => {
+                    console.log('Dragging:', item);
+                    draggedItem = item;
+                  }
+                }}
                 draggable="true"
-                ondragstart={(e) => handleCatalogDragStart(e, layer)}
                 role="listitem"
               >
                 <img src="/icons/file-catalog.svg" alt="Laag" class="h-4 w-4 flex-shrink-0" />
@@ -1231,14 +1236,22 @@
               </h3>
               <div class="ml-6 space-y-1">
                 {#each ungroupedLayers as layer}
-                  <div class="relative">
+                  <div
+                    use:dragStartAction={{
+                      item: { type: 'layer' as 'layer', id: layer.layer_id, groupId: layer.group_id ?? null },
+                      type: 'layer' as 'layer',
+                      dataKey: 'application/json',
+                      effectAllowed: 'move',
+                      onDragStart: (item) => { draggedItem = item; }
+                    }}
+                    class="relative"
+                    draggable="true"
+                  >
                     <div
                       class="hover:bg-base-200 flex cursor-move items-center gap-2 rounded px-2 py-1 text-sm {draggedItem?.type ===
                         'layer' && draggedItem?.id === layer.layer_id
                         ? 'opacity-50'
                         : ''}"
-                      draggable="true"
-                      ondragstart={(e) => handleDragStart(e, 'layer', layer.layer_id, null)}
                       ondragover={(e) => handleDragOver(e, 'layer', layer.layer_id, null)}
                       ondragleave={handleDragLeave}
                       ondrop={(e) => handleDrop(e, 'layer', layer.layer_id, null)}
@@ -1338,7 +1351,16 @@
         ondragleave={handleDragLeave}
         ondrop={(e) => handleDrop(e, 'group', group.id)}
         draggable="true"
-        ondragstart={(e) => handleDragStart(e, 'group', group.id, group.parent_id)}
+        use:dragStartAction={{
+          item: { type: 'group' as 'group', id: group.id, group },
+          type: 'group' as 'group',
+          dataKey: 'application/json',
+          effectAllowed: 'move',
+          onDragStart: (item) => {
+            console.log('Dragging:', item);
+            draggedItem = item;
+          }
+        }}
         role="listitem"
       >
         <button
@@ -1443,7 +1465,16 @@
                   ? 'opacity-50'
                   : ''}"
                 draggable="true"
-                ondragstart={(e) => handleDragStart(e, 'layer', layer.layer_id, group.id)}
+                use:dragStartAction={{
+                  item: { type: 'layer' as 'layer', id: layer.layer_id, groupId: group?.id },
+                  type: 'layer' as 'layer',
+                  dataKey: 'application/json',
+                  effectAllowed: 'move',
+                  onDragStart: (item) => {
+                    console.log('Dragging:', item);
+                    draggedItem = item;
+                  }
+                }}
                 ondragover={(e) => handleDragOver(e, 'layer', layer.layer_id, group.id)}
                 ondragleave={handleDragLeave}
                 ondrop={(e) => handleDrop(e, 'layer', layer.layer_id, group.id)}
