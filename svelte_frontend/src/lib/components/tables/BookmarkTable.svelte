@@ -164,6 +164,8 @@
               {sortDirection}
               {setSort}
             />
+            <th class="bg-base-200 font-bold">Positie</th>
+            <th class="bg-base-200 font-bold">Camera</th>
             <th class="bg-base-200 font-bold">Acties</th>
           </tr>
         </thead>
@@ -171,7 +173,21 @@
           {#each bookmarks as bookmark: Bookmark, idx}
             <tr>
               <td class="text-sm font-bold">{bookmark.title}</td>
-              <td class="text-sm">{bookmark.description}</td>
+              <td class="text-sm">{bookmark.description || '-'}</td>
+              <td class="text-sm">
+                <div class="text-xs">
+                  <div>X: {bookmark.x.toFixed(2)}</div>
+                  <div>Y: {bookmark.y.toFixed(2)}</div>
+                  <div>Z: {bookmark.z.toFixed(2)}</div>
+                </div>
+              </td>
+              <td class="text-sm">
+                <div class="text-xs">
+                  <div>Heading: {bookmark.heading.toFixed(1)}°</div>
+                  <div>Pitch: {bookmark.pitch.toFixed(1)}°</div>
+                  <div>Duur: {bookmark.duration.toFixed(1)}s</div>
+                </div>
+              </td>
               <td class="text-sm relative">
                 <div class="dropdown dropdown-end">
                   <button

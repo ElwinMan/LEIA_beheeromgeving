@@ -4,12 +4,24 @@ export interface Tool {
   content?: any;
 }
 
+// Content Type for polymorphic relationships
+export interface ContentType {
+  id: number;
+  name: string;
+  table_name: string;
+}
+
 // Bookmarks
 export interface Bookmark {
   id: number;
   title: string;
   description?: string;
-  content?: any;
+  x: number;
+  y: number;
+  z: number;
+  heading: number;
+  pitch: number;
+  duration: number;
 }
 
 // Projects

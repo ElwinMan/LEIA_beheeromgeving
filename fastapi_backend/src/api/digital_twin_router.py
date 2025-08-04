@@ -6,6 +6,7 @@ import services.viewer_service as viewer_service
 import services.digital_twin_layer_relation_service as layer_service
 import services.digital_twin_group_relation_service as group_service
 import services.digital_twin_tool_relation_service as tool_service
+import services.digital_twin_bookmark_relation_service as bookmark_service
 from schemas.digital_twin_schema import (
     DigitalTwinCreate,
     DigitalTwinUpdate,
@@ -150,3 +151,27 @@ def bulk_modify_tool_associations(
         digital_twin_id, payload.operations, db
     )
     return {"tools": results}
+
+# Bookmark associations
+@router.put("/{digital_twin_id}/bookmarks/bulk")
+def bulk_modify_bookmark_associations(
+    digital_twin_id: int,
+    payload: DigitalTwinToolBulkOperation,
+    db: Session = Depends(get_db)
+):
+    db_twin = service.get_digital_twin(digital_twin_id, db)
+    if not db_twin:
+        raise HTTPException(status_code=404, detail="Digital twin not found")
+
+    results = bookmark_service.handle_bulk_bookmark_operations(
+        digital_twin_id, payload.operations, db
+    )
+    return {"bookmarks": results}
+
+@router.get("/{digital_twin_id}/bookmarks")
+def get_digital_twin_bookmarks(digital_twin_id: int, db: Session = Depends(get_db)):
+    db_twin = service.get_digital_twin(digital_twin_id, db)
+    if not db_twin:
+        raise HTTPException(status_code=404, detail="Digital twin not found")
+    
+    return bookmark_service.get_digital_twin_bookmarks(digital_twin_id, db)

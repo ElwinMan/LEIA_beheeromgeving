@@ -7,19 +7,13 @@ def seed(db: Session):
         bookmarks = [
             {
                 "title": "Heinenoordtunnel",
-                "description": "Bookmark set for Heinenoordtunnel",
-                "content": [
-                    {
-                        "title": "Heinenoordtunnel",
-                        "description": "De Heinenoordtunnel is een verkeerstunnel in de Nederlandse provincie Zuid-Holland",
-                        "x": 4.51056,
-                        "y": 51.833003,
-                        "z": 2000,
-                        "heading": 0,
-                        "pitch": -65,
-                        "duration": 2
-                    }
-                ]
+                "description": "De Heinenoordtunnel is een verkeerstunnel in de Nederlandse provincie Zuid-Holland",
+                "x": 4.51056,
+                "y": 51.833003,
+                "z": 2000,
+                "heading": 0,
+                "pitch": -65,
+                "duration": 2
             }
         ]
         for b in bookmarks:

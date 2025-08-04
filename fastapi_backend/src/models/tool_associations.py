@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, JSON, Boolean
+from sqlalchemy import Column, Integer, String, JSON, Boolean, Float
 from db.database import Base
 
 class Bookmark(Base):
@@ -6,7 +6,12 @@ class Bookmark(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     title = Column(String(255), nullable=False)
     description = Column(String(255), nullable=True)
-    content = Column(JSON, nullable=True)
+    x = Column(Float, nullable=False)
+    y = Column(Float, nullable=False)
+    z = Column(Float, nullable=False)
+    heading = Column(Float, nullable=False)
+    pitch = Column(Float, nullable=False)
+    duration = Column(Float, nullable=False)
 
 class Project(Base):
     __tablename__ = "projects"

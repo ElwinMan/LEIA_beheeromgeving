@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from api import layer_router, user_router, digital_twin_router, group_router, tool_router, project_router, story_router, bookmark_router, terrain_provider_router, export_router
+from api import layer_router, user_router, digital_twin_router, group_router, tool_router, project_router, story_router, bookmark_router, terrain_provider_router, export_router, content_type_router
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -22,3 +22,4 @@ app.include_router(project_router.router)
 app.include_router(terrain_provider_router.router)
 app.include_router(story_router.router)
 app.include_router(bookmark_router.router)
+app.include_router(content_type_router.router)

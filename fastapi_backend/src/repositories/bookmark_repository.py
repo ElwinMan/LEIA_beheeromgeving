@@ -4,6 +4,9 @@ from models.tool_associations import Bookmark
 def get_by_id(db: Session, bookmark_id: int):
     return db.query(Bookmark).filter_by(id=bookmark_id).first()
 
+def get_bookmarks_by_ids(db: Session, bookmark_ids: list):
+    return db.query(Bookmark).filter(Bookmark.id.in_(bookmark_ids)).all()
+
 def get_all(db: Session):
     return db.query(Bookmark).all()
 

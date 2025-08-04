@@ -8,6 +8,7 @@ from .layer_seeder import seed as seed_layer
 from .group_seeder import seed as seed_group
 from .digital_twin_layer_association_seeder import seed as seed_digital_twin_layer_association
 from .tool_seeder import seed as seed_tool
+from .content_type_seeder import seed as seed_content_type
 from .bookmark_seeder import seed as seed_bookmark
 from .terrain_provider_seeder import seed as seed_terrain_provider
 from .project_seeder import seed as seed_project
@@ -45,6 +46,9 @@ def main():
 
         seed_tool(db)
         print("Seeded tools.")
+
+        seed_content_type(db)
+        print("Seeded tools content types.")
 
         seed_bookmark(db)
         print("Seeded bookmarks.")

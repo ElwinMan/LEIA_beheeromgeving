@@ -1,8 +1,8 @@
-"""initial
+"""initial_migration
 
-Revision ID: 251438241f99
+Revision ID: a85a9d0b08ba
 Revises: 
-Create Date: 2025-07-17 11:53:43.870117
+Create Date: 2025-08-04 12:06:56.677098
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '251438241f99'
+revision: str = 'a85a9d0b08ba'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -25,8 +25,20 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('title', sa.String(length=255), nullable=False),
     sa.Column('description', sa.String(length=255), nullable=True),
-    sa.Column('content', sa.JSON(), nullable=True),
+    sa.Column('x', sa.Float(), nullable=False),
+    sa.Column('y', sa.Float(), nullable=False),
+    sa.Column('z', sa.Float(), nullable=False),
+    sa.Column('heading', sa.Float(), nullable=False),
+    sa.Column('pitch', sa.Float(), nullable=False),
+    sa.Column('duration', sa.Float(), nullable=False),
     sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('content_types',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('name', sa.String(), nullable=False),
+    sa.Column('table_name', sa.String(), nullable=False),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('name')
     )
     op.create_table('digital_twin',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -93,7 +105,10 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('digital_twin_id', sa.Integer(), nullable=False),
     sa.Column('tool_id', sa.Integer(), nullable=False),
+    sa.Column('content_type_id', sa.Integer(), nullable=True),
     sa.Column('content_id', sa.Integer(), nullable=True),
+    sa.Column('sort_order', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['content_type_id'], ['content_types.id'], ),
     sa.ForeignKeyConstraint(['digital_twin_id'], ['digital_twin.id'], ),
     sa.ForeignKeyConstraint(['tool_id'], ['tool.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -153,5 +168,6 @@ def downgrade() -> None:
     op.drop_table('layer')
     op.drop_index(op.f('ix_digital_twin_id'), table_name='digital_twin')
     op.drop_table('digital_twin')
+    op.drop_table('content_types')
     op.drop_table('bookmarks')
     # ### end Alembic commands ###

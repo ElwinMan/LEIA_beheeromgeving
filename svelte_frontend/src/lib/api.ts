@@ -1,6 +1,6 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 import type { DigitalTwin, DigitalTwinViewerResponse, ViewerContent, CreateDigitalTwinInput } from '$lib/types/digitalTwin';
-import type { BulkAssociationsPayload, BulkToolOperation } from '$lib/types/digitalTwinAssociation';
+import type { BulkAssociationsPayload, BulkToolOperation, BulkBookmarksPayload } from '$lib/types/digitalTwinAssociation';
 import type { Layer } from '$lib/types/layer';
 
 export async function fetchDigitalTwins(fetchFn?: typeof fetch) {
@@ -583,4 +583,29 @@ export async function fetchLayersPaginated(
   const res = await fetch(`${API_BASE}/layers/search?${params}`);
   if (!res.ok) throw new Error('Failed to fetch layers');
   return await res.json();
+}
+
+// --- Bookmark Associations (Polymorphic) ---
+export async function fetchDigitalTwinBookmarks(digitalTwinId: string, fetchFn?: typeof fetch) {
+  const _fetch = fetchFn ?? fetch;
+  const res = await _fetch(`${API_BASE}/digital-twins/${digitalTwinId}/bookmarks`);
+  if (!res.ok) throw new Error('Failed to fetch digital twin bookmarks');
+  return await res.json();
+}
+
+export async function bulkUpdateDigitalTwinBookmarks(
+  digitalTwinId: string,
+  payload: BulkBookmarksPayload
+) {
+  const res = await fetch(`${API_BASE}/digital-twins/${digitalTwinId}/bookmarks/bulk`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  
+  if (!res.ok) {
+    throw new Error('Failed to update digital twin bookmarks');
+  }
+  
+  return res.json();
 }

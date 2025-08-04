@@ -24,6 +24,33 @@ export interface ToolAssociation {
   tool_id: number;
 }
 
+// Bookmark associations - extending the polymorphic tool association
+export interface BookmarkAssociation extends ToolAssociation {
+  content_type_id: number; // Always points to bookmark content type
+  content_id: number; // Points to actual bookmark ID
+  sort_order: number;
+}
+
+// Response from API for bookmark associations
+export interface BookmarkAssociationResponse {
+  tool_id: number;
+  content_type_id: number;
+  content_id: number;
+  sort_order: number;
+}
+
+export interface BookmarkWithAssociation extends BookmarkAssociation {
+  title: string;
+  description?: string;
+  x: number;
+  y: number;
+  z: number;
+  heading: number;
+  pitch: number;
+  duration: number;
+  isNew: boolean;
+}
+
 // Bulk operations for associated tools
 export interface BulkToolPayload {
   operations: BulkToolOperation[];
@@ -31,7 +58,22 @@ export interface BulkToolPayload {
 
 export interface BulkToolOperation {
   tool_id: number;
-  action: 'create' | 'delete';
+  content_type_id?: number;
+  content_id?: number;
+  sort_order?: number;
+  action: 'create' | 'update' | 'delete';
+}
+
+// Bookmark-specific bulk operations
+export interface BookmarkBulkOperation {
+  action: 'create' | 'update' | 'delete';
+  tool_id: number;
+  content_id: number; // bookmark ID
+  sort_order?: number;
+}
+
+export interface BulkBookmarksPayload {
+  operations: BookmarkBulkOperation[];
 }
 
 // Bulk operations for association layers and groups

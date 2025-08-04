@@ -9,23 +9,25 @@
 
   let title = '';
   let description = '';
-  let content = '';
+  let x = 0;
+  let y = 0;
+  let z = 0;
+  let heading = 0;
+  let pitch = 0;
+  let duration = 0;
 
   let errorBanner: InstanceType<typeof AlertBanner> | null = null;
   let successBanner: InstanceType<typeof AlertBanner> | null = null;
 
-  const jsonPlaceholder = `{
-  "key": "value",
-  "anotherKey": 123,
-  "array": [
-    { "itemKey": "itemValue" }
-  ]
-}`;
-
   export function showModal() {
     title = '';
     description = '';
-    content = '';
+    x = 0;
+    y = 0;
+    z = 0;
+    heading = 0;
+    pitch = 0;
+    duration = 0;
     errorBanner?.hide?.();
     successBanner?.hide?.();
     modalRef.showModal();
@@ -34,15 +36,16 @@
   async function handleSubmit(event: Event) {
     event.preventDefault();
 
-    let payload: any = { title, description };
-    if (content && content.trim() !== '') {
-      try {
-        payload.content = JSON.parse(content);
-      } catch (e) {
-        errorBanner?.show();
-        return;
-      }
-    }
+    const payload = {
+      title,
+      description,
+      x,
+      y,
+      z,
+      heading,
+      pitch,
+      duration
+    };
 
     try {
       const newBookmark = await createBookmark(payload);
@@ -67,7 +70,7 @@
   <AlertBanner
     bind:this={errorBanner}
     type="error"
-    message="Content moet geldig JSON zijn!"
+    message="Er is een fout opgetreden bij het aanmaken van de bookmark!"
   />
 
   <form
@@ -82,14 +85,25 @@
     <label for="description" class="pr-4 text-right font-semibold">Beschrijving:</label>
     <input id="description" class="input input-bordered col-span-3 w-full" bind:value={description} />
 
-    <label for="content" class="pr-4 text-right font-semibold">Content (JSON):</label>
-    <textarea
-      id="content"
-      class="textarea textarea-bordered col-span-3 w-full min-h-[12rem]"
-      bind:value={content}
-      rows="10"
-      placeholder={jsonPlaceholder}
-    ></textarea>
+    <!-- Position fields -->
+    <label for="x" class="pr-4 text-right font-semibold">X-coördinaat:</label>
+    <input id="x" type="number" step="any" class="input input-bordered col-span-3 w-full" bind:value={x} required />
+
+    <label for="y" class="pr-4 text-right font-semibold">Y-coördinaat:</label>
+    <input id="y" type="number" step="any" class="input input-bordered col-span-3 w-full" bind:value={y} required />
+
+    <label for="z" class="pr-4 text-right font-semibold">Z-coördinaat:</label>
+    <input id="z" type="number" step="any" class="input input-bordered col-span-3 w-full" bind:value={z} required />
+
+    <!-- Camera orientation fields -->
+    <label for="heading" class="pr-4 text-right font-semibold">Heading (graden):</label>
+    <input id="heading" type="number" step="any" class="input input-bordered col-span-3 w-full" bind:value={heading} required />
+
+    <label for="pitch" class="pr-4 text-right font-semibold">Pitch (graden):</label>
+    <input id="pitch" type="number" step="any" class="input input-bordered col-span-3 w-full" bind:value={pitch} required />
+
+    <label for="duration" class="pr-4 text-right font-semibold">Duur (seconden):</label>
+    <input id="duration" type="number" step="any" class="input input-bordered col-span-3 w-full" bind:value={duration} required />
 
     <div class="col-span-4 mt-6 flex justify-end gap-2">
       <button type="button" class="btn btn-ghost" on:click={() => modalRef.close()}>Annuleren</button>

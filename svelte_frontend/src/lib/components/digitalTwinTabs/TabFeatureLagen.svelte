@@ -26,7 +26,8 @@
   import type { DropZone } from '$lib/utils/dragDropPermission';
   import { addCatalogItemToList } from '$lib/utils/catalogAddUtil';
   import { dragStartAction } from '$lib/utils/dragStartAction';
-
+  import { getTotalLayersInGroup } from '$lib/utils/treeUtils';
+  import { getDropZone } from '$lib/utils/dropZoneUtils';
 
   interface Props {
     digitalTwin: DigitalTwin | null;
@@ -82,7 +83,7 @@
   };
   let isSaving = $state(false);
 
-  // Drag and drop state - extended to support catalog layers
+  // Drag and drop state
   let draggedItem = $state<{
     type: 'layer' | 'group' | 'catalog-layer';
     id: number;
@@ -278,14 +279,6 @@
     rootGroups = [...rootGroups];
   }
 
-  function getTotalLayersInGroup(group: GroupWithLayers): number {
-    let total = group.layers.length;
-    for (const subgroup of group.subgroups) {
-      total += getTotalLayersInGroup(subgroup);
-    }
-    return total;
-  }
-
   function findGroupById(groups: GroupWithLayers[], id: number): GroupWithLayers | null {
     for (const group of groups) {
       if (group.id === id) return group;
@@ -357,19 +350,6 @@
     layersWithDetails = [...layersWithDetails, mapLayerToAssociation(layer, null, ungroupedLayers.length - 1)];
     rootGroups = [...rootGroups];
     hasChanges = true;
-  }
-
-  function getDropZone(e: DragEvent, element: HTMLElement): 'top' | 'middle' | 'bottom' {
-    const rect = element.getBoundingClientRect();
-    const y = e.clientY - rect.top;
-    const height = rect.height;
-
-    const topThreshold = height * 0.35;
-    const bottomThreshold = height * 0.65;
-
-    if (y < topThreshold) return 'top';
-    if (y > bottomThreshold) return 'bottom';
-    return 'middle';
   }
 
   function handleDragOver(
