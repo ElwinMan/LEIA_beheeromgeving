@@ -116,6 +116,42 @@ export interface ProjectBulkOperation {
   is_default?: boolean;
 }
 
+// Story associations - extending the polymorphic tool association
+export interface StoryAssociation extends ToolAssociation {
+  content_type_id: number; // Always points to story content type
+  content_id: number; // Points to actual story ID
+  sort_order: number;
+}
+
+// Response from API for story associations
+export interface StoryAssociationResponse {
+  tool_id: number;
+  content_type_id: number;
+  content_id: number;
+  sort_order: number;
+  is_default?: boolean;
+}
+
+export interface StoryWithAssociation extends StoryAssociation {
+  name: string;
+  description?: string;
+  content?: any;
+  isNew: boolean;
+}
+
+// Story-specific bulk operations
+export interface StoryBulkOperation {
+  action: 'create' | 'update' | 'delete';
+  tool_id: number;
+  content_id: number; // story ID
+  sort_order?: number;
+  is_default?: boolean;
+}
+
+export interface BulkStoriesPayload {
+  operations: StoryBulkOperation[];
+}
+
 export interface BulkBookmarksPayload {
   operations: BookmarkBulkOperation[];
 }

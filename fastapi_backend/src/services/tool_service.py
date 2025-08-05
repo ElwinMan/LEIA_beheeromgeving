@@ -5,6 +5,9 @@ import repositories.tool_repository as repo
 def get_tool(tool_id: int, db: Session):
     return repo.get_tool_by_id(db, tool_id)
 
+def get_tool_by_name(name: str, db: Session):
+    return repo.get_tool_by_name(db, name)
+
 def list_tools(db: Session):
     return repo.get_all_tools(db)
 

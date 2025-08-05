@@ -455,25 +455,20 @@
           class="btn btn-primary btn-sm"
           onclick={() => createProjectModalRef.showModal()}
         >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
+          <img src="/icons/plus.svg" alt="Voeg toe" class="h-4 w-4" />
           Nieuw Project
-        </button>
-        
-        {#if hasChanges}
+        </button>        {#if hasChanges}
           <button class="btn btn-success btn-sm" onclick={saveChanges} disabled={isSaving}>
             {#if isSaving}
               <span class="loading loading-spinner loading-sm"></span>
             {:else}
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
+              <img src="/icons/save.svg" alt="Opslaan" class="h-4 w-4" />
             {/if}
             Opslaan
           </button>
           <button class="btn btn-ghost btn-sm" onclick={resetChanges}>
-            Annuleren
+            <img src="/icons/rotate-ccw.svg" alt="Reset" class="h-4 w-4" />
+            Reset
           </button>
         {/if}
       </div>
@@ -530,10 +525,32 @@
                     <img src="/icons/grip-vertical.svg" alt="Grip" class="text-base-content/30 h-4 w-4 flex-shrink-0" />
                   </div>
 
+                  <!-- Project icon -->
+                  <img src="/icons/folder.svg" alt="Project" class="h-5 w-5 flex-shrink-0 text-green-600" />
+
+                  <!-- Project info -->
+                  <div class="flex-1">
+                    <div class="flex items-center gap-2">
+                      <div class="font-medium">{project.name}</div>
+                      {#if project.isNew}
+                        <span class="badge badge-success badge-sm">Nieuw</span>
+                      {/if}
+                      {#if project.is_default}
+                        <span class="badge badge-info badge-xs ml-2">Standaard</span>
+                      {/if}
+                    </div>
+                    {#if project.description}
+                      <div class="text-sm text-base-content/70">{project.description}</div>
+                    {/if}
+                  </div>
+
+                  <!-- Sort order -->
+                  <span class="text-base-content/50 text-xs">#{project.sort_order}</span>
+
                   <!-- Default toggle -->
                   <button
                     class="btn btn-sm btn-circle"
-                    class:btn-primary={project.is_default}
+                    class:btn-secondary={project.is_default}
                     class:btn-outline={!project.is_default}
                     onclick={() => handleDefaultToggle(project)}
                     title={project.is_default ? 'Standaard project' : 'Instellen als standaard'}
@@ -545,28 +562,15 @@
                     </svg>
                   </button>
 
-                  <!-- Project info -->
-                  <div class="flex-1">
-                    <div class="flex items-center gap-2">
-                      <div class="font-medium">{project.name}</div>
-                      {#if project.isNew}
-                        <span class="badge badge-success badge-sm">Nieuw</span>
-                      {/if}
-                    </div>
-                    {#if project.description}
-                      <div class="text-sm text-base-content/70">{project.description}</div>
-                    {/if}
-                  </div>
-
                   <!-- Actions -->
                   <div class="flex gap-2">
                     <button 
-                      class="btn btn-error btn-sm btn-circle"
+                      class="btn btn-ghost btn-xs text-error hover:bg-error/10"
                       onclick={() => showDeleteConfirmation(project)}
                       title="Project verwijderen"
                       aria-label="Project verwijderen"
                     >
-                      <img src="/icons/trash-2.svg" alt="Verwijder laag" class="h-5 w-5" />
+                      <img src="/icons/trash-2.svg" alt="Verwijder" class="h-5 w-5" />
                     </button>
                   </div>
                 </div>

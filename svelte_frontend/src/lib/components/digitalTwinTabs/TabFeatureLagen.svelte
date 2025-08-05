@@ -1160,7 +1160,7 @@
         <!-- Header -->
         <div class="flex items-center justify-between">
           <div>
-            <h3 class="text-lg font-semibold">Layer Catalogus</h3>
+            <h3 class="text-lg font-semibold">Feature Lagen Catalogus</h3>
             <p class="text-base-content/70 text-sm">
               Sleep lagen naar de digital twin of klik op + om toe te voegen
             </p>
@@ -1171,7 +1171,7 @@
             title="Nieuwe layer aanmaken"
           >
             <img src="/icons/plus.svg" alt="Voeg toe" class="h-4 w-4" />
-            Nieuwe Layer
+            Nieuwe Feature Laag
           </button>
         </div>
 
@@ -1354,15 +1354,17 @@
                       </span>
                       <span class="text-base-content/50 text-xs">#{layer.sort_order}</span>
                       <button
-                        class="btn btn-ghost btn-xs"
+                        class="btn btn-sm btn-circle"
+                        class:btn-secondary={layer.is_default}
+                        class:btn-outline={!layer.is_default}
                         onclick={() => toggleDefault(layer.layer_id)}
-                        title={layer.is_default ? 'Verwijder van standaard' : 'Maak standaard'}
+                        title={layer.is_default ? 'Standaard laag' : 'Instellen als standaard'}
+                        aria-label={layer.is_default ? 'Standaard laag' : 'Instellen als standaard'}
                       >
-                        {#if layer.is_default}
-                          <img src="/icons/eye.svg" alt="Zichtbaar" class="h-3 w-3" />
-                        {:else}
-                          <img src="/icons/eye-off.svg" alt="Verborgen" class="h-3 w-3" />
-                        {/if}
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
                       </button>
                       <button
                         class="btn btn-ghost btn-xs"
@@ -1434,7 +1436,7 @@
             <!-- Root Groups -->
             <div class="mb-4">
               <h3 class="text-base-content/80 mb-2 flex items-center gap-2 text-sm font-semibold">
-                <img src="/icons/folder.svg" alt="Map" class="h-4 w-4" />
+                <img src="/icons/folder-group.svg" alt="Map" class="h-4 w-4" />
                 Groepen ({rootGroups.length})
                 <button
                   class="btn btn-sm btn-outline mb-2"
@@ -1490,9 +1492,9 @@
         </button>
 
         {#if expandedGroups.has(group.id)}
-          <img src="/icons/folder-open.svg" alt="Folder open" class="h-4 w-4 flex-shrink-0 text-amber-600" />
+          <img src="/icons/folder-open-group.svg" alt="Folder open" class="h-4 w-4 flex-shrink-0 text-amber-600" />
         {:else}
-          <img src="/icons/folder.svg" alt="Folder closed" class="h-4 w-4 flex-shrink-0 text-amber-600" />
+          <img src="/icons/folder-group.svg" alt="Folder closed" class="h-4 w-4 flex-shrink-0 text-amber-600" />
         {/if}
 
         {#if editingGroupId === group.id}
@@ -1608,15 +1610,17 @@
                 </span>
                 <span class="text-base-content/50 text-xs">#{layer.sort_order}</span>
                 <button
-                  class="btn btn-ghost btn-xs"
+                  class="btn btn-sm btn-circle"
+                  class:btn-secondary={layer.is_default}
+                  class:btn-outline={!layer.is_default}
                   onclick={() => toggleDefault(layer.layer_id)}
-                  title={layer.is_default ? 'Verwijder van standaard' : 'Maak standaard'}
+                  title={layer.is_default ? 'Standaard laag' : 'Instellen als standaard'}
+                  aria-label={layer.is_default ? 'Standaard laag' : 'Instellen als standaard'}
                 >
-                {#if layer.is_default}
-                  <img src="/icons/eye.svg" alt="Visible" class="h-3 w-3" />
-                {:else}
-                  <img src="/icons/eye-off.svg" alt="Hidden" class="h-3 w-3" />
-                {/if}
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
                 </button>
                 <button
                   class="btn btn-ghost btn-xs"

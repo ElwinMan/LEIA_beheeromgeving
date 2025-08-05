@@ -6,6 +6,7 @@ import repositories.tool_repository as tool_repo
 import repositories.digital_twin_tool_relation_repository as tool_relation_repo
 import repositories.bookmark_repository as bookmark_repo
 import repositories.project_repository as project_repo
+import repositories.story_repository as story_repo
 import services.content_type_service as content_type_service
 
 from schemas.layer_schema import LayerResponse
@@ -60,6 +61,10 @@ def export_digital_twin(db: Session, digital_twin_id: int):
     # Get project content type
     project_content_type = content_type_service.get_content_type_by_name(db, "project")
     project_associations = []
+    
+    # Get story content type
+    story_content_type = content_type_service.get_content_type_by_name(db, "story")
+    story_associations = []
     
     if bookmark_content_type:
         # Filter associations that are bookmarks and have content_id
@@ -137,6 +142,46 @@ def export_digital_twin(db: Session, digital_twin_id: int):
                     # Log missing project for debugging
                     print(f"Warning: Project {assoc.content_id} referenced in association but not found in database")
 
+    if story_content_type:
+        # Filter associations that are stories and have content_id
+        story_tool_associations = [
+            assoc for assoc in all_tool_associations 
+            if assoc.content_type_id == story_content_type.id and assoc.content_id
+        ]
+        
+        # Get story details for each association
+        story_ids = [assoc.content_id for assoc in story_tool_associations]
+        if story_ids:
+            stories = story_repo.get_stories_by_ids(db, story_ids)
+            stories_by_id = {story.id: story for story in stories}
+            
+            # Create story entries with tool reference, but only for existing stories
+            for assoc in story_tool_associations:
+                story = stories_by_id.get(assoc.content_id)
+                tool = next((t for t in tools if t.id == assoc.tool_id), None)
+                
+                # Only process if both story and tool exist
+                if story and tool:
+                    story_data = {
+                        "name": story.name or "",
+                        "description": story.description or "",
+                        "tool": tool.name  # Keep this for grouping
+                    }
+                    
+                    # Add content fields to story data (safely handle None content)
+                    if story.content and isinstance(story.content, dict):
+                        # Add width if it exists
+                        if "width" in story.content:
+                            story_data["width"] = story.content["width"]
+                        # Add chapters if they exist
+                        if "chapters" in story.content:
+                            story_data["chapters"] = story.content["chapters"]
+                    
+                    story_associations.append(story_data)
+                elif not story:
+                    # Log missing story for debugging
+                    print(f"Warning: Story {assoc.content_id} referenced in association but not found in database")
+
     layer_associations_by_id = {
         assoc.layer_id: assoc for assoc in digital_twin.layer_associations
     }
@@ -146,10 +191,11 @@ def export_digital_twin(db: Session, digital_twin_id: int):
         for layer in layers
     ]
 
-    # Transform tools to include bookmarks and projects
+    # Transform tools to include bookmarks, projects, and stories
     tools_with_content = []
     bookmark_tool_added = False
     project_tool_added = False
+    story_tool_added = False
     
     for tool in tools:
         tool_data = ToolResponse.model_validate(tool).model_dump()
@@ -162,6 +208,14 @@ def export_digital_twin(db: Session, digital_twin_id: int):
                 clean_bookmark = {k: v for k, v in bookmark.items() if k != "tool"}
                 tool_bookmarks.append(clean_bookmark)
         
+        # Get stories for this specific tool and remove the tool reference
+        tool_stories = []
+        for story in story_associations:
+            if story.get("tool") == tool.name:
+                # Create a copy without the tool reference
+                clean_story = {k: v for k, v in story.items() if k != "tool"}
+                tool_stories.append(clean_story)
+
         # Get projects for this specific tool and remove the tool reference
         tool_projects = []
         default_project = None
@@ -205,6 +259,18 @@ def export_digital_twin(db: Session, digital_twin_id: int):
             
             tools_with_content.append(projects_tool)
             project_tool_added = True
+        # Check if this is a stories tool and there are stories
+        elif tool.name == "stories" and tool_stories:
+            # Create the stories tool with the proper structure
+            stories_tool = {
+                "id": "stories",
+                "enabled": True,
+                "settings": {
+                    "stories": tool_stories
+                }
+            }
+            tools_with_content.append(stories_tool)
+            story_tool_added = True
         else:
             # Transform tool data to use name as id and add enabled: true
             transformed_tool = {
@@ -285,6 +351,25 @@ def export_digital_twin(db: Session, digital_twin_id: int):
             projects_tool["settings"]["projects"] = unassigned_projects
             
             tools_with_content.append(projects_tool)
+
+    # If we have story associations but no stories tool was found, create one
+    if story_associations and not story_tool_added:
+        # Collect all stories that weren't assigned to any specific tool
+        unassigned_stories = []
+        for story in story_associations:
+            # Remove the tool reference for the final output
+            clean_story = {k: v for k, v in story.items() if k != "tool"}
+            unassigned_stories.append(clean_story)
+        
+        if unassigned_stories:
+            stories_tool = {
+                "id": "stories", 
+                "enabled": True,
+                "settings": {
+                    "stories": unassigned_stories
+                }
+            }
+            tools_with_content.append(stories_tool)
 
     export_data = {
         "layers": layers_response,

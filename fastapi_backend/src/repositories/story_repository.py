@@ -4,6 +4,9 @@ from models.tool_associations import Story
 def get_by_id(db: Session, story_id: int):
     return db.query(Story).filter_by(id=story_id).first()
 
+def get_stories_by_ids(db: Session, story_ids: list):
+    return db.query(Story).filter(Story.id.in_(story_ids)).all()
+
 def get_all(db: Session):
     return db.query(Story).all()
 

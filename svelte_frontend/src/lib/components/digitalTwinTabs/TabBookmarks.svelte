@@ -444,9 +444,7 @@
           class="btn btn-primary btn-sm"
           onclick={() => createBookmarkModalRef.showModal()}
         >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
+          <img src="/icons/plus.svg" alt="Voeg toe" class="h-4 w-4" />
           Nieuwe Bookmark
         </button>
         
@@ -455,14 +453,13 @@
             {#if isSaving}
               <span class="loading loading-spinner loading-sm"></span>
             {:else}
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
+              <img src="/icons/save.svg" alt="Opslaan" class="h-4 w-4" />
             {/if}
             Opslaan
           </button>
           <button class="btn btn-ghost btn-sm" onclick={resetChanges}>
-            Annuleren
+            <img src="/icons/rotate-ccw.svg" alt="Reset" class="h-4 w-4" />
+            Reset
           </button>
         {/if}
       </div>
@@ -519,6 +516,9 @@
                       <img src="/icons/grip-vertical.svg" alt="Grip" class="text-base-content/30 h-4 w-4 flex-shrink-0" />
                     </div>
 
+                    <!-- Bookmark icon -->
+                    <img src="/icons/bookmark.svg" alt="Bookmark" class="h-5 w-5 flex-shrink-0 text-blue-600" />
+
                     <!-- Bookmark info -->
                     <div class="flex-1">
                       <div class="flex items-center gap-2">
@@ -535,17 +535,18 @@
                       </div>
                     </div>
 
+                    <!-- Sort order -->
+                    <span class="text-base-content/50 text-xs">#{bookmark.sort_order}</span>
+
                     <!-- Actions -->
                     <div class="flex gap-2">
                       <button 
-                        class="btn btn-error btn-sm btn-circle"
+                        class="btn btn-ghost btn-xs text-error hover:bg-error/10"
                         onclick={() => showDeleteConfirmation(bookmark)}
                         title="Bookmark verwijderen"
                         aria-label="Bookmark verwijderen"
                       >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
+                        <img src="/icons/trash-2.svg" alt="Verwijder" class="h-5 w-5" />
                       </button>
                     </div>
                   </div>

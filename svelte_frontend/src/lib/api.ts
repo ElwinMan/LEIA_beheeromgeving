@@ -1,6 +1,6 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 import type { DigitalTwin, DigitalTwinViewerResponse, ViewerContent, CreateDigitalTwinInput } from '$lib/types/digitalTwin';
-import type { BulkAssociationsPayload, BulkToolOperation, BulkBookmarksPayload, BulkProjectsPayload } from '$lib/types/digitalTwinAssociation';
+import type { BulkAssociationsPayload, BulkToolOperation, BulkBookmarksPayload, BulkProjectsPayload, BulkStoriesPayload } from '$lib/types/digitalTwinAssociation';
 import type { Layer } from '$lib/types/layer';
 
 export async function fetchDigitalTwins(fetchFn?: typeof fetch) {
@@ -629,6 +629,31 @@ export async function bulkUpdateDigitalTwinProjects(
   
   if (!res.ok) {
     throw new Error('Failed to update digital twin projects');
+  }
+  
+  return res.json();
+}
+
+// Digital Twin Story Management
+export async function fetchDigitalTwinStories(digitalTwinId: string, fetchFn?: typeof fetch) {
+  const _fetch = fetchFn ?? fetch;
+  const res = await _fetch(`${API_BASE}/digital-twins/${digitalTwinId}/stories`);
+  if (!res.ok) throw new Error('Failed to fetch digital twin stories');
+  return await res.json();
+}
+
+export async function bulkUpdateDigitalTwinStories(
+  digitalTwinId: string,
+  payload: BulkStoriesPayload
+) {
+  const res = await fetch(`${API_BASE}/digital-twins/${digitalTwinId}/stories/bulk`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  
+  if (!res.ok) {
+    throw new Error('Failed to update digital twin stories');
   }
   
   return res.json();

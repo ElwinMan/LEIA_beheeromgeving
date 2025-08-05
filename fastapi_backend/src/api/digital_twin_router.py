@@ -8,6 +8,7 @@ import services.digital_twin_group_relation_service as group_service
 import services.digital_twin_tool_relation_service as tool_service
 import services.digital_twin_bookmark_relation_service as bookmark_service
 import services.digital_twin_project_relation_service as project_service
+import services.digital_twin_story_relation_service as story_service
 from schemas.digital_twin_schema import (
     DigitalTwinCreate,
     DigitalTwinUpdate,
@@ -200,3 +201,27 @@ def get_digital_twin_projects(digital_twin_id: int, db: Session = Depends(get_db
         raise HTTPException(status_code=404, detail="Digital twin not found")
     
     return project_service.get_digital_twin_projects(digital_twin_id, db)
+
+# Story associations
+@router.put("/{digital_twin_id}/stories/bulk")
+def bulk_modify_story_associations(
+    digital_twin_id: int,
+    payload: DigitalTwinToolBulkOperation,
+    db: Session = Depends(get_db)
+):
+    db_twin = service.get_digital_twin(digital_twin_id, db)
+    if not db_twin:
+        raise HTTPException(status_code=404, detail="Digital twin not found")
+
+    results = story_service.handle_bulk_story_operations(
+        digital_twin_id, payload.operations, db
+    )
+    return {"stories": results}
+
+@router.get("/{digital_twin_id}/stories")
+def get_digital_twin_stories(digital_twin_id: int, db: Session = Depends(get_db)):
+    db_twin = service.get_digital_twin(digital_twin_id, db)
+    if not db_twin:
+        raise HTTPException(status_code=404, detail="Digital twin not found")
+    
+    return story_service.get_digital_twin_stories(digital_twin_id, db)
