@@ -22,6 +22,7 @@ class DigitalTwinToolAssociation(Base):
     content_type_id = Column(Integer, ForeignKey("content_types.id"), nullable=True)
     content_id = Column(Integer, nullable=True)
     sort_order = Column(Integer, nullable=False, default=0)
+    is_default = Column(Boolean, default=False, nullable=True)
 
     digital_twin = relationship("DigitalTwin", back_populates="tool_associations")
     tool = relationship("Tool")

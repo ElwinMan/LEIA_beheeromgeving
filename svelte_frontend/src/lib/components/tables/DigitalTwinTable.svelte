@@ -21,8 +21,8 @@
   let digitalTwins: DigitalTwin[] = $state([]);
 
   // Sorting state
-  let sortColumn = $state('name');
-  let sortDirection = $state<'asc' | 'desc'>('asc');
+  let sortColumn = $state('last_updated');
+  let sortDirection = $state<'asc' | 'desc'>('desc');
 
   function onSearchChange(newValue: string) {
     if (searchTimeout) clearTimeout(searchTimeout);

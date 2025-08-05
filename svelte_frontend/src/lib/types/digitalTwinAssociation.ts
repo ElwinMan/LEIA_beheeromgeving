@@ -31,12 +31,29 @@ export interface BookmarkAssociation extends ToolAssociation {
   sort_order: number;
 }
 
+// Project associations - extending the polymorphic tool association
+export interface ProjectAssociation extends ToolAssociation {
+  content_type_id: number; // Always points to project content type
+  content_id: number; // Points to actual project ID
+  sort_order: number;
+  is_default?: boolean; // For marking default project
+}
+
 // Response from API for bookmark associations
 export interface BookmarkAssociationResponse {
   tool_id: number;
   content_type_id: number;
   content_id: number;
   sort_order: number;
+}
+
+// Response from API for project associations
+export interface ProjectAssociationResponse {
+  tool_id: number;
+  content_type_id: number;
+  content_id: number;
+  sort_order: number;
+  is_default?: boolean;
 }
 
 export interface BookmarkWithAssociation extends BookmarkAssociation {
@@ -48,6 +65,24 @@ export interface BookmarkWithAssociation extends BookmarkAssociation {
   heading: number;
   pitch: number;
   duration: number;
+  isNew: boolean;
+}
+
+export interface ProjectWithAssociation extends ProjectAssociation {
+  name: string;
+  description?: string;
+  content?: {
+    polygon?: number[][];
+    layers?: string[];
+    cameraPosition?: {
+      x: number;
+      y: number;
+      z: number;
+      heading: number;
+      pitch: number;
+      duration: number;
+    };
+  };
   isNew: boolean;
 }
 
@@ -72,8 +107,21 @@ export interface BookmarkBulkOperation {
   sort_order?: number;
 }
 
+// Project-specific bulk operations
+export interface ProjectBulkOperation {
+  action: 'create' | 'update' | 'delete';
+  tool_id: number;
+  content_id: number; // project ID
+  sort_order?: number;
+  is_default?: boolean;
+}
+
 export interface BulkBookmarksPayload {
   operations: BookmarkBulkOperation[];
+}
+
+export interface BulkProjectsPayload {
+  operations: ProjectBulkOperation[];
 }
 
 // Bulk operations for association layers and groups

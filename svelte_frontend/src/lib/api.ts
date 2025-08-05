@@ -1,6 +1,6 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 import type { DigitalTwin, DigitalTwinViewerResponse, ViewerContent, CreateDigitalTwinInput } from '$lib/types/digitalTwin';
-import type { BulkAssociationsPayload, BulkToolOperation, BulkBookmarksPayload } from '$lib/types/digitalTwinAssociation';
+import type { BulkAssociationsPayload, BulkToolOperation, BulkBookmarksPayload, BulkProjectsPayload } from '$lib/types/digitalTwinAssociation';
 import type { Layer } from '$lib/types/layer';
 
 export async function fetchDigitalTwins(fetchFn?: typeof fetch) {
@@ -605,6 +605,30 @@ export async function bulkUpdateDigitalTwinBookmarks(
   
   if (!res.ok) {
     throw new Error('Failed to update digital twin bookmarks');
+  }
+  
+  return res.json();
+}
+
+export async function fetchDigitalTwinProjects(digitalTwinId: string, fetchFn?: typeof fetch) {
+  const _fetch = fetchFn ?? fetch;
+  const res = await _fetch(`${API_BASE}/digital-twins/${digitalTwinId}/projects`);
+  if (!res.ok) throw new Error('Failed to fetch digital twin projects');
+  return await res.json();
+}
+
+export async function bulkUpdateDigitalTwinProjects(
+  digitalTwinId: string,
+  payload: BulkProjectsPayload
+) {
+  const res = await fetch(`${API_BASE}/digital-twins/${digitalTwinId}/projects/bulk`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  
+  if (!res.ok) {
+    throw new Error('Failed to update digital twin projects');
   }
   
   return res.json();

@@ -87,25 +87,21 @@
     <label for="description" class="pr-4 text-right font-semibold">Beschrijving:</label>
     <input id="description" type="text" class="input input-bordered col-span-3 w-full" bind:value={description} />
 
-    <!-- Position fields -->
-    <label for="x" class="pr-4 text-right font-semibold">X-coördinaat:</label>
-    <input id="x" type="number" step="any" class="input input-bordered col-span-3 w-full" bind:value={x} required />
+    <!-- X, Y, Z coordinates row -->
+    <label for="x" class="pr-4 text-right font-semibold">Coördinaten (X, Y, Z):</label>
+    <div class="col-span-3 flex gap-2">
+      <input id="x" type="number" step="any" class="input input-bordered w-full" bind:value={x} required placeholder="X-coördinaat" />
+      <input id="y" type="number" step="any" class="input input-bordered w-full" bind:value={y} required placeholder="Y-coördinaat" />
+      <input id="z" type="number" step="any" class="input input-bordered w-full" bind:value={z} required placeholder="Z-coördinaat" />
+    </div>
 
-    <label for="y" class="pr-4 text-right font-semibold">Y-coördinaat:</label>
-    <input id="y" type="number" step="any" class="input input-bordered col-span-3 w-full" bind:value={y} required />
-
-    <label for="z" class="pr-4 text-right font-semibold">Z-coördinaat:</label>
-    <input id="z" type="number" step="any" class="input input-bordered col-span-3 w-full" bind:value={z} required />
-
-    <!-- Camera orientation fields -->
-    <label for="heading" class="pr-4 text-right font-semibold">Heading (graden):</label>
-    <input id="heading" type="number" step="any" class="input input-bordered col-span-3 w-full" bind:value={heading} required />
-
-    <label for="pitch" class="pr-4 text-right font-semibold">Pitch (graden):</label>
-    <input id="pitch" type="number" step="any" class="input input-bordered col-span-3 w-full" bind:value={pitch} required />
-
-    <label for="duration" class="pr-4 text-right font-semibold">Duur (seconden):</label>
-    <input id="duration" type="number" step="any" class="input input-bordered col-span-3 w-full" bind:value={duration} required />
+    <!-- Heading, Pitch, Duration row -->
+    <label for="heading" class="pr-4 text-right font-semibold">Oriëntatie & Duur:</label>
+    <div class="col-span-3 flex gap-2">
+      <input id="heading" type="number" step="any" class="input input-bordered w-full" bind:value={heading} required placeholder="Heading (graden)" />
+      <input id="pitch" type="number" step="any" class="input input-bordered w-full" bind:value={pitch} required placeholder="Pitch (graden)" />
+      <input id="duration" type="number" step="any" class="input input-bordered w-full" bind:value={duration} required placeholder="Duur (seconden)" />
+    </div>
 
     <div class="col-span-4 mt-6 flex justify-end gap-2">
       <button type="button" class="btn btn-ghost" on:click={() => modalRef.close()}>Annuleren</button>

@@ -288,6 +288,68 @@
     return null;
   }
 
+  function handleEmptyStateDrop(e: DragEvent) {
+    e.preventDefault();
+    
+    // Handle existing layers being moved from groups to ungrouped FIRST
+    if (draggedItem && draggedItem.type === 'layer') {
+      const layerId = draggedItem.id;
+      const sourceGroupId = draggedItem.groupId;
+
+      // Find and remove the layer from its current location (only if it's in a group)
+      if (sourceGroupId !== null && sourceGroupId !== undefined) {
+        let layer: LayerWithAssociation | undefined;
+        const group = findGroupById(rootGroups, sourceGroupId);
+        if (group) {
+          const index = group.layers.findIndex((l) => l.layer_id === layerId);
+          if (index !== -1) {
+            layer = group.layers.splice(index, 1)[0];
+          }
+        }
+
+        if (layer) {
+          // Move the layer to ungrouped
+          layer.group_id = null;
+          layer.sort_order = ungroupedLayers.length;
+          ungroupedLayers.push(layer);
+
+          // Update the layer in layersWithDetails as well
+          const layerInDetails = layersWithDetails.find(l => l.layer_id === layerId);
+          if (layerInDetails) {
+            layerInDetails.group_id = null;
+            layerInDetails.sort_order = ungroupedLayers.length - 1;
+          }
+
+          // Update arrays for reactivity
+          ungroupedLayers = [...ungroupedLayers];
+          rootGroups = [...rootGroups];
+          layersWithDetails = [...layersWithDetails];
+          
+          // Update sort orders without rebuilding layersWithDetails
+          updateLayerSortOrders(true);
+          hasChanges = true;
+        }
+      }
+    } 
+    // Handle catalog layers from the catalog ONLY if no draggedItem or draggedItem is catalog-layer
+    else if (draggedItem?.type === 'catalog-layer' || (!draggedItem && (window as any).catalogDragData)) {
+      const dragData = (window as any).catalogDragData;
+      if (dragData && dragData.type === 'catalog-layer' && dragData.layer) {
+        const layer = dragData.layer as Layer;
+        const existingLayer = allLayers.find(l => l.id === layer.id);
+        if (existingLayer) {
+          addLayerToDigitalTwin(existingLayer);
+        }
+      }
+    }
+
+    // Clean up
+    draggedItem = null;
+    if ((window as any).catalogDragData) {
+      delete (window as any).catalogDragData;
+    }
+  }
+
   // catalogAddUtil.ts
   function addLayerToDigitalTwin(layer: Layer, groupId: number | null = null) {
     // Create new layer association
@@ -561,7 +623,7 @@
     updateLayerSortOrders();
   }
 
-  function updateLayerSortOrders() {
+  function updateLayerSortOrders(skipDetailsUpdate: boolean = false) {
     // Update ungrouped layers sort order
     ungroupedLayers.forEach((layer, index) => {
       layer.sort_order = index;
@@ -579,8 +641,10 @@
 
     updateGroupLayerSortOrders(rootGroups);
 
-    // Update main arrays
-    updateLayersWithDetails();
+    // Update main arrays only if not skipped
+    if (!skipDetailsUpdate) {
+      updateLayersWithDetails();
+    }
 
     // Force reactivity
     ungroupedLayers = [...ungroupedLayers];
@@ -788,6 +852,16 @@
 
       collectGroupOperations(rootGroups);
 
+      // Add deleted groups
+      if (window._deletedGroupIds && Array.isArray(window._deletedGroupIds)) {
+        for (const deletedGroupId of window._deletedGroupIds) {
+          groupOperations.push({
+            action: 'delete',
+            id: deletedGroupId
+          } as GroupBulkOperation);
+        }
+      }
+
       // Compose full payload to match backend
       const payload: BulkAssociationsPayload = {
         layer_payload: { operations: layerOperations },
@@ -816,6 +890,11 @@
       // Clear deleted layer IDs after successful save
       if (window._deletedLayerIds) {
         window._deletedLayerIds = [];
+      }
+
+      // Clear deleted group IDs after successful save
+      if (window._deletedGroupIds) {
+        window._deletedGroupIds = [];
       }
 
       hasChanges = false;
@@ -1287,6 +1366,41 @@
                   </div>
                 {/each}
               </div>
+
+              <!-- Empty state for ungrouped layers -->
+              {#if ungroupedLayers.length === 0}
+                <div class="ml-6">
+                  <div 
+                    class="border-2 border-dashed border-base-300 rounded-lg p-6 text-center text-base-content/50 transition-colors {(draggedItem?.type === 'layer' && draggedItem?.groupId !== null) || draggedItem?.type === 'catalog-layer' ? 'border-primary bg-primary/5' : ''}"
+                    role="region"
+                    ondragover={(e) => {
+                      e.preventDefault();
+                      // draggedItem should already be set by dragStartAction for existing layers
+                      // Only try to set it if it's not already set (for catalog items)
+                      if (!draggedItem) {
+                        const dragData = e.dataTransfer?.getData('application/json');
+                        if (dragData) {
+                          try {
+                            draggedItem = JSON.parse(dragData);
+                          } catch (err) {
+                            // Ignore parse errors
+                          }
+                        } else if ((window as any).catalogDragData) {
+                          draggedItem = (window as any).catalogDragData;
+                        }
+                      }
+                    }}
+                    ondrop={handleEmptyStateDrop}
+                  >
+                    <img src="/icons/file.svg" alt="Geen lagen" class="mx-auto mb-3 h-10 w-10 opacity-50" />
+                    <h4 class="text-base font-medium mb-2">Geen ongegroepeerde lagen</h4>
+                    <p class="mb-3 text-sm">Sleep lagen vanuit de catalogus hiernaartoe om ze toe te voegen.</p>
+                    <div class="inline-flex items-center gap-2 text-xs text-base-content/40">
+                      Sleep & laat los
+                    </div>
+                  </div>
+                </div>
+              {/if}
             </div>
 
             <!-- Root Groups -->
@@ -1307,13 +1421,6 @@
                 {@render groupComponent(group)}
               {/each}
             </div>
-
-            {#if ungroupedLayers.length === 0 && rootGroups.length === 0}
-              <div class="text-base-content/50 py-8 text-center">
-                <p>Geen lagen gevonden voor deze digital twin.</p>
-                <p class="mt-2 text-xs">Sleep lagen vanuit de catalogus om te beginnen.</p>
-              </div>
-            {/if}
           </div>
         </div>
       </div>

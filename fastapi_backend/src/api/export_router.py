@@ -20,5 +20,8 @@ async def export_digital_twin_file(digital_twin_id: int, db: Session = Depends(g
         })
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
-    except Exception:
-        raise HTTPException(status_code=500, detail="Something went wrong during export.")
+    except Exception as e:
+        print(f"Export error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Export error: {str(e)}")

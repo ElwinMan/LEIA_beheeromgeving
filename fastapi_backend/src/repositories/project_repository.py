@@ -4,6 +4,9 @@ from models.tool_associations import Project
 def get_by_id(db: Session, project_id: int):
     return db.query(Project).filter_by(id=project_id).first()
 
+def get_projects_by_ids(db: Session, project_ids: list):
+    return db.query(Project).filter(Project.id.in_(project_ids)).all()
+
 def get_all(db: Session):
     return db.query(Project).all()
 

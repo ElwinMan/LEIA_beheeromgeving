@@ -119,6 +119,7 @@
                 type="checkbox"
                 checked={selectedLayerIds.has(layer.id)}
                 onchange={() => toggleLayer(layer.id)}
+                class="checkbox checkbox-primary"
               />
               <span>{layer.title}</span>
             </div>
@@ -131,6 +132,7 @@
                   value={layer.id}
                   checked={defaultLayerId === layer.id}
                   onchange={() => setDefaultLayer(layer.id)}
+                  class="radio radio-secondary"
                 />
                 <span class="text-sm">Standaard</span>
               </label>

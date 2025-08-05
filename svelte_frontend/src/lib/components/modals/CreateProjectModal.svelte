@@ -1,48 +1,93 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import { createProject } from '$lib/api';
+  import { createProject, fetchLayers } from '$lib/api';
   import type { Project } from '$lib/types/tool';
+  import type { Layer } from '$lib/types/layer';
   import AlertBanner from '$lib/components/AlertBanner.svelte';
+  import { onMount } from 'svelte';
 
   let modalRef: HTMLDialogElement;
   const dispatch = createEventDispatcher<{ created: Project }>();
 
   let name = '';
   let description = '';
-  let content = '';
+  let polygon = '';
+  let selectedLayers: string[] = [];
+  let x = 0;
+  let y = 0;
+  let z = 0;
+  let heading = 0;
+  let pitch = 0;
+  let duration = 0;
 
   let errorBanner: InstanceType<typeof AlertBanner> | null = null;
   let successBanner: InstanceType<typeof AlertBanner> | null = null;
+  let availableLayers: Layer[] = [];
 
-  const jsonPlaceholder = `{
-  "key": "value",
-  "anotherKey": 123,
-  "array": [
-    { "itemKey": "itemValue" }
-  ]
-}`;
+  onMount(async () => {
+    try {
+      availableLayers = await fetchLayers();
+    } catch (error) {
+      console.error('Failed to fetch layers:', error);
+    }
+  });
 
   export function showModal() {
     name = '';
     description = '';
-    content = '';
+    polygon = '';
+    selectedLayers = [];
+    x = 0;
+    y = 0;
+    z = 0;
+    heading = 0;
+    pitch = 0;
+    duration = 0;
     errorBanner?.hide?.();
     successBanner?.hide?.();
     modalRef.showModal();
   }
 
+  function handleLayerChange(layerTitle: string, checked: boolean) {
+    if (checked) {
+      selectedLayers = [...selectedLayers, layerTitle];
+    } else {
+      selectedLayers = selectedLayers.filter(l => l !== layerTitle);
+    }
+  }
+
   async function handleSubmit(event: Event) {
     event.preventDefault();
 
-    let payload: any = { name, description };
-    if (content && content.trim() !== '') {
-      try {
-        payload.content = JSON.parse(content);
-      } catch (e) {
-        errorBanner?.show();
-        return;
+    let polygonData;
+    try {
+      if (polygon.trim()) {
+        polygonData = JSON.parse(polygon);
       }
+    } catch (error) {
+      errorBanner?.show();
+      console.error('Invalid polygon JSON:', error);
+      return;
     }
+
+    const content = {
+      polygon: polygonData,
+      layers: selectedLayers,
+      cameraPosition: {
+        x,
+        y,
+        z,
+        heading,
+        pitch,
+        duration
+      }
+    };
+
+    const payload = {
+      name,
+      description,
+      content
+    };
 
     try {
       const newProject = await createProject(payload);
@@ -67,7 +112,7 @@
   <AlertBanner
     bind:this={errorBanner}
     type="error"
-    message="Content moet geldig JSON zijn!"
+    message="Er is een fout opgetreden bij het aanmaken van het project!"
   />
 
   <form
@@ -82,14 +127,53 @@
     <label for="description" class="pr-4 text-right font-semibold">Beschrijving:</label>
     <input id="description" class="input input-bordered col-span-3 w-full" bind:value={description} />
 
-    <label for="content" class="pr-4 text-right font-semibold">Content (JSON):</label>
-    <textarea
-      id="content"
-      class="textarea textarea-bordered col-span-3 w-full min-h-[12rem]"
-      bind:value={content}
-      rows="10"
-      placeholder={jsonPlaceholder}
+    <label for="polygon" class="pr-4 text-right font-semibold">Polygon (JSON):</label>
+    <textarea 
+      id="polygon" 
+      class="textarea textarea-bordered col-span-3 w-full h-32" 
+      bind:value={polygon} 
+      placeholder='[
+  [4.9000, 52.39961],
+  [4.91807, 52.39961],
+  [4.9193, 52.38107],
+  [4.9000, 52.38575]
+]'
     ></textarea>
+
+    <div class="pr-4 text-right font-semibold">Lagen:</div>
+    <div class="col-span-3 max-h-32 overflow-y-auto border border-base-300 rounded-lg p-2">
+      {#each availableLayers as layer}
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input 
+            type="checkbox" 
+            class="checkbox checkbox-sm"
+            checked={selectedLayers.includes(layer.title)}
+            on:change={(e) => handleLayerChange(layer.title, e.currentTarget.checked)}
+          />
+          <span class="text-sm">{layer.title}</span>
+        </label>
+      {/each}
+    </div>
+
+    <!-- Camera Position fields -->
+    <h4 class="col-span-4 mt-4 font-semibold">Camera Positie</h4>
+
+    <!-- X, Y, Z coordinates row -->
+    <label for="x" class="pr-4 text-right font-semibold">Coördinaten (X, Y, Z):</label>
+    <div class="col-span-3 flex gap-2">
+      <input id="x" type="number" step="any" class="input input-bordered w-full" bind:value={x} required placeholder="X-coördinaat" />
+      <input id="y" type="number" step="any" class="input input-bordered w-full" bind:value={y} required placeholder="Y-coördinaat" />
+      <input id="z" type="number" step="any" class="input input-bordered w-full" bind:value={z} required placeholder="Z-coördinaat" />
+    </div>
+
+    <!-- Heading, Pitch, Duration row -->
+    <label for="heading" class="pr-4 text-right font-semibold">Oriëntatie & Duur:</label>
+    <div class="col-span-3 flex gap-2">
+      <input id="heading" type="number" step="any" class="input input-bordered w-full" bind:value={heading} required placeholder="Heading (graden)" />
+      <input id="pitch" type="number" step="any" class="input input-bordered w-full" bind:value={pitch} required placeholder="Pitch (graden)" />
+      <input id="duration" type="number" step="any" class="input input-bordered w-full" bind:value={duration} required placeholder="Duur (seconden)" />
+    </div>
+
     <div class="col-span-4 mt-6 flex justify-end gap-2">
       <button type="button" class="btn btn-ghost" on:click={() => modalRef.close()}>Annuleren</button>
       <button type="submit" class="btn btn-primary">Aanmaken</button>
