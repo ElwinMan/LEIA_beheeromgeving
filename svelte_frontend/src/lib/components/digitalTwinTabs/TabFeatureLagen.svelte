@@ -19,6 +19,7 @@
   import type { Group } from '$lib/types/group';
   import AlertBanner from '$lib/components/AlertBanner.svelte';
   import GroupModal from '$lib/components/modals/CreateGroupModal.svelte';
+  import CreateLayerModal from '$lib/components/modals/CreateLayerModal.svelte';
   import DeleteModal from '$lib/components/modals/DeleteModal.svelte';
   import DeleteGroupModal from '$lib/components/modals/DeleteGroupModal.svelte';
   import { isDescendant } from '$lib/utils/isDescendantPrevention';
@@ -36,6 +37,7 @@
 
   let { digitalTwin, digitalTwinId }: Props = $props();
   let groupModalRef: InstanceType<typeof GroupModal>;
+  let createLayerModalRef: InstanceType<typeof CreateLayerModal>;
   let deleteLayerModalShow = $state(false);
   let layerToDelete: LayerWithAssociation | null = null;
   let skipDeleteLayerConfirm = false;
@@ -1108,6 +1110,13 @@
     }
     hasChanges = true;
   }
+
+  function handleLayerCreated(event: CustomEvent<Layer>) {
+    const newLayer = event.detail;
+    // Refresh the catalog to include the new layer
+    allLayers = [...allLayers, newLayer];
+    catalogLayers = [...catalogLayers, newLayer];
+  }
 </script>
 
 <GroupModal
@@ -1115,6 +1124,12 @@
   availableGroups={allGroups}
   digitalTwinId={Number(digitalTwinId)}
   on:created={(event) => handleGroupCreated(event.detail)}
+/>
+
+<CreateLayerModal
+  bind:this={createLayerModalRef}
+  on:created={handleLayerCreated}
+  isBackgroundPage={false}
 />
 
 <DeleteModal
@@ -1143,11 +1158,21 @@
     <div class="bg-base-100 border-base-300 h-full rounded-lg border p-4">
       <div class="space-y-4">
         <!-- Header -->
-        <div>
-          <h3 class="text-lg font-semibold">Layer Catalogus</h3>
-          <p class="text-base-content/70 text-sm">
-            Sleep lagen naar de digital twin of klik op + om toe te voegen
-          </p>
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-semibold">Layer Catalogus</h3>
+            <p class="text-base-content/70 text-sm">
+              Sleep lagen naar de digital twin of klik op + om toe te voegen
+            </p>
+          </div>
+          <button
+            class="btn btn-primary btn-sm"
+            onclick={() => createLayerModalRef.showModal()}
+            title="Nieuwe layer aanmaken"
+          >
+            <img src="/icons/plus.svg" alt="Voeg toe" class="h-4 w-4" />
+            Nieuwe Layer
+          </button>
         </div>
 
         <!-- Search -->
@@ -1320,8 +1345,11 @@
                       <img src="/icons/file-ungrouped.svg" alt="Laag" class="h-4 w-4 flex-shrink-0" />
                       <span class="flex-1">
                         <span class="font-medium">{layer.title}</span>
+                        {#if layer.isNew}
+                          <span class="badge badge-success badge-xs ml-2">nieuw</span>
+                        {/if}
                         {#if layer.is_default}
-                          <span class="badge badge-primary badge-xs ml-2">Standaard</span>
+                          <span class="badge badge-info badge-xs ml-2">Standaard</span>
                         {/if}
                       </span>
                       <span class="text-base-content/50 text-xs">#{layer.sort_order}</span>
@@ -1571,8 +1599,11 @@
                 <img src="/icons/file-grouped.svg" alt="File" class="h-4 w-4 flex-shrink-0" />
                 <span class="flex-1">
                   <span class="font-medium">{layer.title}</span>
+                  {#if layer.isNew}
+                    <span class="badge badge-success badge-xs ml-2">nieuw</span>
+                  {/if}
                   {#if layer.is_default}
-                    <span class="badge badge-primary badge-xs ml-2">Standaard</span>
+                    <span class="badge badge-info badge-xs ml-2">Standaard</span>
                   {/if}
                 </span>
                 <span class="text-base-content/50 text-xs">#{layer.sort_order}</span>

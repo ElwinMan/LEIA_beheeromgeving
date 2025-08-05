@@ -146,7 +146,7 @@
         <label class="flex items-center gap-2 cursor-pointer">
           <input 
             type="checkbox" 
-            class="checkbox checkbox-sm"
+            class="checkbox checkbox-primary"
             checked={selectedLayers.includes(layer.title)}
             on:change={(e) => handleLayerChange(layer.title, e.currentTarget.checked)}
           />

@@ -521,7 +521,12 @@
 
                     <!-- Bookmark info -->
                     <div class="flex-1">
-                      <div class="font-medium">{bookmark.title}</div>
+                      <div class="flex items-center gap-2">
+                        <div class="font-medium">{bookmark.title}</div>
+                        {#if bookmark.isNew}
+                          <span class="badge badge-primary badge-sm">nieuw</span>
+                        {/if}
+                      </div>
                       {#if bookmark.description}
                         <div class="text-sm text-base-content/70">{bookmark.description}</div>
                       {/if}

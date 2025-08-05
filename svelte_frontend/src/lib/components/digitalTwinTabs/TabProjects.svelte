@@ -547,12 +547,14 @@
 
                   <!-- Project info -->
                   <div class="flex-1">
-                    <div class="font-medium">{project.name}</div>
+                    <div class="flex items-center gap-2">
+                      <div class="font-medium">{project.name}</div>
+                      {#if project.isNew}
+                        <span class="badge badge-success badge-sm">Nieuw</span>
+                      {/if}
+                    </div>
                     {#if project.description}
                       <div class="text-sm text-base-content/70">{project.description}</div>
-                    {/if}
-                    {#if project.isNew}
-                      <span class="badge badge-success badge-sm">Nieuw</span>
                     {/if}
                   </div>
 
