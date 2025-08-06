@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 import repositories.digital_twin_tool_relation_repository as repo
 import repositories.project_repository as project_repo
 import services.content_type_service as content_type_service
+import services.tool_service as tool_service
 from models.associations import DigitalTwinToolAssociation
 from models.tool_associations import Project
 from typing import List
@@ -15,11 +16,19 @@ def handle_bulk_project_operations(digital_twin_id: int, operations: List[Digita
     project_content_type = content_type_service.get_content_type_by_name(db, "project")
     if not project_content_type:
         raise ValueError("Project content type not found")
+    
+    # Get projects tool
+    projects_tool = tool_service.get_tool_by_name("projects", db)
+    if not projects_tool:
+        raise ValueError("Projects tool not found")
 
     def handle_create(op: DigitalTwinToolBulkItem):
+        # Use the actual projects tool ID instead of the one from frontend
+        actual_tool_id = projects_tool.id
+        
         # Check if association already exists
         assoc = repo.get_tool_association(
-            db, digital_twin_id, op.tool_id, project_content_type.id, op.content_id
+            db, digital_twin_id, actual_tool_id, project_content_type.id, op.content_id
         )
         if assoc is None:
             # Verify the project exists
@@ -30,7 +39,7 @@ def handle_bulk_project_operations(digital_twin_id: int, operations: List[Digita
             
             assoc = DigitalTwinToolAssociation(
                 digital_twin_id=digital_twin_id,
-                tool_id=op.tool_id,
+                tool_id=actual_tool_id,
                 content_type_id=project_content_type.id,
                 content_id=op.content_id,
                 sort_order=op.sort_order or 0,
@@ -40,8 +49,11 @@ def handle_bulk_project_operations(digital_twin_id: int, operations: List[Digita
             result_counter["created"] += 1
 
     def handle_update(op: DigitalTwinToolBulkItem):
+        # Use the actual projects tool ID instead of the one from frontend
+        actual_tool_id = projects_tool.id
+        
         assoc = repo.get_tool_association(
-            db, digital_twin_id, op.tool_id, project_content_type.id, op.content_id
+            db, digital_twin_id, actual_tool_id, project_content_type.id, op.content_id
         )
         if assoc:
             updates = {
@@ -53,8 +65,11 @@ def handle_bulk_project_operations(digital_twin_id: int, operations: List[Digita
             result_counter["updated"] += 1
 
     def handle_delete(op: DigitalTwinToolBulkItem):
+        # Use the actual projects tool ID instead of the one from frontend
+        actual_tool_id = projects_tool.id
+        
         assoc = repo.get_tool_association(
-            db, digital_twin_id, op.tool_id, project_content_type.id, op.content_id
+            db, digital_twin_id, actual_tool_id, project_content_type.id, op.content_id
         )
         if assoc:
             repo.bulk_delete_tool_association(db, assoc)

@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 import repositories.digital_twin_tool_relation_repository as repo
 import repositories.bookmark_repository as bookmark_repo
 import services.content_type_service as content_type_service
+import services.tool_service as tool_service
 from models.associations import DigitalTwinToolAssociation
 from models.tool_associations import Bookmark
 from typing import List
@@ -15,11 +16,19 @@ def handle_bulk_bookmark_operations(digital_twin_id: int, operations: List[Digit
     bookmark_content_type = content_type_service.get_content_type_by_name(db, "bookmark")
     if not bookmark_content_type:
         raise ValueError("Bookmark content type not found")
+    
+    # Get bookmarks tool
+    bookmarks_tool = tool_service.get_tool_by_name("bookmarks", db)
+    if not bookmarks_tool:
+        raise ValueError("Bookmarks tool not found")
 
     def handle_create(op: DigitalTwinToolBulkItem):
+        # Use the actual bookmarks tool ID instead of the one from frontend
+        actual_tool_id = bookmarks_tool.id
+        
         # Check if association already exists
         assoc = repo.get_tool_association(
-            db, digital_twin_id, op.tool_id, bookmark_content_type.id, op.content_id
+            db, digital_twin_id, actual_tool_id, bookmark_content_type.id, op.content_id
         )
         if assoc is None:
             # Verify the bookmark exists
@@ -30,7 +39,7 @@ def handle_bulk_bookmark_operations(digital_twin_id: int, operations: List[Digit
             
             assoc = DigitalTwinToolAssociation(
                 digital_twin_id=digital_twin_id,
-                tool_id=op.tool_id,
+                tool_id=actual_tool_id,
                 content_type_id=bookmark_content_type.id,
                 content_id=op.content_id,
                 sort_order=op.sort_order or 0
@@ -39,8 +48,11 @@ def handle_bulk_bookmark_operations(digital_twin_id: int, operations: List[Digit
             result_counter["created"] += 1
 
     def handle_update(op: DigitalTwinToolBulkItem):
+        # Use the actual bookmarks tool ID instead of the one from frontend
+        actual_tool_id = bookmarks_tool.id
+        
         assoc = repo.get_tool_association(
-            db, digital_twin_id, op.tool_id, bookmark_content_type.id, op.content_id
+            db, digital_twin_id, actual_tool_id, bookmark_content_type.id, op.content_id
         )
         if assoc:
             updates = {"sort_order": op.sort_order if op.sort_order is not None else assoc.sort_order}
@@ -49,8 +61,11 @@ def handle_bulk_bookmark_operations(digital_twin_id: int, operations: List[Digit
             result_counter["updated"] += 1
 
     def handle_delete(op: DigitalTwinToolBulkItem):
+        # Use the actual bookmarks tool ID instead of the one from frontend
+        actual_tool_id = bookmarks_tool.id
+        
         assoc = repo.get_tool_association(
-            db, digital_twin_id, op.tool_id, bookmark_content_type.id, op.content_id
+            db, digital_twin_id, actual_tool_id, bookmark_content_type.id, op.content_id
         )
         if assoc:
             repo.bulk_delete_tool_association(db, assoc)

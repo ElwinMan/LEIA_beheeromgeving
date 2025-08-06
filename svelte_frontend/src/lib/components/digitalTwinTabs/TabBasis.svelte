@@ -14,6 +14,7 @@
   export let digitalTwinId: string;
 
   import AlertBanner from '$lib/components/AlertBanner.svelte';
+  import PositionSelector from '$lib/components/PositionSelector.svelte';
   let successBanner: InstanceType<typeof AlertBanner> | null = null;
   let errorBanner: InstanceType<typeof AlertBanner> | null = null;
 
@@ -155,7 +156,20 @@
 
         <!-- Start Position in 3 columns (defined by grid-cols-3)-->
         <fieldset>
-          <legend class="font-semibold">Start positie</legend>
+          <legend class="font-semibold mb-2">Start positie</legend>
+          
+          <!-- Position Selector Button -->
+          <div class="mb-4">
+            <PositionSelector 
+              title="Selecteer start positie"
+              buttonText="Selecteer start positie op kaart"
+              initialPosition={startPosition}
+              on:coordinatesSelected={(e) => {
+                startPosition = e.detail;
+              }}
+            />
+          </div>
+
           <div class="grid grid-cols-3 gap-4">
             <div>
               <label for="start-x" class="block font-medium">X</label>

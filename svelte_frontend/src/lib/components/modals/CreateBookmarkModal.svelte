@@ -3,6 +3,7 @@
   import { createBookmark } from '$lib/api';
   import type { Bookmark } from '$lib/types/tool';
   import AlertBanner from '$lib/components/AlertBanner.svelte';
+  import PositionSelector from '$lib/components/PositionSelector.svelte';
 
   let modalRef: HTMLDialogElement;
   const dispatch = createEventDispatcher<{ created: Bookmark }>();
@@ -58,6 +59,16 @@
       console.error('Bookmark creation failed', error);
     }
   }
+
+  function handleCoordinatesSelected(event: CustomEvent) {
+    const coords = event.detail;
+    x = coords.x || 0;
+    y = coords.y || 0;
+    z = coords.z || 0;
+    heading = coords.heading || 0;
+    pitch = coords.pitch || 0;
+    duration = coords.duration || 0;
+  }
 </script>
 
 <AlertBanner
@@ -75,7 +86,7 @@
 
   <form
     on:submit|preventDefault={handleSubmit}
-    class="modal-box grid w-full max-w-4xl grid-cols-4 items-center gap-4"
+    class="modal-box grid w-full max-w-4xl min-h-[700px] grid-cols-4 items-center gap-4"
   >
     <h3 class="col-span-4 mb-4 text-lg font-bold">Nieuwe Bookmark Aanmaken</h3>
 
@@ -99,6 +110,16 @@
       <input id="heading" type="number" step="any" class="input input-bordered w-full" bind:value={heading} required placeholder="Heading (graden)" />
       <input id="pitch" type="number" step="any" class="input input-bordered w-full" bind:value={pitch} required placeholder="Pitch (graden)" />
       <input id="duration" type="number" step="any" class="input input-bordered w-full" bind:value={duration} required placeholder="Duur (seconden)" />
+    </div>
+
+    <!-- Position Selector -->
+    <div class="pr-4 text-right font-semibold">Positie Selector:</div>
+    <div class="col-span-3">
+      <PositionSelector 
+        buttonText="Selecteer positie op kaart"
+        initialPosition={{ x, y, z, heading, pitch, duration }}
+        on:coordinatesSelected={handleCoordinatesSelected}
+      />
     </div>
 
     <div class="col-span-4 mt-6 flex justify-end gap-2">
