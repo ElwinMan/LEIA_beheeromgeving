@@ -3,10 +3,13 @@
   import {
     fetchStories,
     fetchDigitalTwinStories,
-    bulkUpdateDigitalTwinStories
+    bulkUpdateDigitalTwinStories,
+    fetchLayers,
+    fetchDigitalTwin
   } from '$lib/api';
   import type { DigitalTwin } from '$lib/types/digitalTwin';
   import type { Story } from '$lib/types/tool';
+  import type { Layer } from '$lib/types/layer';
   import type { StoryWithAssociation, StoryBulkOperation, StoryAssociationResponse } from '$lib/types/digitalTwinAssociation';
   import AlertBanner from '$lib/components/AlertBanner.svelte';
   import DeleteModal from '$lib/components/modals/DeleteModal.svelte';
@@ -21,6 +24,9 @@
 
   let { digitalTwin, digitalTwinId }: Props = $props();
   let createStoryModalRef: InstanceType<typeof CreateStoryModal>;
+
+  // State for local digital twin data (can be updated independently)
+  let localDigitalTwin = $state<DigitalTwin | null>(digitalTwin);
 
   // Deep clone function
   function deepClone<T>(obj: T): T {
@@ -74,22 +80,89 @@
   let catalogIsLoading = $state(true);
   let catalogError = $state<string | null>(null);
 
+  // Layer validation state
+  let allLayers = $state<Layer[]>([]);
+  let showLayerInfo: { [key: number]: boolean } = $state({});
+  
+  let digitalTwinLayers = $derived(
+    localDigitalTwin?.layer_associations.map(assoc => 
+      allLayers.find(layer => layer.id === assoc.layer_id)
+    ).filter(Boolean) || []
+  );
+  let digitalTwinLayerIds = $derived(
+    digitalTwinLayers.map(layer => layer?.id).filter(Boolean) || []
+  );
+
   // Get used story IDs for filtering catalog
   let usedStoryIds = $derived(storiesWithDetails.map((s) => s.content_id));
 
+  // Check if story can be added (has all required layers)
+  function validateStoryLayers(story: Story): { canAdd: boolean; missingLayers: string[] } {
+    if (!story.content?.chapters || !Array.isArray(story.content.chapters)) {
+      return { canAdd: true, missingLayers: [] }; // No layer requirements
+    }
+
+    const requiredLayerIds = new Set<string>();
+    
+    // Extract all layer IDs from all chapters and steps
+    story.content.chapters.forEach((chapter: any) => {
+      if (chapter.steps && Array.isArray(chapter.steps)) {
+        chapter.steps.forEach((step: any) => {
+          if (step.layers && Array.isArray(step.layers)) {
+            step.layers.forEach((layer: any) => {
+              if (layer.id) {
+                requiredLayerIds.add(layer.id.toString());
+              }
+            });
+          }
+        });
+      }
+    });
+
+    const missingLayerIds = Array.from(requiredLayerIds).filter(
+      layerId => !digitalTwinLayerIds.includes(parseInt(layerId))
+    );
+
+    // Get layer titles for missing layers
+    const missingLayers = missingLayerIds.map(layerId => {
+      const layer = allLayers.find(l => l.id === parseInt(layerId));
+      return layer?.title || `Layer ${layerId}`;
+    });
+
+    return {
+      canAdd: missingLayerIds.length === 0,
+      missingLayers
+    };
+  }
+
   // Filter catalog stories
   const filteredCatalogStories = $derived.by(() => {
+    const filtered = catalogStories.filter((story) => !usedStoryIds.includes(story.id));
+    
+    let searchFiltered;
     if (catalogSearchTerm.trim() === '') {
-      return catalogStories.filter((story) => !usedStoryIds.includes(story.id));
+      searchFiltered = filtered;
     } else {
       const term = catalogSearchTerm.toLowerCase();
-      return catalogStories.filter(
+      searchFiltered = filtered.filter(
         (story) =>
-          !usedStoryIds.includes(story.id) &&
-          (story.name.toLowerCase().includes(term) ||
-            (story.description && story.description.toLowerCase().includes(term)))
+          story.name.toLowerCase().includes(term) ||
+          (story.description && story.description.toLowerCase().includes(term))
       );
     }
+
+    // Sort by compatibility first (compatible stories on top)
+    return searchFiltered.sort((a, b) => {
+      const validationA = validateStoryLayers(a);
+      const validationB = validateStoryLayers(b);
+      
+      // Sort by compatibility first (compatible stories on top)
+      if (validationA.canAdd && !validationB.canAdd) return -1;
+      if (!validationA.canAdd && validationB.canAdd) return 1;
+      
+      // Then sort alphabetically by name
+      return a.name.localeCompare(b.name);
+    });
   });
 
   onMount(() => {
@@ -97,9 +170,32 @@
     skipDeleteStoryConfirm = stored === 'true';
   });
 
+  async function loadAllLayers() {
+    try {
+      allLayers = await fetchLayers();
+    } catch (err) {
+      console.error('Error loading layers:', err);
+    }
+  }
+
+  async function loadDigitalTwin() {
+    try {
+      localDigitalTwin = await fetchDigitalTwin(digitalTwinId);
+    } catch (err) {
+      console.error('Error loading digital twin:', err);
+      // Fallback to the prop if API call fails
+      localDigitalTwin = digitalTwin;
+    }
+  }
+
   async function fetchAllData() {
     isLoading = true;
     try {
+      // Load all layers first for validation
+      await loadAllLayers();
+      // Load digital twin data to get current layer associations
+      await loadDigitalTwin();
+      
       // Fetch all stories for catalog
       allStories = await fetchStories();
       catalogStories = allStories;
@@ -140,6 +236,16 @@
 
   onMount(fetchAllData);
 
+  function handleDragStart(story: StoryWithAssociation) {
+    const fullStory = allStories.find(s => s.id === story.content_id);
+    draggedItem = { type: 'story', id: story.content_id, story: fullStory };
+  }
+
+  function handleDragEnd() {
+    draggedItem = null;
+    draggedOverItem = null;
+  }
+
   function handleDragLeave() {
     draggedOverItem = null;
   }
@@ -159,26 +265,30 @@
     
     if (!draggedItem) return;
 
-    const sourceStory = draggedItem.story;
-    if (!sourceStory) return;
+    // Handle story from catalog
+    if (draggedItem.type === 'catalog-story') {
+      const sourceStory = draggedItem.story;
+      if (!sourceStory) return;
 
-    const existingStory = allStories.find(s => s.id === sourceStory.id);
-    if (!existingStory) return;
+      // Validate story layers before allowing drop
+      const validation = validateStoryLayers(sourceStory);
+      if (!validation.canAdd) {
+        // Show error message or prevent drop
+        alert(`Deze story kan niet worden toegevoegd. Ontbrekende lagen: ${validation.missingLayers.join(', ')}`);
+        handleDragEnd();
+        return;
+      }
 
-    const zone = draggedOverItem?.zone || 'middle';
-    let insertIndex = targetIndex;
-    
-    if (zone === 'bottom') {
-      insertIndex = targetIndex + 1;
-    }
+      const existingStory = allStories.find(s => s.id === sourceStory.id);
+      if (!existingStory) return;
 
-    // Check if story is already in the list
-    const existingIndex = storiesWithDetails.findIndex(s => s.content_id === sourceStory.id);
-    
-    if (existingIndex !== -1 && draggedItem.type === 'story') {
-      // Move existing story
-      moveStoryInList(existingIndex, insertIndex);
-    } else if (draggedItem.type === 'catalog-story') {
+      const zone = draggedOverItem?.zone || 'middle';
+      let insertIndex = targetIndex;
+      
+      if (zone === 'bottom') {
+        insertIndex = targetIndex + 1;
+      }
+
       // Add new story from catalog
       const newStory = createStoryAssociation(sourceStory, insertIndex);
 
@@ -189,10 +299,28 @@
       storiesWithDetails = [...storiesWithDetails];
       
       hasChanges = true;
+    } 
+    // Handle moving existing story within the list
+    else if (draggedItem.type === 'story') {
+      const draggedStoryId = draggedItem.id;
+      const existingIndex = storiesWithDetails.findIndex(s => s.content_id === draggedStoryId);
+      
+      if (existingIndex !== -1) {
+        const zone = draggedOverItem?.zone || 'middle';
+        let insertIndex = targetIndex;
+        
+        if (zone === 'bottom') {
+          insertIndex = targetIndex + 1;
+        }
+        
+        // Only move if it's actually a different position
+        if (existingIndex !== insertIndex) {
+          moveStoryInList(existingIndex, insertIndex);
+        }
+      }
     }
 
-    draggedItem = null;
-    draggedOverItem = null;
+    handleDragEnd();
   }
 
   function moveStoryInList(fromIndex: number, toIndex: number) {
@@ -227,6 +355,15 @@
     if (!dragData) return;
 
     const story = dragData as Story;
+    
+    // Validate story layers before allowing drop
+    const validation = validateStoryLayers(story);
+    if (!validation.canAdd) {
+      alert(`Deze story kan niet worden toegevoegd. Ontbrekende lagen: ${validation.missingLayers.join(', ')}`);
+      delete (window as any).catalogDragData;
+      return;
+    }
+    
     const existingStory = allStories.find(s => s.id === story.id);
     if (!existingStory) return;
 
@@ -385,6 +522,10 @@
     allStories = [...allStories, newStory];
     catalogStories = [...catalogStories, newStory];
   }
+
+  function toggleLayerInfo(storyId: number) {
+    showLayerInfo[storyId] = !showLayerInfo[storyId];
+  }
 </script>
 
 <CreateStoryModal
@@ -483,31 +624,40 @@
           {:else}
             <div class="space-y-2">
               {#each storiesWithDetails as story, index (story.content_id)}
+                {@const fullStory = allStories.find(s => s.id === story.content_id)}
+                {@const validation = fullStory ? validateStoryLayers(fullStory) : { canAdd: true, missingLayers: [] }}
                 <div class="relative">
                   <div 
-                    class="flex items-center gap-3 p-3 border border-base-300 rounded-lg hover:bg-base-50 transition-colors {draggedItem?.type === 'story' && draggedItem?.id === story.content_id ? 'opacity-50' : ''}"
-                    use:dragStartAction={{
-                      item: { type: 'story' as 'story', id: story.content_id },
-                      type: 'story' as 'story',
-                      dataKey: 'application/json',
-                      effectAllowed: 'move',
-                      onDragStart: (item) => { draggedItem = item; }
-                    }}
+                    class="flex items-center gap-3 p-3 border rounded-lg hover:bg-base-50 transition-colors"
+                    class:border-base-300={validation.canAdd}
+                    class:border-error={!validation.canAdd}
+                    class:bg-red-50={!validation.canAdd}
+                    class:opacity-50={draggedItem?.type === 'story' && draggedItem?.id === story.content_id}
                     draggable="true"
+                    role="listitem"
+                    ondragstart={() => handleDragStart(story)}
+                    ondragend={handleDragEnd}
                     ondragover={(e) => handleDragOver(e, index)}
                     ondragleave={handleDragLeave}
                     ondrop={(e) => handleDrop(e, index)}
-                    role="listitem"
                   >
                     <img src="/icons/grip-vertical.svg" alt="Grip" class="text-base-content/30 h-4 w-4 flex-shrink-0" />
                     
-                    <img src="/icons/book.svg" alt="Story" class="h-5 w-5 flex-shrink-0 text-blue-600" />
+                    <img 
+                      src="/icons/book.svg" 
+                      alt="Story" 
+                      class="h-5 w-5 flex-shrink-0 text-blue-600" 
+                      class:text-error={!validation.canAdd}
+                    />
                     
                     <div class="flex-1 min-w-0">
                       <div class="flex items-center gap-2">
-                        <div class="font-medium text-sm">{story.name}</div>
+                        <div class="font-medium text-sm" class:text-error={!validation.canAdd}>{story.name}</div>
                         {#if story.isNew}
                           <span class="badge badge-success badge-xs">nieuw</span>
+                        {/if}
+                        {#if !validation.canAdd}
+                          <span class="badge badge-error badge-xs">Ontbrekende lagen</span>
                         {/if}
                       </div>
                       {#if story.description}
@@ -519,15 +669,71 @@
                       #{story.sort_order}
                     </div>
                     
-                    <button
-                      class="btn btn-ghost btn-xs text-error hover:bg-error/10"
-                      onclick={() => confirmDeleteStory(story)}
-                      title="Verwijder story"
-                      aria-label="Verwijder story"
-                    >
-                      <img src="/icons/trash-2.svg" alt="Verwijder" class="h-5 w-5" />
-                    </button>
+                    <!-- Actions -->
+                    <div class="flex gap-2">
+                      <!-- Layer info button -->
+                      {#if fullStory}
+                        <button
+                          class="btn btn-xs"
+                          class:btn-error={!validation.canAdd}
+                          class:btn-success={validation.canAdd}
+                          onclick={() => toggleLayerInfo(story.content_id)}
+                          title={validation.canAdd ? 'Bekijk vereiste lagen' : 'Bekijk ontbrekende lagen'}
+                        >
+                          {#if !validation.canAdd}
+                            <img src="/icons/circle-alert.svg" alt="Lijst ontbrekende lagen" class="h-3 w-3" />
+                          {:else}
+                            <img src="/icons/check.svg" alt="Lijst vereiste lagen" class="h-3 w-3" />
+                          {/if}
+                        </button>
+                      {/if}
+                      
+                      <button
+                        class="btn btn-ghost btn-xs text-error hover:bg-error/10"
+                        onclick={() => confirmDeleteStory(story)}
+                        title="Verwijder story"
+                        aria-label="Verwijder story"
+                      >
+                        <img src="/icons/trash-2.svg" alt="Verwijder" class="h-5 w-5" />
+                      </button>
+                    </div>
                   </div>
+
+                  <!-- Layer info display -->
+                  {#if showLayerInfo[story.content_id] && fullStory}
+                    {#if !validation.canAdd}
+                      <div class="mt-2 p-2 bg-error/10 border border-error/30 rounded text-xs">
+                        <div class="font-medium text-error mb-1">Ontbrekende lagen:</div>
+                        <div class="text-error font-medium">
+                          {validation.missingLayers.join(', ')}
+                        </div>
+                      </div>
+                    {:else}
+                      <!-- Show required layers if story has layer requirements -->
+                      {@const allRequiredLayers = new Set()}
+                      {#each fullStory.content?.chapters || [] as chapter}
+                        {#each chapter.steps || [] as step}
+                          {#each step.layers || [] as layer}
+                            {#if layer.id}
+                              {allRequiredLayers.add(allLayers.find(l => l.id === parseInt(layer.id))?.title || `Layer ${layer.id}`)}
+                            {/if}
+                          {/each}
+                        {/each}
+                      {/each}
+                      {#if allRequiredLayers.size > 0}
+                        <div class="mt-2 p-2 bg-success/10 border border-success/30 rounded text-xs">
+                          <div class="font-medium text-success mb-1">Vereiste lagen aanwezig:</div>
+                          <div class="text-success">
+                            {Array.from(allRequiredLayers).join(', ')}
+                          </div>
+                        </div>
+                      {:else}
+                        <div class="mt-2 p-2 bg-info/10 border border-info/30 rounded text-xs">
+                          <div class="font-medium text-info">Deze story heeft geen laagvereisten.</div>
+                        </div>
+                      {/if}
+                    {/if}
+                  {/if}
 
                   <!-- Absolute positioned drop indicators -->
                   {#if getDropIndicatorStyle('story', story.content_id).show}
@@ -573,9 +779,18 @@
         {:else}
           <div class="space-y-2 max-h-96 overflow-y-auto">
             {#each filteredCatalogStories as story (story.id)}
+              {@const validation = validateStoryLayers(story)}
               <div 
-                class="p-2 border border-base-300 rounded cursor-move hover:bg-base-50 transition-colors"
-                draggable="true"
+                class="p-2 border rounded transition-colors"
+                class:border-base-300={validation.canAdd}
+                class:bg-base-50={validation.canAdd}
+                class:hover:bg-base-100={validation.canAdd}
+                class:border-error={!validation.canAdd}
+                class:bg-red-100={!validation.canAdd}
+                class:opacity-60={!validation.canAdd}
+                class:cursor-move={validation.canAdd}
+                class:cursor-not-allowed={!validation.canAdd}
+                draggable={validation.canAdd}
                 use:dragStartAction={{
                   item: { type: 'catalog-story' as 'catalog-story', id: story.id, story },
                   type: 'catalog-story' as 'catalog-story',
@@ -583,14 +798,66 @@
                   effectAllowed: 'copy',
                   globalKey: 'catalogDragData',
                   onDragStart: (item) => {
-                    console.log('Dragging:', item);
-                    draggedItem = item;
+                    if (validation.canAdd) {
+                      console.log('Dragging:', item);
+                      draggedItem = item;
+                    }
                   }
                 }}
               >
-                <div class="font-medium text-sm">{story.name}</div>
-                {#if story.description}
-                  <div class="text-xs text-base-content/70">{story.description}</div>
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <div class="font-medium text-sm">{story.name}</div>
+                    {#if story.description}
+                      <div class="text-xs text-base-content/70">{story.description}</div>
+                    {/if}
+                  </div>
+                  
+                  {#if !validation.canAdd || (story.content?.chapters && story.content.chapters.some((ch: any) => ch.steps?.some((step: any) => step.layers?.length > 0)))}
+                    <button
+                      class="btn btn-circle btn-xs ml-2 flex-shrink-0"
+                      class:btn-error={!validation.canAdd}
+                      class:btn-success={validation.canAdd}
+                      onclick={() => toggleLayerInfo(story.id)}
+                      title={validation.canAdd ? 'Bekijk vereiste lagen' : 'Bekijk ontbrekende lagen'}
+                    >
+                      {#if !validation.canAdd}
+                        <img src="/icons/circle-alert.svg" alt="Lijst ontbrekende lagen" class="h-3 w-3" />
+                      {:else}
+                        <img src="/icons/check.svg" alt="Lijst vereiste lagen" class="h-3 w-3" />
+                      {/if}
+                    </button>
+                  {/if}
+                </div>
+                
+                {#if showLayerInfo[story.id]}
+                  {#if !validation.canAdd}
+                    <div class="mt-2 p-2 bg-error/10 border border-error/30 rounded text-xs">
+                      <div class="font-medium text-error mb-1">Ontbrekende lagen:</div>
+                      <div class="text-error font-medium">
+                        {validation.missingLayers.join(', ')}
+                      </div>
+                    </div>
+                  {:else if story.content?.chapters}
+                    {@const allRequiredLayers = new Set()}
+                    {#each story.content.chapters as chapter}
+                      {#each chapter.steps || [] as step}
+                        {#each step.layers || [] as layer}
+                          {#if layer.id}
+                            {allRequiredLayers.add(allLayers.find(l => l.id === parseInt(layer.id))?.title || `Layer ${layer.id}`)}
+                          {/if}
+                        {/each}
+                      {/each}
+                    {/each}
+                    {#if allRequiredLayers.size > 0}
+                      <div class="mt-2 p-2 bg-success/10 border border-success/30 rounded text-xs">
+                        <div class="font-medium text-success mb-1">Vereiste lagen aanwezig:</div>
+                        <div class="text-success font-medium">
+                          {Array.from(allRequiredLayers).join(', ')}
+                        </div>
+                      </div>
+                    {/if}
+                  {/if}
                 {/if}
               </div>
             {:else}
