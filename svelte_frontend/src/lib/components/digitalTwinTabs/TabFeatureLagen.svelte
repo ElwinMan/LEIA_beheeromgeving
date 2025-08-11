@@ -149,6 +149,11 @@
               featureName: layerDetails?.featureName || '',
               isNew: false
             };
+          })
+          .filter((layer) => {
+            // Filter out background layers
+            const layerDetails = allLayers.find((l) => l.id === layer.layer_id);
+            return layerDetails && !layerDetails.isBackground;
           });
 
         ungroupedLayers = layersWithDetails.filter((layer) => layer.group_id === null);
@@ -164,7 +169,7 @@
       }
 
       catalogIsLoading = true;
-      catalogLayers = allLayers;
+      catalogLayers = allLayers.filter(layer => !layer.isBackground);
       catalogIsLoading = false;
     } catch (err) {
       error = err instanceof Error ? err.message : 'Unknown error occurred';
