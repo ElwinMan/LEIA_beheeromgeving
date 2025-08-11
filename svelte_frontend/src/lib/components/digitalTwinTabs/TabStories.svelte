@@ -700,6 +700,7 @@
                   </div>
 
                   <!-- Layer info display -->
+                  <!-- DEBUG MARKER: Before layer info -->
                   {#if showLayerInfo[story.content_id] && fullStory}
                     {#if !validation.canAdd}
                       <div class="mt-2 p-2 bg-error/10 border border-error/30 rounded text-xs">
@@ -710,21 +711,24 @@
                       </div>
                     {:else}
                       <!-- Show required layers if story has layer requirements -->
-                      {@const allRequiredLayers = new Set()}
+                      {@const requiredLayerTitles: string[] = []}
                       {#each fullStory.content?.chapters || [] as chapter}
                         {#each chapter.steps || [] as step}
                           {#each step.layers || [] as layer}
                             {#if layer.id}
-                              {allRequiredLayers.add(allLayers.find(l => l.id === parseInt(layer.id))?.title || `Layer ${layer.id}`)}
+                              {@const foundLayer = allLayers.find(l => l.id === parseInt(layer.id))}
+                              {#if foundLayer && foundLayer.title && !requiredLayerTitles.includes(foundLayer.title)}
+                                {@const _ = requiredLayerTitles.push(foundLayer.title)}
+                              {/if}
                             {/if}
                           {/each}
                         {/each}
                       {/each}
-                      {#if allRequiredLayers.size > 0}
+                      {#if requiredLayerTitles.length > 0}
                         <div class="mt-2 p-2 bg-success/10 border border-success/30 rounded text-xs">
                           <div class="font-medium text-success mb-1">Vereiste lagen aanwezig:</div>
-                          <div class="text-success">
-                            {Array.from(allRequiredLayers).join(', ')}
+                          <div class="text-success font-medium">
+                            {requiredLayerTitles.join(', ')}
                           </div>
                         </div>
                       {:else}
@@ -839,21 +843,24 @@
                       </div>
                     </div>
                   {:else if story.content?.chapters}
-                    {@const allRequiredLayers = new Set()}
+                    {@const requiredLayerTitles: string[] = []}
                     {#each story.content.chapters as chapter}
                       {#each chapter.steps || [] as step}
                         {#each step.layers || [] as layer}
                           {#if layer.id}
-                            {allRequiredLayers.add(allLayers.find(l => l.id === parseInt(layer.id))?.title || `Layer ${layer.id}`)}
+                            {@const foundLayer = allLayers.find(l => l.id === parseInt(layer.id))}
+                            {#if foundLayer && foundLayer.title && !requiredLayerTitles.includes(foundLayer.title)}
+                              {@const _ = requiredLayerTitles.push(foundLayer.title)}
+                            {/if}
                           {/if}
                         {/each}
                       {/each}
                     {/each}
-                    {#if allRequiredLayers.size > 0}
+                    {#if requiredLayerTitles.length > 0}
                       <div class="mt-2 p-2 bg-success/10 border border-success/30 rounded text-xs">
                         <div class="font-medium text-success mb-1">Vereiste lagen aanwezig:</div>
                         <div class="text-success font-medium">
-                          {Array.from(allRequiredLayers).join(', ')}
+                          {requiredLayerTitles.join(', ')}
                         </div>
                       </div>
                     {/if}
