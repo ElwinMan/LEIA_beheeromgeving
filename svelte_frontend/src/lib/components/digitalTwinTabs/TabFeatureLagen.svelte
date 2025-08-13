@@ -1222,7 +1222,6 @@
                   effectAllowed: 'copy',
                   globalKey: 'catalogDragData',
                   onDragStart: (item) => {
-                    console.log('Dragging:', item);
                     draggedItem = item;
                   }
                 }}
@@ -1287,29 +1286,29 @@
           </p>
         </div>
 
-        {#if hasChanges}
-          <div class="flex gap-2">
-            <button class="btn btn-ghost btn-sm" onclick={resetChanges} disabled={isSaving}>
+        <!-- Save/Reset actions -->
+        <div class="flex gap-2">
+          {#if hasChanges}
+            <button class="btn btn-ghost" onclick={resetChanges} disabled={isSaving}>
               <img src="/icons/rotate-ccw.svg" alt="Reset" class="h-4 w-4" />
               Reset
             </button>
-            <button class="btn btn-primary btn-sm" onclick={saveChanges} disabled={isSaving}>
-              {#if isSaving}
-                <span class="loading loading-spinner loading-xs"></span>
-              {:else}
-                <img src="/icons/save.svg" alt="Opslaan" class="h-4 w-4" />
-              {/if}
-              Opslaan
-            </button>
-            <button
-              class="btn btn-outline btn-sm ml-2"
-              type="button"
-              onclick={() => console.log('Associated layers:', layersWithDetails)}
-            >
-              Debug: Log associated layers
-            </button>
-          </div>
-        {/if}
+          {:else}
+            <div class="btn btn-ghost invisible">
+              <img src="/icons/rotate-ccw.svg" alt="Reset" class="h-4 w-4" />
+              Reset
+            </div>
+          {/if}
+          
+          <button class="btn btn-primary" onclick={saveChanges} disabled={isSaving || !hasChanges}>
+            {#if isSaving}
+              <span class="loading loading-spinner loading-xs"></span>
+            {:else}
+              <img src="/icons/save.svg" alt="Opslaan" class="h-4 w-4" />
+            {/if}
+            Opslaan
+          </button>
+        </div>
       </div>
 
       <div class="bg-base-100 border-base-300 rounded-lg border p-4">
@@ -1464,11 +1463,19 @@
 </div>
 
 {#snippet groupComponent(group: GroupWithLayers)}
-  <div class="space-y-1" style="margin-left: {group.depth * 1.5}rem;" role="group">
+  <div class="space-y-1 ml-6 relative" role="group">
+    <!-- Vertical line extending down from this group -->
+    {#if expandedGroups.has(group.id) && (group.layers.length > 0 || group.subgroups.length > 0)}
+      <div class="absolute left-2 top-8 bottom-0 w-px bg-border border-l border-base-300"></div>
+    {/if}
+    
     <!-- Group Header with relative positioning -->
     <div class="relative">
+      <!-- Horizontal connector line -->
+      <div class="absolute left-2 top-1/2 w-4 h-px bg-base-300 border-t -translate-y-px"></div>
+      
       <div
-        class="hover:bg-base-200 flex items-center gap-2 rounded px-2 py-1 text-sm"
+        class="hover:bg-base-200 flex items-center gap-2 rounded px-2 py-1 text-sm relative z-10 bg-base-100"
         ondragover={(e) => handleDragOver(e, 'group', group.id)}
         ondragleave={handleDragLeave}
         ondrop={(e) => handleDrop(e, 'group', group.id)}
@@ -1479,7 +1486,6 @@
           dataKey: 'application/json',
           effectAllowed: 'move',
           onDragStart: (item) => {
-            console.log('Dragging:', item);
             draggedItem = item;
           }
         }}
@@ -1576,13 +1582,16 @@
 
     <!-- Group Content (only if expanded) -->
     {#if expandedGroups.has(group.id)}
-      <div class="space-y-1">
+      <div class="space-y-1 relative">
         <!-- Group Layers -->
-        <div class="space-y-1">
-          {#each group.layers as layer}
+        <div class="space-y-1 ml-6">
+          {#each group.layers as layer, index}
             <div class="relative">
+              <!-- Horizontal connector line for layers -->
+              <div class="absolute -left-4 top-1/2 w-4 h-px bg-base-300 border-t -translate-y-px"></div>
+              
               <div
-                class="hover:bg-base-200 flex cursor-move items-center gap-2 rounded px-2 py-1 text-sm {draggedItem?.type ===
+                class="hover:bg-base-200 flex cursor-move items-center gap-2 rounded px-2 py-1 text-sm relative z-10 bg-base-100 {draggedItem?.type ===
                   'layer' && draggedItem?.id === layer.layer_id
                   ? 'opacity-50'
                   : ''}"
@@ -1593,7 +1602,6 @@
                   dataKey: 'application/json',
                   effectAllowed: 'move',
                   onDragStart: (item) => {
-                    console.log('Dragging:', item);
                     draggedItem = item;
                   }
                 }}

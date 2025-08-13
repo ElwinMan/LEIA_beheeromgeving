@@ -235,8 +235,15 @@
 
   function moveProjectInList(fromIndex: number, toIndex: number) {
     const item = projectsWithDetails[fromIndex];
+    
+    // Adjust target index if moving forward (to account for removal shifting indices)
+    let adjustedToIndex = toIndex;
+    if (fromIndex < toIndex) {
+      adjustedToIndex = toIndex - 1;
+    }
+    
     projectsWithDetails.splice(fromIndex, 1);
-    projectsWithDetails.splice(toIndex, 0, item);
+    projectsWithDetails.splice(adjustedToIndex, 0, item);
     
     // Update sort_order for all items
     projectsWithDetails.forEach((project, index) => {
@@ -302,13 +309,20 @@
     const zone = draggedOverItem?.zone || 'middle';
     let insertIndex = targetIndex;
     
-    if (zone === 'bottom') {
-      insertIndex += 1;
-    }
-
-    // Check if project is already in the list
+    // Check if project is already in the list to determine direction
     const existingIndex = projectsWithDetails.findIndex(p => p.content_id === sourceProject.id);
     
+    if (zone === 'bottom') {
+      insertIndex += 1;
+    } else if (zone === 'middle' && existingIndex !== -1) {
+      // For middle drops of existing items, adjust based on direction
+      if (existingIndex < targetIndex) {
+        // Moving down: place item below target (target moves up)
+        insertIndex = targetIndex + 1;
+      }
+      // Moving up: place item above target (use targetIndex as-is)
+    }
+
     if (existingIndex !== -1 && draggedItem.type === 'project') {
       // Moving existing project within the list
       moveProjectInList(existingIndex, insertIndex);
@@ -562,20 +576,31 @@
         >
           <img src="/icons/plus.svg" alt="Voeg toe" class="h-4 w-4" />
           Nieuw Project
-        </button>        {#if hasChanges}
-          <button class="btn btn-success btn-sm" onclick={saveChanges} disabled={isSaving}>
-            {#if isSaving}
-              <span class="loading loading-spinner loading-sm"></span>
-            {:else}
-              <img src="/icons/save.svg" alt="Opslaan" class="h-4 w-4" />
-            {/if}
-            Opslaan
-          </button>
-          <button class="btn btn-ghost btn-sm" onclick={resetChanges}>
-            <img src="/icons/rotate-ccw.svg" alt="Reset" class="h-4 w-4" />
-            Reset
-          </button>
-        {/if}
+        </button>
+        
+        <button 
+          class="btn btn-ghost btn-sm"
+          class:invisible={!hasChanges}
+          onclick={resetChanges}
+        >
+          <img src="/icons/rotate-ccw.svg" alt="Reset" class="h-4 w-4" />
+          Reset
+        </button>
+        
+        <button 
+          class="btn btn-sm"
+          class:btn-success={hasChanges}
+          class:btn-disabled={!hasChanges}
+          onclick={saveChanges} 
+          disabled={isSaving || !hasChanges}
+        >
+          {#if isSaving}
+            <span class="loading loading-spinner loading-sm"></span>
+          {:else}
+            <img src="/icons/save.svg" alt="Opslaan" class="h-4 w-4" />
+          {/if}
+          Opslaan
+        </button>
       </div>
     </div>
 

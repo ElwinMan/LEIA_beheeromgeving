@@ -199,8 +199,15 @@
 
   function moveBookmarkInList(fromIndex: number, toIndex: number) {
     const item = bookmarksWithDetails[fromIndex];
+    
+    // Adjust target index if moving forward (to account for removal shifting indices)
+    let adjustedToIndex = toIndex;
+    if (fromIndex < toIndex) {
+      adjustedToIndex = toIndex - 1;
+    }
+    
     bookmarksWithDetails.splice(fromIndex, 1);
-    bookmarksWithDetails.splice(toIndex, 0, item);
+    bookmarksWithDetails.splice(adjustedToIndex, 0, item);
     
     // Update sort_order for all items
     bookmarksWithDetails.forEach((bookmark, index) => {
@@ -224,13 +231,20 @@
     const zone = draggedOverItem?.zone || 'middle';
     let insertIndex = targetIndex;
     
-    if (zone === 'bottom') {
-      insertIndex = targetIndex + 1;
-    }
-
-    // Check if bookmark is already in the list
+    // Check if bookmark is already in the list to determine direction
     const existingIndex = bookmarksWithDetails.findIndex(b => b.content_id === sourceBookmark.id);
     
+    if (zone === 'bottom') {
+      insertIndex = targetIndex + 1;
+    } else if (zone === 'middle' && existingIndex !== -1) {
+      // For middle drops of existing items, adjust based on direction
+      if (existingIndex < targetIndex) {
+        // Moving down: place item below target (target moves up)
+        insertIndex = targetIndex + 1;
+      }
+      // Moving up: place item above target (use targetIndex as-is)
+    }
+
     if (existingIndex !== -1 && draggedItem.type === 'bookmark') {
       // Move existing bookmark
       moveBookmarkInList(existingIndex, insertIndex);
@@ -439,29 +453,39 @@
         <p class="text-base-content/70">Beheer bookmarks voor deze digital twin.</p>
       </div>
       
-      <div class="flex gap-2">
+      <div class="flex gap-4">
+        <!-- Create action - separate group -->
         <button 
-          class="btn btn-primary btn-sm"
+          class="btn btn-primary"
           onclick={() => createBookmarkModalRef.showModal()}
         >
           <img src="/icons/plus.svg" alt="Voeg toe" class="h-4 w-4" />
           Nieuwe Bookmark
         </button>
         
-        {#if hasChanges}
-          <button class="btn btn-success btn-sm" onclick={saveChanges} disabled={isSaving}>
+        <!-- Save/Reset actions - grouped together -->
+        <div class="flex gap-2">
+          {#if hasChanges}
+            <button class="btn btn-ghost" onclick={resetChanges}>
+              <img src="/icons/rotate-ccw.svg" alt="Reset" class="h-4 w-4" />
+              Reset
+            </button>
+          {:else}
+            <div class="btn btn-ghost invisible">
+              <img src="/icons/rotate-ccw.svg" alt="Reset" class="h-4 w-4" />
+              Reset
+            </div>
+          {/if}
+          
+          <button class="btn btn-primary" onclick={saveChanges} disabled={isSaving || !hasChanges}>
             {#if isSaving}
-              <span class="loading loading-spinner loading-sm"></span>
+              <span class="loading loading-spinner loading-xs"></span>
             {:else}
               <img src="/icons/save.svg" alt="Opslaan" class="h-4 w-4" />
             {/if}
             Opslaan
           </button>
-          <button class="btn btn-ghost btn-sm" onclick={resetChanges}>
-            <img src="/icons/rotate-ccw.svg" alt="Reset" class="h-4 w-4" />
-            Reset
-          </button>
-        {/if}
+        </div>
       </div>
     </div>
 
