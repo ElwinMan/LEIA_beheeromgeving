@@ -571,7 +571,7 @@
       
       <div class="flex gap-2">
         <button 
-          class="btn btn-primary btn-sm"
+          class="btn btn-primary"
           onclick={() => createProjectModalRef.showModal()}
         >
           <img src="/icons/plus.svg" alt="Voeg toe" class="h-4 w-4" />
@@ -579,7 +579,7 @@
         </button>
         
         <button 
-          class="btn btn-ghost btn-sm"
+          class="btn btn-ghost"
           class:invisible={!hasChanges}
           onclick={resetChanges}
         >
@@ -588,7 +588,7 @@
         </button>
         
         <button 
-          class="btn btn-sm"
+          class="btn"
           class:btn-success={hasChanges}
           class:btn-disabled={!hasChanges}
           onclick={saveChanges} 

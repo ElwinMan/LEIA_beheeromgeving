@@ -6,6 +6,7 @@
   import TabBookmarks from '$lib/components/digitalTwinTabs/TabBookmarks.svelte';
   import TabStories from '$lib/components/digitalTwinTabs/TabStories.svelte';
   import TabProjects from '$lib/components/digitalTwinTabs/TabProjects.svelte';
+  import TabTerrainProvider from '$lib/components/digitalTwinTabs/TabTerrainProvider.svelte';
 
   import { digitalTwinExport } from '$lib/api';
 
@@ -16,6 +17,7 @@
     { label: 'Basis', component: TabBasis },
     { label: 'Ondergrond', component: TabOndergrond },
     { label: 'FeatureLagen', component: TabFeatureLagen },
+    { label: 'TerrainProviders', component: TabTerrainProvider },
     { label: 'Bookmarks', component: TabBookmarks },
     { label: 'Stories', component: TabStories },
     { label: 'Projects', component: TabProjects }

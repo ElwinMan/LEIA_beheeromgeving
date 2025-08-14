@@ -7,7 +7,10 @@ import repositories.digital_twin_tool_relation_repository as tool_relation_repo
 import repositories.bookmark_repository as bookmark_repo
 import repositories.project_repository as project_repo
 import repositories.story_repository as story_repo
+import repositories.terrain_provider_repository as terrain_provider_repo
 import services.content_type_service as content_type_service
+import services.digital_twin_cesium_config_service as cesium_config_service
+import services.digital_twin_terrain_provider_relation_service as terrain_provider_service
 
 from schemas.layer_schema import LayerResponse
 from schemas.viewer_schema import ViewerResponse
@@ -34,6 +37,66 @@ def transform_layer(layer, assoc=None):
             "contenttype": layer.content.get("contenttype", "") if layer.content and isinstance(layer.content, dict) else ""
         }
     }
+
+def build_viewer_export(digital_twin, viewer):
+    """Build the viewer export structure with extracted fields"""
+    viewer_export = {
+        "title": digital_twin.title,
+        "subtitle": digital_twin.subtitle
+    }
+    
+    if viewer and viewer.content:
+        content = viewer.content
+        
+        # Extract specific fields to root level
+        if "logo" in content:
+            viewer_export["logo"] = content["logo"]
+        
+        if "thumbnail" in content:
+            viewer_export["thumbnail"] = content["thumbnail"]
+            
+        if "startPosition" in content:
+            viewer_export["startPosition"] = content["startPosition"]
+            
+        # Add remaining content fields (excluding the ones we moved to root)
+        remaining_content = {
+            k: v for k, v in content.items() 
+            if k not in ["logo", "thumbnail", "startPosition"]
+        }
+        
+        # Add remaining content fields to the root level
+        viewer_export.update(remaining_content)
+    
+    return viewer_export
+
+def build_chapter_groups(chapters):
+    """Build chapterGroups from story chapters"""
+    if not chapters or not isinstance(chapters, list):
+        return []
+    
+    chapter_groups = []
+    for index, chapter in enumerate(chapters):
+        if isinstance(chapter, dict):
+            chapter_id = str(index + 1)
+            
+            # Try to get title from the first step of the chapter, or use a default
+            title = f"Hoofdstuk {chapter_id}"
+            if "steps" in chapter and isinstance(chapter["steps"], list) and len(chapter["steps"]) > 0:
+                first_step = chapter["steps"][0]
+                if isinstance(first_step, dict) and "title" in first_step and first_step["title"]:
+                    title = first_step["title"]
+            
+            # Format title with H1:, H2:, H3: etc prefix
+            formatted_title = f"H{chapter_id}: {title}"
+            
+            chapter_group = {
+                "id": chapter_id,
+                "title": formatted_title,
+                "buttonText": title
+            }
+            chapter_groups.append(chapter_group)
+    
+    return chapter_groups
 
 def export_digital_twin(db: Session, digital_twin_id: int):
     digital_twin = digital_twin_repo.get_digital_twin_by_id(db, digital_twin_id)
@@ -176,6 +239,10 @@ def export_digital_twin(db: Session, digital_twin_id: int):
                         # Add chapters if they exist
                         if "chapters" in story.content:
                             story_data["chapters"] = story.content["chapters"]
+                            # Build chapterGroups from chapters
+                            chapter_groups = build_chapter_groups(story.content["chapters"])
+                            if chapter_groups:
+                                story_data["chapterGroups"] = chapter_groups
                     
                     story_associations.append(story_data)
                 elif not story:
@@ -271,6 +338,55 @@ def export_digital_twin(db: Session, digital_twin_id: int):
             }
             tools_with_content.append(stories_tool)
             story_tool_added = True
+        # Check if this is a cesium tool
+        elif tool.name == "cesium":
+            # Get cesium configuration
+            cesium_config = cesium_config_service.get_cesium_configuration(digital_twin_id, db) or {}
+            
+            # Get terrain providers associated with cesium tool
+            terrain_provider_associations = terrain_provider_service.get_digital_twin_terrain_providers(digital_twin_id, db)
+            
+            # Get terrain provider details
+            terrain_providers_data = []
+            if terrain_provider_associations:
+                terrain_provider_ids = [assoc.content_id for assoc in terrain_provider_associations if assoc.content_id]
+                if terrain_provider_ids:
+                    terrain_providers = terrain_provider_repo.get_by_ids(db, terrain_provider_ids)
+                    terrain_providers_by_id = {tp.id: tp for tp in terrain_providers}
+                    
+                    for assoc in terrain_provider_associations:
+                        if assoc.content_id and assoc.content_id in terrain_providers_by_id:
+                            tp = terrain_providers_by_id[assoc.content_id]
+                            terrain_provider_data = {
+                                "title": tp.title,
+                                "url": tp.url
+                            }
+                            
+                            # Add vertexNormals if it exists and is not None
+                            if tp.vertexNormals is not None:
+                                terrain_provider_data["vertexNormals"] = tp.vertexNormals
+                            
+                            terrain_providers_data.append(terrain_provider_data)
+            
+            # Create the cesium tool with proper structure
+            cesium_tool = {
+                "id": "cesium",
+                "enabled": True,
+                "settings": {}
+            }
+            
+            # Add cesium configuration settings
+            if cesium_config:
+                # Add configuration values to settings, excluding terrainProviders which we handle separately
+                for key, value in cesium_config.items():
+                    if key != "terrainProviders":  # We build this from associations
+                        cesium_tool["settings"][key] = value
+            
+            # Add terrain providers
+            if terrain_providers_data:
+                cesium_tool["settings"]["terrainProviders"] = terrain_providers_data
+            
+            tools_with_content.append(cesium_tool)
         else:
             # Transform tool data to use name as id and add enabled: true
             transformed_tool = {
@@ -373,11 +489,7 @@ def export_digital_twin(db: Session, digital_twin_id: int):
 
     export_data = {
         "layers": layers_response,
-        "viewer": {
-            "title": digital_twin.title,
-            "subtitle": digital_twin.subtitle,
-            **(ViewerResponse.model_validate(viewer).model_dump() if viewer else {})
-        },
+        "viewer": build_viewer_export(digital_twin, viewer),
         "groups": [GroupResponse.model_validate(group).model_dump() for group in groups],
         "tools": tools_with_content,
     }

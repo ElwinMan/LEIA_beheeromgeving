@@ -59,7 +59,7 @@
     name = '';
     description = '';
     width = '600px';
-    chapters = [createNewChapter()];
+    chapters = [createNewChapter(0)];
     activeChapterIndex = 0;
     activeStepIndex = 0;
     errorBanner?.hide?.();
@@ -67,9 +67,10 @@
     modalRef.showModal();
   }
 
-  function createNewChapter(): StoryChapter {
+  function createNewChapter(chapterIndex?: number): StoryChapter {
+    const index = chapterIndex !== undefined ? chapterIndex : chapters.length;
     return {
-      id: Date.now().toString(),
+      id: (index + 1).toString(),
       steps: [createNewStep()]
     };
   }
@@ -93,7 +94,7 @@
   }
 
   function addChapter() {
-    chapters = [...chapters, createNewChapter()];
+    chapters = [...chapters, createNewChapter(chapters.length)];
     activeChapterIndex = chapters.length - 1;
     activeStepIndex = 0;
   }

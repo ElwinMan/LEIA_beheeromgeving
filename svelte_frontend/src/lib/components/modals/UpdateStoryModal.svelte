@@ -67,8 +67,8 @@
       width = s.content.width || '600px';
       
       if (s.content.chapters && Array.isArray(s.content.chapters)) {
-        chapters = s.content.chapters.map((chapter: any) => ({
-          id: chapter.id || Date.now().toString(),
+        chapters = s.content.chapters.map((chapter: any, index: number) => ({
+          id: chapter.id && !chapter.id.toString().includes('1755') ? chapter.id : (index + 1).toString(), // Keep existing clean IDs, fix timestamp IDs
           steps: chapter.steps ? chapter.steps.map((step: any) => ({
             title: step.title || '',
             html: step.html || '',
@@ -86,11 +86,11 @@
           })) : [createNewStep()]
         }));
       } else {
-        chapters = [createNewChapter()];
+        chapters = [createNewChapter(0)];
       }
     } else {
       width = '600px';
-      chapters = [createNewChapter()];
+      chapters = [createNewChapter(0)];
     }
     
     activeChapterIndex = 0;
@@ -100,9 +100,10 @@
     modalRef.showModal();
   }
 
-  function createNewChapter(): StoryChapter {
+  function createNewChapter(chapterIndex?: number): StoryChapter {
+    const index = chapterIndex !== undefined ? chapterIndex : chapters.length;
     return {
-      id: Date.now().toString(),
+      id: (index + 1).toString(),
       steps: [createNewStep()]
     };
   }
@@ -126,7 +127,7 @@
   }
 
   function addChapter() {
-    chapters = [...chapters, createNewChapter()];
+    chapters = [...chapters, createNewChapter(chapters.length)];
     activeChapterIndex = chapters.length - 1;
     activeStepIndex = 0;
   }

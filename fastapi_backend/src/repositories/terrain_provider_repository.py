@@ -4,6 +4,9 @@ from models.tool_associations import TerrainProvider
 def get_by_id(db: Session, terrainProvider_id: int):
     return db.query(TerrainProvider).filter_by(id=terrainProvider_id).first()
 
+def get_by_ids(db: Session, terrain_provider_ids: list):
+    return db.query(TerrainProvider).filter(TerrainProvider.id.in_(terrain_provider_ids)).all()
+
 def get_all(db: Session):
     return db.query(TerrainProvider).all()
 

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey, Boolean, String
+from sqlalchemy import Column, Integer, ForeignKey, Boolean, String, JSON
 from sqlalchemy.orm import relationship
 from db.database import Base
 
@@ -23,6 +23,7 @@ class DigitalTwinToolAssociation(Base):
     content_id = Column(Integer, nullable=True)
     sort_order = Column(Integer, nullable=False, default=0)
     is_default = Column(Boolean, default=False, nullable=True)
+    content = Column(JSON, nullable=True)
 
     digital_twin = relationship("DigitalTwin", back_populates="tool_associations")
     tool = relationship("Tool")

@@ -9,6 +9,8 @@ import services.digital_twin_tool_relation_service as tool_service
 import services.digital_twin_bookmark_relation_service as bookmark_service
 import services.digital_twin_project_relation_service as project_service
 import services.digital_twin_story_relation_service as story_service
+import services.digital_twin_terrain_provider_relation_service as terrain_provider_service
+import services.digital_twin_cesium_config_service as cesium_config_service
 from schemas.digital_twin_schema import (
     DigitalTwinCreate,
     DigitalTwinUpdate,
@@ -26,6 +28,7 @@ from schemas.viewer_schema import (
 from schemas.digital_twin_tool_association_schema import (
     DigitalTwinToolBulkOperation
 )
+from typing import Dict, Any
 from sqlalchemy.exc import IntegrityError
 
 router = APIRouter(prefix="/digital-twins", tags=["Digital Twins"])
@@ -225,3 +228,62 @@ def get_digital_twin_stories(digital_twin_id: int, db: Session = Depends(get_db)
         raise HTTPException(status_code=404, detail="Digital twin not found")
     
     return story_service.get_digital_twin_stories(digital_twin_id, db)
+
+# Terrain Provider associations
+@router.put("/{digital_twin_id}/terrain-providers/bulk")
+def bulk_modify_terrain_provider_associations(
+    digital_twin_id: int,
+    payload: DigitalTwinToolBulkOperation,
+    db: Session = Depends(get_db)
+):
+    db_twin = service.get_digital_twin(digital_twin_id, db)
+    if not db_twin:
+        raise HTTPException(status_code=404, detail="Digital twin not found")
+
+    results = terrain_provider_service.handle_bulk_terrain_provider_operations(
+        digital_twin_id, payload.operations, db
+    )
+    return {"terrain_providers": results}
+
+@router.get("/{digital_twin_id}/terrain-providers")
+def get_digital_twin_terrain_providers(digital_twin_id: int, db: Session = Depends(get_db)):
+    db_twin = service.get_digital_twin(digital_twin_id, db)
+    if not db_twin:
+        raise HTTPException(status_code=404, detail="Digital twin not found")
+    
+    return terrain_provider_service.get_digital_twin_terrain_providers(digital_twin_id, db)
+
+# Cesium tool configuration
+@router.get("/{digital_twin_id}/cesium/config")
+def get_cesium_configuration(digital_twin_id: int, db: Session = Depends(get_db)):
+    """Get Cesium tool configuration for a digital twin"""
+    db_twin = service.get_digital_twin(digital_twin_id, db)
+    if not db_twin:
+        raise HTTPException(status_code=404, detail="Digital twin not found")
+    
+    config = cesium_config_service.get_cesium_configuration(digital_twin_id, db)
+    return {"config": config}
+
+@router.put("/{digital_twin_id}/cesium/config")
+def update_cesium_configuration(
+    digital_twin_id: int, 
+    config: Dict[str, Any], 
+    db: Session = Depends(get_db)
+):
+    """Update Cesium tool configuration for a digital twin"""
+    db_twin = service.get_digital_twin(digital_twin_id, db)
+    if not db_twin:
+        raise HTTPException(status_code=404, detail="Digital twin not found")
+    
+    cesium_config_service.update_cesium_configuration(digital_twin_id, config, db)
+    return {"message": "Configuration updated successfully"}
+
+@router.delete("/{digital_twin_id}/cesium/config")
+def delete_cesium_configuration(digital_twin_id: int, db: Session = Depends(get_db)):
+    """Delete Cesium tool configuration for a digital twin"""
+    db_twin = service.get_digital_twin(digital_twin_id, db)
+    if not db_twin:
+        raise HTTPException(status_code=404, detail="Digital twin not found")
+    
+    cesium_config_service.delete_cesium_configuration(digital_twin_id, db)
+    return {"message": "Configuration deleted successfully"}

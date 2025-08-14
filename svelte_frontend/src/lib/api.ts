@@ -1,6 +1,6 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 import type { DigitalTwin, DigitalTwinViewerResponse, ViewerContent, CreateDigitalTwinInput } from '$lib/types/digitalTwin';
-import type { BulkAssociationsPayload, BulkToolOperation, BulkBookmarksPayload, BulkProjectsPayload, BulkStoriesPayload } from '$lib/types/digitalTwinAssociation';
+import type { BulkAssociationsPayload, BulkToolOperation, BulkBookmarksPayload, BulkProjectsPayload, BulkStoriesPayload, BulkTerrainProvidersPayload, CesiumConfiguration } from '$lib/types/digitalTwinAssociation';
 import type { Layer } from '$lib/types/layer';
 
 export async function fetchDigitalTwins(fetchFn?: typeof fetch) {
@@ -654,6 +654,73 @@ export async function bulkUpdateDigitalTwinStories(
   
   if (!res.ok) {
     throw new Error('Failed to update digital twin stories');
+  }
+  
+  return res.json();
+}
+
+// Digital Twin Terrain Provider Management
+export async function fetchDigitalTwinTerrainProviders(digitalTwinId: string, fetchFn?: typeof fetch) {
+  const _fetch = fetchFn ?? fetch;
+  const res = await _fetch(`${API_BASE}/digital-twins/${digitalTwinId}/terrain-providers`);
+  if (!res.ok) throw new Error('Failed to fetch digital twin terrain providers');
+  return await res.json();
+}
+
+export async function bulkUpdateDigitalTwinTerrainProviders(
+  digitalTwinId: string,
+  payload: BulkTerrainProvidersPayload
+) {
+  const res = await fetch(`${API_BASE}/digital-twins/${digitalTwinId}/terrain-providers/bulk`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  
+  if (!res.ok) {
+    throw new Error('Failed to update digital twin terrain providers');
+  }
+  
+  return res.json();
+}
+
+// Cesium configuration API functions
+export async function fetchCesiumConfiguration(digitalTwinId: string, fetchFn?: typeof fetch) {
+  const res = await (fetchFn || fetch)(`${API_BASE}/digital-twins/${digitalTwinId}/cesium/config`);
+  
+  if (!res.ok) {
+    throw new Error('Failed to fetch cesium configuration');
+  }
+  
+  const data = await res.json();
+  return data.config;
+}
+
+export async function updateCesiumConfiguration(
+  digitalTwinId: string,
+  config: CesiumConfiguration,
+  fetchFn?: typeof fetch
+) {
+  const res = await (fetchFn || fetch)(`${API_BASE}/digital-twins/${digitalTwinId}/cesium/config`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(config)
+  });
+  
+  if (!res.ok) {
+    throw new Error('Failed to update cesium configuration');
+  }
+  
+  return res.json();
+}
+
+export async function deleteCesiumConfiguration(digitalTwinId: string, fetchFn?: typeof fetch) {
+  const res = await (fetchFn || fetch)(`${API_BASE}/digital-twins/${digitalTwinId}/cesium/config`, {
+    method: 'DELETE'
+  });
+  
+  if (!res.ok) {
+    throw new Error('Failed to delete cesium configuration');
   }
   
   return res.json();
