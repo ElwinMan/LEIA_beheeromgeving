@@ -8,6 +8,7 @@ class DigitalTwinToolAssociationSchema(BaseModel):
     content_id: Optional[int] = None
     sort_order: int
     is_default: Optional[bool] = False
+    content: Optional[dict] = None
 
     class Config:
         orm_mode = True
@@ -18,6 +19,7 @@ class DigitalTwinToolBulkItem(BaseModel):
     content_id: Optional[int] = None
     sort_order: Optional[int] = 0
     is_default: Optional[bool] = False
+    content: Optional[dict] = None
     action: Literal["create", "update", "delete"]
 
 class DigitalTwinToolBulkOperation(BaseModel):

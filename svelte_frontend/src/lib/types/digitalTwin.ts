@@ -9,7 +9,10 @@ export interface DigitalTwin {
   private: boolean;
   last_updated: string;
   layer_associations: LayerAssociation[];
-  tool_associations: Array<{ tool_id: number }>;
+  tool_associations: Array<{ 
+    tool_id: number;
+    content?: Record<string, any>;
+  }>;
 }
 
 export interface CreateDigitalTwinInput {

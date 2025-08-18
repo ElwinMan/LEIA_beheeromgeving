@@ -17,7 +17,8 @@ def handle_bulk_tool_operations(digital_twin_id: int, operations: List[DigitalTw
                 tool_id=op.tool_id,
                 content_type_id=op.content_type_id,
                 content_id=op.content_id,
-                sort_order=op.sort_order or 0
+                sort_order=op.sort_order or 0,
+                content=op.content
             )
             repo.bulk_create_tool_association(db, assoc)
             result_counter["created"] += 1
@@ -28,7 +29,8 @@ def handle_bulk_tool_operations(digital_twin_id: int, operations: List[DigitalTw
         )
         if assoc:
             updates = {
-                "sort_order": op.sort_order or assoc.sort_order
+                "sort_order": op.sort_order or assoc.sort_order,
+                "content": op.content if op.content is not None else assoc.content
             }
             # Remove None values to keep existing data
             updates = {k: v for k, v in updates.items() if v is not None}

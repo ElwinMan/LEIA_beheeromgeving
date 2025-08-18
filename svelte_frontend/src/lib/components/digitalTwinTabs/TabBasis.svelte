@@ -35,13 +35,90 @@
     duration: 0
   };
   let colors: Record<string, string> = {};
-  let allTools: (Tool & { enabled: boolean })[] = [];
+  let allTools: (Tool & { enabled: boolean; settings?: Record<string, any> })[] = [];
+  let activeToolSettingsTab: number | null = null;
+
+  // Reactive statement to calculate tools with settings
+  $: toolsWithSettings = allTools.filter(tool => {
+    if (!tool.enabled) return false;
+    const booleanSettings = getConfigurableBooleanSettings(tool);
+    const textSettings = getConfigurableTextSettings(tool);
+    return booleanSettings.length > 0 || textSettings.length > 0;
+  });
+
+  // Reactive statement to initialize active tab
+  $: {
+    if (activeToolSettingsTab === null && toolsWithSettings.length > 0) {
+      activeToolSettingsTab = toolsWithSettings[0].id;
+    }
+    
+    // Reset if current active tab is no longer available
+    if (activeToolSettingsTab !== null && !toolsWithSettings.some(tool => tool.id === activeToolSettingsTab)) {
+      activeToolSettingsTab = toolsWithSettings.length > 0 ? toolsWithSettings[0].id : null;
+    }
+  }
 
   function toggleTool(toolId: number) {
     const tool = allTools.find((t) => t.id === toolId);
     if (tool) {
       tool.enabled = !tool.enabled;
+      
+      // Initialize settings if tool is being enabled and has default settings
+      if (tool.enabled && tool.content?.settings) {
+        tool.settings = { ...tool.content.settings };
+      } else if (!tool.enabled) {
+        // Clear settings when tool is disabled
+        tool.settings = undefined;
+      }
+      
+      // Trigger reactivity
+      allTools = allTools;
     }
+  }
+
+  function toggleToolSetting(toolId: number, settingKey: string) {
+    const tool = allTools.find((t) => t.id === toolId);
+    if (tool && tool.settings) {
+      tool.settings[settingKey] = !tool.settings[settingKey];
+      // Trigger reactivity
+      allTools = allTools;
+    }
+  }
+
+  function updateToolTextSetting(toolId: number, settingKey: string, value: string) {
+    const tool = allTools.find((t) => t.id === toolId);
+    if (tool && tool.settings) {
+      tool.settings[settingKey] = value;
+      // Trigger reactivity
+      allTools = allTools;
+    }
+  }
+
+  // Helper function to get configurable boolean settings for a tool
+  function getConfigurableBooleanSettings(tool: Tool) {
+    if (!tool.content?.settings) return [];
+    const currentTool = allTools.find(t => t.id === tool.id);
+    return Object.entries(tool.content.settings)
+      .filter(([_, value]) => typeof value === 'boolean')
+      .map(([key, value]) => ({
+        key,
+        value: currentTool?.settings?.[key] ?? value,
+        label: key // You may want to map key to a user-friendly label
+      }));
+  }
+
+  // Helper function to get configurable text settings for a tool
+  function getConfigurableTextSettings(tool: Tool) {
+    if (!tool.content?.settings) return [];
+    const currentTool = allTools.find(t => t.id === tool.id);
+    return Object.entries(tool.content.settings)
+      .filter(([_, value]) => typeof value === 'string')
+      .map(([key, value]) => ({
+        key,
+        value: currentTool?.settings?.[key] ?? value,
+        label: key, // Map to user-friendly label if needed
+        multiline: key === 'description' // Or use a config for which fields are multiline
+      }));
   }
 
   onMount(async () => {
@@ -71,11 +148,22 @@
         (digitalTwinData?.tool_associations ?? []).map((t) => t.tool_id)
       );
 
-      // Combine tools with enabled info
-      allTools = toolsFromApi.map((tool: Tool) => ({
-        ...tool,
-        enabled: enabledToolIds.has(tool.id)
-      }));
+      // Combine tools with enabled info and settings
+      allTools = toolsFromApi.map((tool: Tool) => {
+        const enabled = enabledToolIds.has(tool.id);
+        // Get existing settings from tool association if available
+        const existingAssociation = digitalTwinData?.tool_associations?.find(assoc => assoc.tool_id === tool.id);
+        const existingSettings = existingAssociation?.content || {};
+        
+        return {
+          ...tool,
+          enabled,
+          settings: enabled ? { 
+            ...tool.content?.settings, // Default settings from tool definition
+            ...existingSettings // Override with saved settings
+          } : undefined
+        };
+      });
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e);
     }
@@ -97,9 +185,34 @@
 
       // Prepare operations for bulk API
       const operations: BulkToolOperation[] = [
-        ...toolsToAdd.map((id) => ({ tool_id: id, action: 'create' as const })),
-        ...toolsToRemove.map((id) => ({ tool_id: id, action: 'delete' as const }))
+        ...toolsToAdd.map((id) => {
+          const tool = allTools.find(t => t.id === id);
+          return {
+            tool_id: id,
+            action: 'create' as const,
+            content: tool?.settings || {}
+          };
+        }),
+        ...toolsToRemove.map((id) => ({ 
+          tool_id: id, 
+          action: 'delete' as const 
+        }))
       ];
+
+      // Add update operations for tools with changed settings
+      for (const tool of allTools.filter(t => t.enabled && originallyEnabled.has(t.id))) {
+        const originalAssociation = digitalTwinData?.tool_associations?.find(assoc => assoc.tool_id === tool.id);
+        const originalSettings = originalAssociation?.content || {};
+        
+        // Check if settings have changed
+        if (JSON.stringify(tool.settings) !== JSON.stringify(originalSettings)) {
+          operations.push({
+            tool_id: tool.id,
+            action: 'update',
+            content: tool.settings || {}
+          });
+        }
+      }
 
       // Call bulk API only if there are operations
       if (operations.length > 0) {
@@ -242,20 +355,108 @@
         <!-- Tools checkboxes list in 3 column grid (defined by class grid-cols-3) -->
         <fieldset>
           <legend class="mb-2 font-semibold">Tools</legend>
-          <div
-            class="grid max-h-48 grid-cols-3 gap-2 overflow-auto rounded border border-gray-300 p-2"
-          >
-            {#each allTools as tool (tool.id)}
-              <label class="flex cursor-pointer items-center space-x-2 select-none">
-                <input
-                  type="checkbox"
-                  checked={tool.enabled}
-                  on:change={() => toggleTool(tool.id)}
-                  class="checkbox checkbox-primary"
-                />
-                <span>{tool.name}</span>
-              </label>
-            {/each}
+          <div class="space-y-3">
+            <div
+              class="grid max-h-48 grid-cols-3 gap-2 overflow-auto rounded border border-gray-300 p-2"
+            >
+              {#each allTools as tool (tool.id)}
+                <label class="flex cursor-pointer items-center space-x-2 select-none">
+                  <input
+                    type="checkbox"
+                    checked={tool.enabled}
+                    on:change={() => toggleTool(tool.id)}
+                    class="checkbox checkbox-primary"
+                  />
+                  <span>{tool.name}</span>
+                </label>
+              {/each}
+            </div>
+            
+            <!-- Tool Settings -->
+            {#if toolsWithSettings.length > 0}
+              <div class="bg-base-50 rounded-lg">
+                <h3 class="font-semibold text-base">Tool Settings</h3>
+                <!-- Tool Settings Tabs -->
+                <div class="tabs tabs-border">
+                  {#each toolsWithSettings as tool, index (tool.id)}
+                    {@const configurableBooleanSettings = getConfigurableBooleanSettings(tool)}
+                    {@const configurableTextSettings = getConfigurableTextSettings(tool)}
+                    <input 
+                      type="radio" 
+                      name="tool_settings_tabs" 
+                      class="tab" 
+                      aria-label={tool.name}
+                      checked={activeToolSettingsTab === tool.id}
+                      on:change={() => activeToolSettingsTab = tool.id}
+                    />
+                    <div class="tab-content border-base-300 bg-base-100 p-6">
+                      <div class="space-y-4">
+                        <!-- Boolean Settings -->
+                        {#if configurableBooleanSettings.length > 0}
+                          <div class="space-y-3">
+                            <div class="flex items-center space-x-2">
+                              <div class="w-1 h-4 bg-secondary rounded"></div>
+                              <h5 class="font-semibold text-sm text-base-content uppercase tracking-wide">Opties</h5>
+                            </div>
+                            <div class="space-y-2 pl-3">
+                              {#each configurableBooleanSettings as setting}
+                                <label class="flex cursor-pointer items-center space-x-3 p-2 rounded-md hover:bg-base-50 transition-colors select-none">
+                                  <input
+                                    type="checkbox"
+                                    checked={setting.value}
+                                    on:change={() => toggleToolSetting(tool.id, setting.key)}
+                                    class="checkbox checkbox-sm checkbox-secondary"
+                                  />
+                                  <span class="text-sm font-medium">{setting.label}</span>
+                                </label>
+                              {/each}
+                            </div>
+                          </div>
+                        {/if}
+                        
+                        <!-- Text Settings -->
+                        {#if configurableTextSettings.length > 0}
+                          <div class="space-y-3">
+                            <div class="flex items-center space-x-2">
+                              <div class="w-1 h-4 bg-primary rounded"></div>
+                              <h5 class="font-semibold text-sm text-base-content uppercase tracking-wide">Tekst instellingen</h5>
+                            </div>
+                            <div class="space-y-3 pl-3">
+                              {#each configurableTextSettings as setting}
+                                <div class="form-control">
+                                  <label class="label" for="tool-{tool.id}-{setting.key}">
+                                    <span class="label-text text-sm font-medium">{setting.label}</span>
+                                  </label>
+                                  {#if setting.multiline}
+                                    <textarea
+                                      id="tool-{tool.id}-{setting.key}"
+                                      class="textarea textarea-bordered textarea-sm w-full focus:border-primary"
+                                      rows="3"
+                                      value={setting.value}
+                                      on:input={(e) => updateToolTextSetting(tool.id, setting.key, (e.target as HTMLTextAreaElement)?.value || '')}
+                                      placeholder={setting.label}
+                                    ></textarea>
+                                  {:else}
+                                    <input
+                                      id="tool-{tool.id}-{setting.key}"
+                                      type="text"
+                                      class="input input-bordered input-sm w-full focus:border-primary"
+                                      value={setting.value}
+                                      on:input={(e) => updateToolTextSetting(tool.id, setting.key, (e.target as HTMLInputElement)?.value || '')}
+                                      placeholder={setting.label}
+                                    />
+                                  {/if}
+                                </div>
+                              {/each}
+                            </div>
+                          </div>
+                        {/if}
+                      </div>
+                    </div>
+                  {/each}
+                </div>
+              </div>
+            {/if}
           </div>
         </fieldset>
 

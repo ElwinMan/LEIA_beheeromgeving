@@ -87,6 +87,43 @@ def seed(db: Session):
         Tool(
             name="projects"
         ),
+        Tool(
+            name="flooding",
+            content={
+                "settings": {
+                    "scenariosBaseUrl": "https://virtueel.zeeland.nl/tiles_other/overstroming/",
+                    "breachUrl": "https://virtueel.zeeland.nl/tiles_other/breslocaties.geojson",
+                    "roadsUrl": "https://service.pdok.nl/rws/vervoersnetwerken/wegen/wms/v1_0",
+                    "floodedRoadsUrl": "https://virtueel.zeeland.nl/pygeoapi",
+                    "floodedRoadsStyle": [
+                        {
+                            "property": "flood_depth",
+                            "stops": [
+                                {
+                                    "value": 0,
+                                    "color": "#ffff00"
+                                },
+                                {
+                                    "value": 3,
+                                    "color": "#ff0000"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        ),
+        Tool(
+            name="config_switcher",
+            content={
+                "settings": {
+                    "fullReload": True
+                }
+            }
+        ),
+        Tool(
+            name="flyCamera"
+        )
     ]
 
     for tool in tools:

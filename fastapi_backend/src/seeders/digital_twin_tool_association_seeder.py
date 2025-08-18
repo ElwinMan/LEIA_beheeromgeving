@@ -7,12 +7,12 @@ from sqlalchemy.orm import Session
 def seed(db: Session):
     connections = {
         "bodem": [
-            "layerlibrary", "layermanager", "featureinfo", "info", "help",
-            "bookmarks", "cesium", "stories", "measure", "search", "geocoder",
+            "layerlibrary", "layermanager", "featureinfo", "info", "help", "bookmarks",
+            "cesium", "stories", "measure", "search", "geocoder", "projects"
         ],
         "fier": [
-            "layerlibrary", "layermanager", "featureinfo", "info", "help",
-            "bookmarks", "cesium", "stories", "measure", "search", "geocoder",
+            "layerlibrary", "layermanager", "featureinfo", "info", "help", "bookmarks",
+            "cesium", "stories", "measure", "search", "geocoder", "projects", "flooding"
         ]
     }
 
@@ -31,9 +31,8 @@ def seed(db: Session):
             assoc = DigitalTwinToolAssociation(
                 digital_twin_id=digital_twin.id,
                 tool_id=tool.id,
-                # content_type_id and content_id left as None for simple tools
             )
-            db.add(assoc)  # Use add, not merge
+            db.add(assoc)
 
     db.commit()
     print("Digital Twin-Tool associations seeded.")

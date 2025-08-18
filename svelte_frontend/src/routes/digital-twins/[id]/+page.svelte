@@ -57,26 +57,19 @@
   </div>
 
   <!-- Tab headers -->
-  <div class="tabs tabs-lifted mb-4" role="tablist">
+  <div class="tabs tabs-border mb-4" role="tablist">
     {#each tabs as tab, i}
-      <button
-        type="button"
-        class="tab tab-bordered {selectedIndex === i ? 'tab-active' : ''}"
-        role="tab"
-        tabindex={selectedIndex === i ? 0 : -1}
-        aria-selected={selectedIndex === i}
-        onclick={() => (selectedIndex = i)}
-        onkeydown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') selectedIndex = i;
-        }}
-      >
-        {tab.label}
-      </button>
+      <input
+        type="radio"
+        name="main_tabs"
+        class="tab"
+        aria-label={tab.label}
+        checked={selectedIndex === i}
+        onchange={() => selectedIndex = i}
+      />
+      <div class="tab-content border-base-300 bg-base-100 p-6 shadow-xl">
+        <SvelteComponent digitalTwin={data.digitalTwin} digitalTwinId={data.id} />
+      </div>
     {/each}
-  </div>
-
-  <!-- Tab content -->
-  <div class="bg-base-100 rounded-lg p-6 shadow-xl">
-    <SvelteComponent digitalTwin={data.digitalTwin} digitalTwinId={data.id} />
   </div>
 </div>

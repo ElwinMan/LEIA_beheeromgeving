@@ -5,6 +5,8 @@
   import type { Layer } from '$lib/types/layer';
   import AlertBanner from '$lib/components/AlertBanner.svelte';
 
+    import PositionSelector from '$lib/components/PositionSelector.svelte';
+
   let modalRef: HTMLDialogElement;
   const dispatch = createEventDispatcher<{ created: Story }>();
 
@@ -328,56 +330,64 @@
                 {/each}
               </select>
 
+
               <!-- Camera Position -->
-              <span class="text-right font-semibold">Camera Positie (X, Y, Z):</span>
-              <div class="col-span-3 flex gap-2">
-                <input 
-                  type="number" 
-                  step="any" 
-                  class="input input-bordered w-full" 
-                  bind:value={currentStep.camera.x} 
-                  placeholder="X-coördinaat"
-                />
-                <input 
-                  type="number" 
-                  step="any" 
-                  class="input input-bordered w-full" 
-                  bind:value={currentStep.camera.y} 
-                  placeholder="Y-coördinaat"
-                />
-                <input 
-                  type="number" 
-                  step="any" 
-                  class="input input-bordered w-full" 
-                  bind:value={currentStep.camera.z} 
-                  placeholder="Z-coördinaat"
+
+
+              <!-- Stap positie row: label left, button right -->
+              <label for="step-position-btn" class="text-right font-semibold">Stap positie</label>
+              <div class="col-span-3 mb-2">
+                <PositionSelector
+                  title="Selecteer stap positie"
+                  buttonText="Selecteer stap positie op kaart"
+                  initialPosition={currentStep.camera}
+                  on:coordinatesSelected={(e: CustomEvent<any>) => {
+                    currentStep.camera = {
+                      ...currentStep.camera,
+                      x: e.detail.x,
+                      y: e.detail.y,
+                      z: e.detail.z,
+                      heading: e.detail.heading,
+                      pitch: e.detail.pitch,
+                      duration: e.detail.duration
+                    };
+                    chapters = [...chapters];
+                  }}
                 />
               </div>
 
-              <!-- Camera Orientation -->
-              <span class="text-right font-semibold">Oriëntatie & Duur:</span>
-              <div class="col-span-3 flex gap-2">
-                <input 
-                  type="number" 
-                  step="any" 
-                  class="input input-bordered w-full" 
-                  bind:value={currentStep.camera.heading} 
-                  placeholder="Heading (graden)"
-                />
-                <input 
-                  type="number" 
-                  step="any" 
-                  class="input input-bordered w-full" 
-                  bind:value={currentStep.camera.pitch} 
-                  placeholder="Pitch (graden)"
-                />
-                <input 
-                  type="number" 
-                  step="any" 
-                  class="input input-bordered w-full" 
-                  bind:value={currentStep.camera.duration} 
-                  placeholder="Duur (seconden)"
-                />
+              <!-- X/Y/Z row: empty left, fields right -->
+              <div></div>
+              <div class="col-span-3 grid grid-cols-3 gap-2 mb-2">
+                <div>
+                  <label for="step-x" class="block text-sm font-medium mb-1">X</label>
+                  <input id="step-x" type="number" step="any" class="input input-bordered w-full" bind:value={currentStep.camera.x} />
+                </div>
+                <div>
+                  <label for="step-y" class="block text-sm font-medium mb-1">Y</label>
+                  <input id="step-y" type="number" step="any" class="input input-bordered w-full" bind:value={currentStep.camera.y} />
+                </div>
+                <div>
+                  <label for="step-z" class="block text-sm font-medium mb-1">Z</label>
+                  <input id="step-z" type="number" step="any" class="input input-bordered w-full" bind:value={currentStep.camera.z} />
+                </div>
+              </div>
+
+              <!-- Heading/Pitch/Duration row: empty left, fields right -->
+              <div></div>
+              <div class="col-span-3 grid grid-cols-3 gap-2">
+                <div>
+                  <label for="step-heading" class="block text-sm font-medium mb-1">Heading</label>
+                  <input id="step-heading" type="number" step="any" class="input input-bordered w-full" bind:value={currentStep.camera.heading} />
+                </div>
+                <div>
+                  <label for="step-pitch" class="block text-sm font-medium mb-1">Pitch</label>
+                  <input id="step-pitch" type="number" step="any" class="input input-bordered w-full" bind:value={currentStep.camera.pitch} />
+                </div>
+                <div>
+                  <label for="step-duration" class="block text-sm font-medium mb-1">Duration</label>
+                  <input id="step-duration" type="number" step="any" class="input input-bordered w-full" bind:value={currentStep.camera.duration} />
+                </div>
               </div>
 
               <!-- Layers -->

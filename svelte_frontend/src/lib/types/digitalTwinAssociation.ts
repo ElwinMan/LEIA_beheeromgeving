@@ -96,6 +96,7 @@ export interface BulkToolOperation {
   content_type_id?: number;
   content_id?: number;
   sort_order?: number;
+  content?: Record<string, any>;
   action: 'create' | 'update' | 'delete';
 }
 

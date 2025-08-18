@@ -267,6 +267,9 @@ def export_digital_twin(db: Session, digital_twin_id: int):
     for tool in tools:
         tool_data = ToolResponse.model_validate(tool).model_dump()
         
+        # Get the tool association to access customized settings
+        tool_association = next((assoc for assoc in all_tool_associations if assoc.tool_id == tool.id and assoc.content_type_id is None), None)
+        
         # Get bookmarks for this specific tool and remove the tool reference
         tool_bookmarks = []
         for bookmark in bookmark_associations:
@@ -394,8 +397,14 @@ def export_digital_twin(db: Session, digital_twin_id: int):
                 "enabled": True
             }
             
-            # Add settings from either direct settings or content.settings
-            settings = tool_data.get("content", {}).get("settings") if tool_data.get("content") and isinstance(tool_data.get("content"), dict) else None
+            # Get settings from tool association first (user customized), then fall back to tool defaults
+            settings = None
+            if tool_association and tool_association.content:
+                # User has customized settings stored in the association
+                settings = tool_association.content
+            elif tool_data.get("content") and isinstance(tool_data.get("content"), dict) and "settings" in tool_data["content"]:
+                # Use default settings from tool definition
+                settings = tool_data["content"]["settings"]
             
             if settings:
                 transformed_tool["settings"] = settings
