@@ -10,6 +10,9 @@ def seed(db: Session):
                 "description": "Description of my story",
                 "content": {
                     "width": "600px",
+                    "force2DMode": False,
+                    "requestPolygonArea": False,
+                    "baseLayerId": "",
                     "steps": [
                         {
                             "title": "Title of step",

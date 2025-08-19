@@ -62,6 +62,8 @@ def seed(db: Session):
             name="help",
             content={
                     "settings": {
+                        "title": "title",
+                        "intro": "<img style='float: right;max-width: 15rem' src='https://www.image.domain/my_image.jpg' /> <div class='body-02'>Some contextual information.</div>",
                         "showOnStart": True
                 }
             }

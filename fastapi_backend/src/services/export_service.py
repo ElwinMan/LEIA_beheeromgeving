@@ -21,10 +21,10 @@ from sqlalchemy.orm import Session
 
 def transform_layer(layer, assoc=None):
     return {
-        "id": layer.id,
+        "id": str(layer.id),
         "type": layer.type,
         "title": layer.title,
-        "groupId": assoc.group_id if assoc else "",
+        "groupId": str(assoc.group_id) if assoc and assoc.group_id is not None else "",
         "imageUrl": layer.content.get("imageUrl", "") if layer.content and isinstance(layer.content, dict) else "",
         "legendUrl": layer.content.get("legendUrl", "") if layer.content and isinstance(layer.content, dict) else "",
         "isBackground": layer.isBackground,
@@ -230,12 +230,17 @@ def export_digital_twin(db: Session, digital_twin_id: int):
                         "description": story.description or "",
                         "tool": tool.name  # Keep this for grouping
                     }
-                    
                     # Add content fields to story data (safely handle None content)
                     if story.content and isinstance(story.content, dict):
-                        # Add width if it exists
+                        # Add base data from content if it exists
                         if "width" in story.content:
                             story_data["width"] = story.content["width"]
+                        if "force2DMode" in story.content:
+                            story_data["force2DMode"] = story.content["force2DMode"]
+                        if "requestPolygonArea" in story.content:
+                            story_data["requestPolygonArea"] = story.content["requestPolygonArea"]
+                        if "baseLayerId" in story.content:
+                            story_data["baseLayerId"] = str(story.content["baseLayerId"]) if story.content["baseLayerId"] is not None else ""
                         # Add chapters if they exist
                         if "chapters" in story.content:
                             story_data["chapters"] = story.content["chapters"]
@@ -243,7 +248,7 @@ def export_digital_twin(db: Session, digital_twin_id: int):
                             chapter_groups = build_chapter_groups(story.content["chapters"])
                             if chapter_groups:
                                 story_data["chapterGroups"] = chapter_groups
-                    
+
                     story_associations.append(story_data)
                 elif not story:
                     # Log missing story for debugging

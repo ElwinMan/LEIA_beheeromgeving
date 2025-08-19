@@ -14,6 +14,9 @@
   let name = '';
   let description = '';
   let width = '600px';
+  let force2DMode = false;
+  let requestPolygonArea = false;
+  let baseLayerId = '';
 
   // Available options
   let availableTerrainProviders: TerrainProvider[] = [];
@@ -63,11 +66,12 @@
     story = s;
     name = s.name || '';
     description = s.description || '';
-    
     // Parse content structure
     if (s.content) {
       width = s.content.width || '600px';
-      
+      force2DMode = s.content.force2DMode ?? false;
+      requestPolygonArea = s.content.requestPolygonArea ?? false;
+      baseLayerId = s.content.baseLayerId ?? '';
       if (s.content.chapters && Array.isArray(s.content.chapters)) {
         chapters = s.content.chapters.map((chapter: any, index: number) => ({
           id: chapter.id && !chapter.id.toString().includes('1755') ? chapter.id : (index + 1).toString(), // Keep existing clean IDs, fix timestamp IDs
@@ -92,9 +96,11 @@
       }
     } else {
       width = '600px';
+      force2DMode = false;
+      requestPolygonArea = false;
+      baseLayerId = '';
       chapters = [createNewChapter(0)];
     }
-    
     activeChapterIndex = 0;
     activeStepIndex = 0;
     errorBanner?.hide?.();
@@ -179,6 +185,9 @@
 
     const content = {
       width,
+      force2DMode,
+      requestPolygonArea,
+      baseLayerId,
       chapters: chapters.map(chapter => ({
         id: chapter.id,
         steps: chapter.steps.map(step => ({
@@ -249,6 +258,20 @@
 
       <label for="width" class="text-right font-semibold">Breedte:</label>
       <input id="width" class="input input-bordered col-span-3 w-full" bind:value={width} />
+
+      <label for="force-2d-mode" class="text-right font-semibold">Force 2D Mode:</label>
+      <input id="force-2d-mode" type="checkbox" class="checkbox checkbox-primary" bind:checked={force2DMode} />
+
+      <label for="request-polygon-area" class="text-right font-semibold">Request Polygon Area:</label>
+      <input id="request-polygon-area" type="checkbox" class="checkbox checkbox-primary" bind:checked={requestPolygonArea} />
+
+      <label for="base-layer" class="text-right font-semibold">Base Layer:</label>
+      <select id="base-layer" class="select select-bordered col-span-3" bind:value={baseLayerId}>
+        <option value="">-- Selecteer een laag --</option>
+        {#each availableLayers as layer}
+          <option value={layer.id}>{layer.title}</option>
+        {/each}
+      </select>
     </div>
 
     <!-- Chapters and Steps Management -->
@@ -365,11 +388,7 @@
                 {/each}
               </select>
 
-              <!-- PositionSelector for UpdateStoryModal step -->
-
-              <!-- Camera Position -->
-
-              <!-- Stap positie row: label left, button right -->
+              <!-- Stap positie row: label left, PositionSelector button right -->
               <label for="step-position-btn" class="text-right font-semibold">Stap positie</label>
               <div class="col-span-3 mb-2">
                 <PositionSelector
@@ -391,7 +410,7 @@
                 />
               </div>
 
-              <!-- X/Y/Z row: empty left, fields right -->
+              <!-- X/Y/Z row: empty col left, fields right -->
               <div></div>
               <div class="col-span-3 grid grid-cols-3 gap-2 mb-2">
                 <div>
@@ -408,7 +427,7 @@
                 </div>
               </div>
 
-              <!-- Heading/Pitch/Duration row: empty left, fields right -->
+              <!-- Heading/Pitch/Duration row: empty col left, fields right -->
               <div></div>
               <div class="col-span-3 grid grid-cols-3 gap-2">
                 <div>

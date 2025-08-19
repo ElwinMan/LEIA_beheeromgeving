@@ -99,25 +99,29 @@
   // Check if story can be added (has all required layers)
   function validateStoryLayers(story: Story): { canAdd: boolean; missingLayers: string[] } {
     if (!story.content?.chapters || !Array.isArray(story.content.chapters)) {
-      return { canAdd: true, missingLayers: [] }; // No layer requirements
+      return { canAdd: true, missingLayers: [] };
     }
 
     const requiredLayerIds = new Set<string>();
-    
-    // Extract all layer IDs from all chapters and steps
+
+    // Extract all layer IDs from chapters and steps
     story.content.chapters.forEach((chapter: any) => {
       if (chapter.steps && Array.isArray(chapter.steps)) {
         chapter.steps.forEach((step: any) => {
           if (step.layers && Array.isArray(step.layers)) {
             step.layers.forEach((layer: any) => {
-              if (layer.id) {
-                requiredLayerIds.add(layer.id.toString());
-              }
+              if (layer.id) requiredLayerIds.add(layer.id.toString());
+              else if (typeof layer === 'string' || typeof layer === 'number') requiredLayerIds.add(layer.toString());
             });
           }
         });
       }
     });
+
+    // Add baseLayerId to required layers if present
+    if (story.content.baseLayerId) {
+      requiredLayerIds.add(story.content.baseLayerId.toString());
+    }
 
     const missingLayerIds = Array.from(requiredLayerIds).filter(
       layerId => !digitalTwinLayerIds.includes(parseInt(layerId))

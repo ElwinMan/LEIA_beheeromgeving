@@ -14,6 +14,9 @@
   let name = '';
   let description = '';
   let width = '600px';
+  let force2DMode = false;
+  let requestPolygonArea = false;
+  let baseLayerId = '';
 
   // Available options
   let availableTerrainProviders: TerrainProvider[] = [];
@@ -145,6 +148,9 @@
 
     const content = {
       width,
+      force2DMode,
+      requestPolygonArea,
+      baseLayerId,
       chapters: chapters.map(chapter => ({
         id: chapter.id,
         steps: chapter.steps.map(step => ({
@@ -215,6 +221,20 @@
 
       <label for="width" class="text-right font-semibold">Breedte:</label>
       <input id="width" class="input input-bordered col-span-3 w-full" bind:value={width} />
+
+      <label for="force-2d-mode" class="text-right font-semibold">Force 2D Mode:</label>
+      <input id="force-2d-mode" type="checkbox" class="checkbox checkbox-primary" bind:checked={force2DMode} />
+
+      <label for="request-polygon-area" class="text-right font-semibold">Request Polygon Area:</label>
+      <input id="request-polygon-area" type="checkbox" class="checkbox checkbox-primary" bind:checked={requestPolygonArea} />
+
+      <label for="base-layer" class="text-right font-semibold">Base Layer:</label>
+      <select id="base-layer" class="select select-bordered col-span-3" bind:value={baseLayerId}>
+        <option value="">-- Selecteer een laag --</option>
+        {#each availableLayers as layer}
+          <option value={layer.id}>{layer.title}</option>
+        {/each}
+      </select>
     </div>
 
     <!-- Chapters and Steps Management -->
