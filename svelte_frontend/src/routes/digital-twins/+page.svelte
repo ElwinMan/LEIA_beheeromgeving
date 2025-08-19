@@ -61,5 +61,5 @@
     <span>{data.error}</span>
   </div>
 {:else}
-  <DigitalTwinTable digitalTwins={data.digitalTwins} />
+  <DigitalTwinTable />
 {/if}

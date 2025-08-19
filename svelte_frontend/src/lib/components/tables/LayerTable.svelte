@@ -2,7 +2,6 @@
   import LayerModal from '$lib/components/modals/UpdateLayerModal.svelte';
   import type { Layer } from '$lib/types/layer';
   import { deleteLayer, fetchLayersPaginated, fetchDigitalTwinsForLayer } from '$lib/api';
-  import CreateLayerModal from '$lib/components/modals/CreateLayerModal.svelte';
   import { createEventDispatcher } from 'svelte';
   import { portal } from 'svelte-portal';
   import { tick } from 'svelte';
@@ -16,7 +15,6 @@
   const { isBackgroundPage } = $props();
 
   let modalComponent: any;
-  let createModal: any;
   let digitalTwinsModal: any;
 
   // State for search and debounce
@@ -35,7 +33,7 @@
 
   let layers: Layer[] = $state([]);
   let openIndex = $state<number | null>(null);
-  let summaryRefs: Array<HTMLElement | null> = [];
+  let summaryRefs = $state<Array<HTMLElement | null>>([]);
   let dropdownLeft = $state(0);
   let dropdownTop = $state(0);
   let digitalTwinsForLayer = $state<Array<{ id: number; name: string; title: string }>>([]);
@@ -98,9 +96,6 @@
     return str.length > length ? str.slice(0, length) + '…' : str;
   }
 
-  function handleCreated(event: CustomEvent<Layer>) {
-    loadLayers();
-  }
 
   function handleUpdated(event: CustomEvent<Layer>) {
     loadLayers();
@@ -150,7 +145,6 @@
   }
 </script>
 
-<CreateLayerModal bind:this={createModal} on:created={handleCreated} />
 <LayerModal bind:this={modalComponent} on:updated={handleUpdated} />
 <ShowLayerUsageModal
   bind:this={digitalTwinsModal}
