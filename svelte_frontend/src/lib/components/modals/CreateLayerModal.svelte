@@ -18,16 +18,16 @@
   const tabLabels = ['Algemeen'];
 
   // Main tab fields
-  let title = '';
-  let type = '';
-  let mainUrl = '';
-  let imageUrl = '';
-  let legendUrl = '';
-  let defaultAddToManager = false;
-  let attribution = '';
-  let metadata = '';
-  let transparent = false;
-  let opacity = 100;
+  let title: string = '';
+  let type: string = '';
+  let mainUrl: string = '';
+  let imageUrl: string = '';
+  let legendUrl: string = '';
+  let defaultAddToManager: boolean = false;
+  let attribution: string = '';
+  let metadata: string = '';
+  let transparent: boolean = false;
+  let opacity: number = 100;
   let cameraX: number = 0;
   let cameraY: number = 0;
   let cameraZ: number = 0;
@@ -42,27 +42,44 @@
     pitch: cameraPitch,
     duration: cameraDuration
   });
-  let isBackground = false;
+  let isBackground: boolean = false;
 
   // WMS tab fields
-  let wmsFeatureName = '';
-  let wmsContentType = '';
+  let wmsFeatureName: string = '';
+  let wmsContentType: string = '';
 
   // WMTS tab fields
-  let wmtsFeatureName = '';
-  let wmtsContentType = '';
-  let wmtsRequestEncoding = '';
-  let wmtsMatrixIds = '';
-  let wmtsTileMatrixSetID = '';
-  let wmtsTileWidth = '';
-  let wmtsTileHeight = '';
-  let wmtsMaximumLevel = '';
+  let wmtsFeatureName: string = '';
+  let wmtsContentType: string = '';
+  let wmtsRequestEncoding: string = '';
+  let wmtsMatrixIds: string[] = [];
+  let wmtsMatrixIdsText: string = '';
+  let wmtsTileMatrixSetID: string = '';
+  let wmtsTileWidth: number = 0;
+  let wmtsTileHeight: number = 0;
+  let wmtsMaximumLevel: number = 0;
 
   // 3DTiles tab fields
-  let tilesShadows = false;
-  let tilesetHeight = '';
-  let enableHeightControl = false;
-  let defaultTheme = '';
+  let tilesShadows: boolean = false;
+  let tilesetHeight: number = 0;
+  let enableHeightControl: boolean = false;
+  let defaultTheme: string = '';
+  let style: Record<string, any> = {};
+  let styleJson = JSON.stringify(style, null, 2);
+  $: styleJson = JSON.stringify(style, null, 2);
+
+  type ThemeCondition = [string, string];
+  type ThemeLegendEntry = { color: string; label: string };
+  type Theme = {
+    title: string;
+    conditions: ThemeCondition[];
+    legend: ThemeLegendEntry[];
+  };
+  let themes: Theme[] = [];
+  let filter = {
+    filterAttribute: '',
+    classMapping: {}
+  };
 
   export let isBackgroundPage: boolean = false;
 
@@ -81,7 +98,7 @@
     attribution = '';
     metadata = '';
     transparent = false;
-    opacity = 1;
+    opacity = 100;
     cameraPosition = '';
     isBackground = isBackgroundPage;
 
@@ -91,33 +108,65 @@
     wmtsFeatureName = '';
     wmtsContentType = '';
     wmtsRequestEncoding = '';
-    wmtsMatrixIds = '';
+    wmtsMatrixIds = [];
+    wmtsMatrixIdsText = '';
     wmtsTileMatrixSetID = '';
-    wmtsTileWidth = '';
-    wmtsTileHeight = '';
-    wmtsMaximumLevel = '';
+    wmtsTileWidth = 0;
+    wmtsTileHeight = 0;
+    wmtsMaximumLevel = 0;
 
     tilesShadows = false;
-    tilesetHeight = '';
+    tilesetHeight = 0;
     enableHeightControl = false;
     defaultTheme = '';
+    style = {};
+    themes = [];
+    filter = {
+      filterAttribute: '',
+      classMapping: {}
+    };
 
     activeTab = 0;
   }
 
   async function handleSubmit(event: Event) {
+    // Sanitize theme condition input: wrap variable in ${...} if not present
+    if (type === '3DTiles' && themes.length > 0) {
+      themes = themes.map(theme => ({
+        ...theme,
+        conditions: theme.conditions.map(([cond, result]) => {
+          // If cond does not start with '${' and contain '}', wrap the variable part
+          if (!cond.trim().startsWith('${')) {
+            // Try to extract variable name before '===' or first space
+            const match = cond.match(/^([a-zA-Z0-9_]+)(.*)$/);
+            if (match) {
+              const variable = match[1];
+              const rest = match[2] || '';
+              cond = `\${${variable}}${rest}`;
+            } else {
+              cond = `\${${cond}}`.replace('\u007f', '${').replace('\u007f', '}');
+            }
+          }
+          return [cond, result];
+        })
+      }));
+    }
     event.preventDefault();
+
+    // Parse matrixids from textarea
+    wmtsMatrixIds = wmtsMatrixIdsText
+      .split(/\r?\n/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
 
     const tabContentMap: Record<string, any> = {
       wms: {
         wms: {
-          featureName: wmsFeatureName,
           contenttype: wmsContentType
         }
       },
       wmts: {
         wmts: {
-          featureName: wmtsFeatureName,
           contenttype: wmtsContentType,
           requestencoding: wmtsRequestEncoding,
           matrixids: wmtsMatrixIds,
@@ -132,7 +181,10 @@
           shadows: tilesShadows,
           tilesetHeight,
           enableHeightControl,
-          defaultTheme
+          defaultTheme,
+          style,
+          themes,
+          filter
         }
       }
     };
@@ -143,18 +195,21 @@
       defaultAddToManager,
       attribution,
       metadata,
-      transparent,
-      opacity,
       cameraPosition,
       ...(tabContentMap[type] || {})
     };
+
+    // Only add transparent and opacity if transparent is true
+    if (transparent) {
+      content.transparent = true;
+      content.opacity = opacity;
+    }
 
     try {
       // Set top-level featureName based on type
       let featureName = '';
       if (type === 'wms') featureName = wmsFeatureName;
       else if (type === 'wmts') featureName = wmtsFeatureName;
-      // For 3DTiles, leave as empty or set as needed
 
       const payload = {
         type,
@@ -264,6 +319,7 @@
           class="input input-bordered col-span-3 w-full"
           bind:value={opacity}
           on:input={() => { if (opacity > 100) opacity = 100; if (opacity < 0) opacity = 0; }}
+          disabled={!transparent}
         />
 
         <!-- Camera Position row: label left, button right, then xyz row below -->
@@ -354,19 +410,25 @@
         <input id="wmtsRequestEncoding" class="input input-bordered col-span-3 w-full" bind:value={wmtsRequestEncoding} />
 
         <label for="wmtsMatrixIds" class="pr-4 text-right font-semibold">Matrix IDs:</label>
-        <input id="wmtsMatrixIds" class="input input-bordered col-span-3 w-full" bind:value={wmtsMatrixIds} />
+        <textarea
+          id="wmtsMatrixIds"
+          class="textarea textarea-bordered col-span-3 w-full"
+          bind:value={wmtsMatrixIdsText}
+          rows="5"
+          placeholder="One matrix ID per line"
+        ></textarea>
 
         <label for="wmtsTileMatrixSetID" class="pr-4 text-right font-semibold">Tile Matrix Set ID:</label>
         <input id="wmtsTileMatrixSetID" class="input input-bordered col-span-3 w-full" bind:value={wmtsTileMatrixSetID} />
 
         <label for="wmtsTileWidth" class="pr-4 text-right font-semibold">Tile Width:</label>
-        <input id="wmtsTileWidth" class="input input-bordered col-span-3 w-full" bind:value={wmtsTileWidth} />
+        <input id="wmtsTileWidth" type="number" class="input input-bordered col-span-3 w-full" bind:value={wmtsTileWidth} />
 
         <label for="wmtsTileHeight" class="pr-4 text-right font-semibold">Tile Height:</label>
-        <input id="wmtsTileHeight" class="input input-bordered col-span-3 w-full" bind:value={wmtsTileHeight} />
+        <input id="wmtsTileHeight" type="number" class="input input-bordered col-span-3 w-full" bind:value={wmtsTileHeight} />
 
         <label for="wmtsMaximumLevel" class="pr-4 text-right font-semibold">Maximum Level:</label>
-        <input id="wmtsMaximumLevel" class="input input-bordered col-span-3 w-full" bind:value={wmtsMaximumLevel} />
+        <input id="wmtsMaximumLevel" type="number" class="input input-bordered col-span-3 w-full" bind:value={wmtsMaximumLevel} />
       </div>
     {/if}
 
@@ -384,6 +446,114 @@
 
         <label for="defaultTheme" class="pr-4 text-right font-semibold">Default Theme:</label>
         <input id="defaultTheme" class="input input-bordered col-span-3 w-full" bind:value={defaultTheme} />
+
+        <label for="style" class="pr-4 text-right font-semibold">Style (JSON):</label>
+        <textarea
+          id="style"
+          class="textarea textarea-bordered col-span-3 w-full"
+          rows="6"
+          bind:value={styleJson}
+          on:input={(e) => {
+            const target = e.target as HTMLTextAreaElement | null;
+            if (target) {
+              try {
+                style = JSON.parse(target.value);
+              } catch (err) {
+              }
+            }
+          }}
+        ></textarea>
+
+        <!-- Themes UI -->
+        <div class="col-span-4 mt-4">
+          <div class="flex justify-between items-center mb-2">
+            <span class="font-semibold">Themes</span>
+            <button type="button" class="btn btn-sm btn-primary" on:click={() => themes = [...themes, { title: '', conditions: [], legend: [] }]}>+ Add Theme</button>
+          </div>
+          {#if themes.length === 0}
+            <div class="text-sm text-gray-500">No themes added yet.</div>
+          {/if}
+          {#each themes as theme, i}
+            <div class="border rounded p-3 mb-3 bg-gray-50">
+              <div class="flex justify-between items-center mb-2">
+                <span class="font-semibold">Theme {i + 1}</span>
+                <button type="button" class="btn btn-xs btn-error" on:click={() => themes = themes.filter((_, idx) => idx !== i)}>Remove</button>
+              </div>
+              <div class="mb-2">
+                <label for={`theme-title-${i}`} class="block text-xs font-medium mb-1">Title (unique):</label>
+                <input id={`theme-title-${i}`} class="input input-bordered w-full" bind:value={theme.title} placeholder="Theme title" />
+              </div>
+              <div class="mb-2">
+                <label for={`theme-cond-${i}`} class="block text-xs font-medium mb-1">Conditions</label>
+                {#each theme.conditions as cond, j}
+                  <div class="flex gap-2 mb-1">
+                    <input id={`theme-cond-${i}-${j}-0`} class="input input-bordered w-1/2" bind:value={cond[0]} placeholder='e.g. value === "A"' />
+                    <input id={`theme-cond-${i}-${j}-1`} class="input input-bordered w-1/2" bind:value={cond[1]} placeholder='e.g. color("#009037")' />
+                    <button type="button" class="btn btn-xs btn-error" on:click={() => theme.conditions = theme.conditions.filter((_, idx) => idx !== j)}>Remove</button>
+                  </div>
+                {/each}
+                <button type="button" class="btn btn-xs btn-primary mt-1" on:click={() => theme.conditions = [...theme.conditions, ['', '']]}>+ Add Condition</button>
+              </div>
+              <div>
+                <label for={`theme-legend-${i}`} class="block text-xs font-medium mb-1">Legend</label>
+                {#each theme.legend as entry, k}
+                  <div class="flex gap-2 mb-1">
+                    <input id={`theme-legend-${i}-${k}-color`} class="input input-bordered w-1/2" bind:value={entry.color} placeholder='e.g. #009037' />
+                    <input id={`theme-legend-${i}-${k}-label`} class="input input-bordered w-1/2" bind:value={entry.label} placeholder='e.g. A' />
+                    <button type="button" class="btn btn-xs btn-error" on:click={() => theme.legend = theme.legend.filter((_, idx) => idx !== k)}>Remove</button>
+                  </div>
+                {/each}
+                <button type="button" class="btn btn-xs btn-primary mt-1" on:click={() => theme.legend = [...theme.legend, { color: '', label: '' }]}>+ Add Legend Entry</button>
+              </div>
+            </div>
+          {/each}
+        </div>
+        <div>
+          <label for="filter-attribute" class="block text-xs font-medium mb-1">Filter Attribute:</label>
+          <input id="filter-attribute" class="input input-bordered w-full" bind:value={filter.filterAttribute} placeholder="e.g. Classification" />
+        </div>
+        <div class="mt-2">
+          <label for="filter-classmapping-0" class="block text-xs font-medium mb-1">Class Mapping</label>
+          {#each Object.entries(filter.classMapping) as [key, value], idx}
+            <div class="flex gap-2 mb-1">
+              <input id={`filter-classmapping-${idx}-key`} class="input input-bordered w-1/3" value={key} placeholder='Class value (e.g. 0)'
+                on:input={(e) => {
+                  const target = e.target as HTMLInputElement | null;
+                  if (!target) return;
+                  const newKey = target.value;
+                  if (newKey !== key) {
+                    // Copy mapping, update key
+                    const mapping: Record<string, string> = { ...filter.classMapping };
+                    mapping[newKey] = mapping[key];
+                    delete mapping[key];
+                    filter.classMapping = mapping;
+                  }
+                }} />
+              <input id={`filter-classmapping-${idx}-value`} class="input input-bordered w-2/3" value={value}
+                placeholder='Class label (e.g. Class 0)'
+                on:input={(e) => {
+                  const target = e.target as HTMLInputElement | null;
+                  if (!target) return;
+                  const mapping: Record<string, string> = { ...filter.classMapping };
+                  mapping[key] = target.value;
+                  filter.classMapping = mapping;
+                }} />
+              <button type="button" class="btn btn-xs btn-error" on:click={() => {
+                const mapping: Record<string, string> = { ...filter.classMapping };
+                delete mapping[key];
+                filter.classMapping = mapping;
+              }}>Remove</button>
+            </div>
+          {/each}
+          <button type="button" class="btn btn-xs btn-primary mt-1" on:click={() => {
+            let nextKey = '0';
+            const keys = Object.keys(filter.classMapping).map(Number).filter(n => !isNaN(n));
+            if (keys.length) {
+              nextKey = String(Math.max(...keys) + 1);
+            }
+            filter.classMapping = { ...filter.classMapping, [nextKey]: '' };
+          }}>+ Add Class Mapping</button>
+        </div>
       </div>
     {/if}
 

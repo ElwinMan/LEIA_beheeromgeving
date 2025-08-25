@@ -20,23 +20,47 @@ from schemas.tool_schema import ToolResponse
 from sqlalchemy.orm import Session
 
 def transform_layer(layer, assoc=None):
+    content = layer.content if isinstance(layer.content, dict) else {}
+    settings = {"url": layer.url}
+
+    if layer.type == "wms":
+        keys = ["featureName", "contenttype"]
+        settings.update({k: content.get("wms", {}).get(k, "") for k in keys})
+
+    elif layer.type == "wmts":
+        keys = ["featureName", "contenttype", "requestencoding", "matrixids",
+                "tileMatrixSetID", "tileWidth", "tileHeight", "maximumLevel"]
+        settings.update({k: content.get("wmts", {}).get(k, "") for k in keys})
+
+    elif layer.type == "3DTiles":
+        tiles3d = content.get("tiles3d", {})
+        settings.update({
+            "shadows": tiles3d.get("shadows", False),
+            "tilesetHeight": tiles3d.get("tilesetHeight", ""),
+            "enableHeightControl": tiles3d.get("enableHeightControl", False),
+            "defaultTheme": tiles3d.get("defaultTheme", ""),
+            "style": tiles3d.get("style", ""),
+            "themes": tiles3d.get("themes", "")
+        })
+
     return {
         "id": str(layer.id),
         "type": layer.type,
         "title": layer.title,
         "groupId": str(assoc.group_id) if assoc and assoc.group_id is not None else "",
-        "imageUrl": layer.content.get("imageUrl", "") if layer.content and isinstance(layer.content, dict) else "",
-        "legendUrl": layer.content.get("legendUrl", "") if layer.content and isinstance(layer.content, dict) else "",
+        "imageUrl": content.get("imageUrl", ""),
+        "legendUrl": content.get("legendUrl", ""),
         "isBackground": layer.isBackground,
-        "defaultAddToManager": layer.content.get("defaultAddToManager", False) if layer.content and isinstance(layer.content, dict) else False,
+        "defaultAddToManager": content.get("defaultAddToManager", False),
         "defaultOn": assoc.is_default if assoc else True,
-        "attribution": layer.content.get("attribution", "") if layer.content and isinstance(layer.content, dict) else "",
-        "settings": {
-            "url": layer.url,
-            "featureName": layer.featureName,
-            "contenttype": layer.content.get("contenttype", "") if layer.content and isinstance(layer.content, dict) else ""
-        }
+        "attribution": content.get("attribution", ""),
+        "metadata": content.get("metadata", ""),
+        "transparent": content.get("transparent", False),
+        "opacity": content.get("opacity", 100),
+        "cameraPosition": content.get("cameraPosition", ""),
+        "settings": settings
     }
+
 
 def build_viewer_export(digital_twin, viewer):
     """Build the viewer export structure with extracted fields"""

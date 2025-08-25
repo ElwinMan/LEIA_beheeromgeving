@@ -38,11 +38,96 @@
   let allTools: (Tool & { enabled: boolean; settings?: Record<string, any> })[] = [];
   let activeToolSettingsTab: number | null = null;
 
+  // FeatureInfo fields state (for the featureinfo tool)
+  let featureInfoFields: { field: string; handler: string }[] = [];
+
+  onMount(async () => {
+    try {
+      digitalTwinData = await fetchDigitalTwin(digitalTwinId);
+      viewerData = await fetchDigitalTwinViewer(digitalTwinId);
+
+      // Initialize local copies with safe defaults
+      logo = viewerData.content.logo ?? '';
+      thumbnail = viewerData.content.thumbnail ?? '';
+      startPosition = {
+        x: viewerData.content.startPosition?.x ?? 0,
+        y: viewerData.content.startPosition?.y ?? 0,
+        z: viewerData.content.startPosition?.z ?? 0,
+        heading: viewerData.content.startPosition?.heading ?? 0,
+        pitch: viewerData.content.startPosition?.pitch ?? 0,
+        duration: viewerData.content.startPosition?.duration ?? 0
+      };
+      colors = { ...viewerData.content.colors };
+
+      // Fetch tools
+      const toolsFromApi = await fetchTools();
+
+      // Get enabled tool IDs from the viewer's tool_associations
+      // if tool_associations is undefined, use empty array
+      const enabledToolIds = new Set(
+        (digitalTwinData?.tool_associations ?? []).map((t) => t.tool_id)
+      );
+
+      // Combine tools with enabled info and settings
+      allTools = toolsFromApi.map((tool: Tool) => {
+        const enabled = enabledToolIds.has(tool.id);
+        // Get existing settings from tool association if available
+        const existingAssociation = digitalTwinData?.tool_associations?.find(assoc => assoc.tool_id === tool.id);
+        const existingSettings = existingAssociation?.content || {};
+        
+        return {
+          ...tool,
+          enabled,
+          settings: enabled ? { 
+            ...tool.content?.settings, // Default settings from tool definition
+            ...existingSettings // Override with saved settings
+          } : undefined
+        };
+      });
+
+      // Sync featureInfoFields after allTools is initialized
+      syncFeatureInfoFieldsFromTools();
+    } catch (e: unknown) {
+      error = e instanceof Error ? e.message : String(e);
+    }
+  });
+
+  // Helper to sync featureInfoFields from allTools (call on mount and when active tab changes)
+  function syncFeatureInfoFieldsFromTools() {
+    const featureInfoTool = allTools.find(t => t.name?.toLowerCase() === 'featureinfo');
+    if (featureInfoTool && featureInfoTool.enabled) {
+      if (Array.isArray(featureInfoTool.settings?.fields)) {
+        featureInfoFields = featureInfoTool.settings.fields.map((f: any) => ({ field: f.field || '', handler: f.handler || 'image' }));
+      } else {
+        featureInfoFields = [];
+      }
+    } else {
+      featureInfoFields = [];
+    }
+  }
+
+  // Also call sync when activeToolSettingsTab changes (in case user switches tabs)
+  $: if (activeToolSettingsTab !== null) {
+    syncFeatureInfoFieldsFromTools();
+  }
+
+  // Helper to update allTools when user changes featureInfoFields
+  function updateFeatureInfoFields(newFields: { field: string; handler: string }[]) {
+    featureInfoFields = newFields;
+    const featureInfoTool = allTools.find(t => t.name?.toLowerCase() === 'featureinfo');
+    if (featureInfoTool && featureInfoTool.enabled) {
+      featureInfoTool.settings = featureInfoTool.settings || {};
+      featureInfoTool.settings.fields = featureInfoFields.map(f => ({ field: f.field, handler: f.handler }));
+      allTools = allTools;
+    }
+  }
+
   // Reactive statement to calculate tools with settings
   $: toolsWithSettings = allTools.filter(tool => {
     if (!tool.enabled) return false;
     const booleanSettings = getConfigurableBooleanSettings(tool);
     const textSettings = getConfigurableTextSettings(tool);
+    if (tool.name?.toLowerCase() === 'featureinfo') return true;
     return booleanSettings.length > 0 || textSettings.length > 0;
   });
 
@@ -120,54 +205,6 @@
         multiline: key === 'description' // Or use a config for which fields are multiline
       }));
   }
-
-  onMount(async () => {
-    try {
-      digitalTwinData = await fetchDigitalTwin(digitalTwinId);
-      viewerData = await fetchDigitalTwinViewer(digitalTwinId);
-
-      // Initialize local copies with safe defaults
-      logo = viewerData.content.logo ?? '';
-      thumbnail = viewerData.content.thumbnail ?? '';
-      startPosition = {
-        x: viewerData.content.startPosition?.x ?? 0,
-        y: viewerData.content.startPosition?.y ?? 0,
-        z: viewerData.content.startPosition?.z ?? 0,
-        heading: viewerData.content.startPosition?.heading ?? 0,
-        pitch: viewerData.content.startPosition?.pitch ?? 0,
-        duration: viewerData.content.startPosition?.duration ?? 0
-      };
-      colors = { ...viewerData.content.colors };
-
-      // Fetch tools
-      const toolsFromApi = await fetchTools();
-
-      // Get enabled tool IDs from the viewer's tool_associations
-      // if tool_associations is undefined, use empty array
-      const enabledToolIds = new Set(
-        (digitalTwinData?.tool_associations ?? []).map((t) => t.tool_id)
-      );
-
-      // Combine tools with enabled info and settings
-      allTools = toolsFromApi.map((tool: Tool) => {
-        const enabled = enabledToolIds.has(tool.id);
-        // Get existing settings from tool association if available
-        const existingAssociation = digitalTwinData?.tool_associations?.find(assoc => assoc.tool_id === tool.id);
-        const existingSettings = existingAssociation?.content || {};
-        
-        return {
-          ...tool,
-          enabled,
-          settings: enabled ? { 
-            ...tool.content?.settings, // Default settings from tool definition
-            ...existingSettings // Override with saved settings
-          } : undefined
-        };
-      });
-    } catch (e: unknown) {
-      error = e instanceof Error ? e.message : String(e);
-    }
-  });
 
   async function handleSubmit() {
     try {
@@ -448,6 +485,56 @@
                                   {/if}
                                 </div>
                               {/each}
+                            </div>
+                          </div>
+                        {/if}
+
+                        <!-- FeatureInfo Fields UI -->
+                        {#if tool.name?.toLowerCase() === 'featureinfo'}
+                          <div class="space-y-3">
+                            <div class="flex items-center space-x-2">
+                              <div class="w-1 h-4 bg-accent rounded"></div>
+                              <h5 class="font-semibold text-sm text-base-content uppercase tracking-wide">FeatureInfo Fields</h5>
+                            </div>
+                            <div class="space-y-2 pl-3">
+                              {#if featureInfoFields.length === 0}
+                                <div class="text-sm text-gray-500">No fields added yet.</div>
+                              {/if}
+                              {#each featureInfoFields as fieldObj, idx}
+                                <div class="flex gap-2 mb-1 items-center">
+                                  <input
+                                    class="input input-bordered w-1/2"
+                                    placeholder="Field name (e.g. image)"
+                                    value={fieldObj.field}
+                                    on:input={(e) => {
+                                      const newFields = [...featureInfoFields];
+                                      newFields[idx].field = (e.target as HTMLInputElement).value;
+                                      updateFeatureInfoFields(newFields);
+                                    }}
+                                  />
+                                  <select
+                                    class="select select-bordered w-1/3"
+                                    value={fieldObj.handler}
+                                    on:change={(e) => {
+                                      const newFields = [...featureInfoFields];
+                                      newFields[idx].handler = (e.target as HTMLSelectElement).value;
+                                      updateFeatureInfoFields(newFields);
+                                    }}
+                                  >
+                                    <option value="image">Image</option>
+                                    <option value="pdf">PDF</option>
+                                    <option value="chart">Chart</option>
+                                  </select>
+                                  <button type="button" class="btn btn-xs btn-error" on:click={() => {
+                                    const newFields = featureInfoFields.filter((_, i) => i !== idx);
+                                    updateFeatureInfoFields(newFields);
+                                  }}>Remove</button>
+                                </div>
+                              {/each}
+                              <button type="button" class="btn btn-xs btn-primary mt-1" on:click={() => {
+                                const newFields = [...featureInfoFields, { field: '', handler: 'image' }];
+                                updateFeatureInfoFields(newFields);
+                              }}>+ Add Field</button>
                             </div>
                           </div>
                         {/if}

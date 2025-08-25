@@ -48,6 +48,21 @@ def seed(db: Session):
         ),
         Tool(
             name="featureinfo",
+            content= {
+                "fields": [{
+                        "field": "image",
+                        "handler": "image"
+                    },
+                    {
+                        "field": "document",
+                        "handler": "pdf"
+                    },
+                    {
+                        "field": "plot",
+                        "handler": "chart"
+                    }
+                ]
+            }
         ),
         Tool(
             name="info",
@@ -125,6 +140,9 @@ def seed(db: Session):
         ),
         Tool(
             name="flyCamera"
+        ),
+        Tool(
+            name="modeswitcher"
         )
     ]
 
