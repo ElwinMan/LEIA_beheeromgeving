@@ -47,3 +47,36 @@ export interface Story {
   description?: string;
   content?: any;
 }
+
+// Story reusable types
+export interface RequiredLayer {
+  id: string;
+  title: string;
+  opacity: number;
+  style: string;
+}
+
+export interface StoryStep {
+  title: string;
+  html: string;
+  globeOpacity: number;
+  terrain: string;
+  camera: {
+    x: number;
+    y: number;
+    z: number;
+    heading: number;
+    pitch: number;
+    duration: number;
+  };
+  layers: string[];
+  requiredLayers: RequiredLayer[];
+  _activeTab?: number;
+}
+
+export interface StoryChapter {
+  id: string;
+  title: string;
+  buttonText: string;
+  steps: StoryStep[];
+}

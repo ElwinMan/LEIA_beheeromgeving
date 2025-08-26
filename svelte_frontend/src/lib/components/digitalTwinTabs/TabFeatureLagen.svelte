@@ -631,22 +631,24 @@
   }
 
   function updateLayerSortOrders(skipDetailsUpdate: boolean = false) {
-    // Update ungrouped layers sort order
-    ungroupedLayers.forEach((layer, index) => {
-      layer.sort_order = index;
+    // Assign globally unique sort_order to all layers (ungrouped and grouped)
+    let sortOrder = 0;
+
+    // Assign to ungrouped layers first
+    ungroupedLayers.forEach((layer) => {
+      layer.sort_order = sortOrder++;
     });
 
-    // Update grouped layers sort order recursively
-    function updateGroupLayerSortOrders(groups: GroupWithLayers[]) {
+    // Recursively assign to grouped layers
+    function assignSortOrderToGroupLayers(groups: GroupWithLayers[]) {
       groups.forEach((group) => {
-        group.layers.forEach((layer, index) => {
-          layer.sort_order = index;
+        group.layers.forEach((layer) => {
+          layer.sort_order = sortOrder++;
         });
-        updateGroupLayerSortOrders(group.subgroups);
+        assignSortOrderToGroupLayers(group.subgroups);
       });
     }
-
-    updateGroupLayerSortOrders(rootGroups);
+    assignSortOrderToGroupLayers(rootGroups);
 
     // Update main arrays only if not skipped
     if (!skipDetailsUpdate) {

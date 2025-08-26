@@ -204,7 +204,7 @@
             <tr class="hover">
               <td class="text-sm font-bold">{layer.title || '-'}</td>
               <td class="text-sm">{layer.type || '-'}</td>
-              <td class="text-sm">{truncate(layer.url, 30) || '-'}</td>
+              <td class="text-sm">{truncate(layer.url, 60) || '-'}</td>
               <td class="text-sm">{layer.featureName || '-'}</td>
               <td>
                 <div class="dropdown dropdown-end">

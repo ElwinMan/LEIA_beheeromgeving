@@ -11,6 +11,7 @@ import repositories.terrain_provider_repository as terrain_provider_repo
 import services.content_type_service as content_type_service
 import services.digital_twin_cesium_config_service as cesium_config_service
 import services.digital_twin_terrain_provider_relation_service as terrain_provider_service
+import copy
 
 from schemas.layer_schema import LayerResponse
 from schemas.viewer_schema import ViewerResponse
@@ -21,29 +22,44 @@ from sqlalchemy.orm import Session
 
 def transform_layer(layer, assoc=None):
     content = layer.content if isinstance(layer.content, dict) else {}
-    settings = {"url": layer.url}
+    # Settings always include these keys if relevant for the layer type
+    settings_always_include = {"url", "featureName", "contenttype"}
+    settings = {}
+    settings["url"] = layer.url
 
     if layer.type == "wms":
-        keys = ["featureName", "contenttype"]
-        settings.update({k: content.get("wms", {}).get(k, "") for k in keys})
+        wms_content = content.get("wms", {})
+        for k in ["featureName", "contenttype"]:
+            settings[k] = wms_content.get(k, "")
+        # Add other wms keys only if non-empty
+        for k, v in wms_content.items():
+            if k not in settings_always_include and v not in (None, ""):
+                settings[k] = v
 
     elif layer.type == "wmts":
-        keys = ["featureName", "contenttype", "requestencoding", "matrixids",
-                "tileMatrixSetID", "tileWidth", "tileHeight", "maximumLevel"]
-        settings.update({k: content.get("wmts", {}).get(k, "") for k in keys})
+        wmts_content = content.get("wmts", {})
+        for k in ["featureName", "contenttype"]:
+            settings[k] = wmts_content.get(k, "")
+        # Add other wmts keys only if non-empty
+        for k, v in wmts_content.items():
+            if k not in settings_always_include and v not in (None, ""):
+                settings[k] = v
+        # Add extra wmts keys if non-empty
+        for k in ["requestencoding", "matrixids", "tileMatrixSetID", "tileWidth", "tileHeight", "maximumLevel"]:
+            v = wmts_content.get(k, None)
+            if k not in settings and v not in (None, ""):
+                settings[k] = v
 
     elif layer.type == "3DTiles":
         tiles3d = content.get("tiles3d", {})
-        settings.update({
-            "shadows": tiles3d.get("shadows", False),
-            "tilesetHeight": tiles3d.get("tilesetHeight", ""),
-            "enableHeightControl": tiles3d.get("enableHeightControl", False),
-            "defaultTheme": tiles3d.get("defaultTheme", ""),
-            "style": tiles3d.get("style", ""),
-            "themes": tiles3d.get("themes", "")
-        })
+        for k, v in tiles3d.items():
+            if v not in (None, ""):
+                settings[k] = v
 
-    return {
+    # Always include these keys, even if empty
+    always_include = {"imageUrl", "legendUrl", "groupId", "isBackground", "defaultAddToManager", "defaultOn"}
+    # Prepare all possible keys and their values
+    all_keys = {
         "id": str(layer.id),
         "type": layer.type,
         "title": layer.title,
@@ -57,9 +73,24 @@ def transform_layer(layer, assoc=None):
         "metadata": content.get("metadata", ""),
         "transparent": content.get("transparent", False),
         "opacity": content.get("opacity", 100),
-        "cameraPosition": content.get("cameraPosition", ""),
-        "settings": settings
+        "cameraPosition": content.get("cameraPosition", "")
     }
+    # Build the export dict
+    layer_dict = {}
+    for k, v in all_keys.items():
+        if k in always_include:
+            layer_dict[k] = v
+        elif k == "opacity":
+            layer_dict[k] = v
+        elif k == "transparent":
+            if v:
+                layer_dict[k] = v
+        else:
+            if v not in (None, ""):
+                layer_dict[k] = v
+    # Add settings at the end
+    layer_dict["settings"] = settings
+    return layer_dict
 
 
 def build_viewer_export(digital_twin, viewer):
@@ -97,29 +128,21 @@ def build_chapter_groups(chapters):
     """Build chapterGroups from story chapters"""
     if not chapters or not isinstance(chapters, list):
         return []
-    
+
     chapter_groups = []
     for index, chapter in enumerate(chapters):
         if isinstance(chapter, dict):
             chapter_id = str(index + 1)
-            
-            # Try to get title from the first step of the chapter, or use a default
-            title = f"Hoofdstuk {chapter_id}"
-            if "steps" in chapter and isinstance(chapter["steps"], list) and len(chapter["steps"]) > 0:
-                first_step = chapter["steps"][0]
-                if isinstance(first_step, dict) and "title" in first_step and first_step["title"]:
-                    title = first_step["title"]
-            
-            # Format title with H1:, H2:, H3: etc prefix
+            # Use chapter.title and chapter.buttonText, fallback to defaults
+            title = chapter.get("title") or f"Hoofdstuk {chapter_id}"
+            button_text = chapter.get("buttonText") or title
             formatted_title = f"H{chapter_id}: {title}"
-            
             chapter_group = {
                 "id": chapter_id,
                 "title": formatted_title,
-                "buttonText": title
+                "buttonText": button_text
             }
             chapter_groups.append(chapter_group)
-    
     return chapter_groups
 
 def export_digital_twin(db: Session, digital_twin_id: int):
@@ -127,8 +150,14 @@ def export_digital_twin(db: Session, digital_twin_id: int):
     if not digital_twin:
         raise ValueError("Digital twin not found")
 
-    layer_ids = [assoc.layer_id for assoc in digital_twin.layer_associations]
+    # Sort layer associations by sort_order
+    sorted_layer_assocs = sorted(digital_twin.layer_associations, key=lambda assoc: getattr(assoc, 'sort_order', 0))
+    layer_ids = [assoc.layer_id for assoc in sorted_layer_assocs]
+    print(layer_ids)
     layers = layer_repo.get_layers_by_ids(db, layer_ids)
+    # Reorder layers to match layer_ids order
+    layers_by_id = {str(layer.id): layer for layer in layers}
+    ordered_layers = [layers_by_id[str(lid)] for lid in layer_ids if str(lid) in layers_by_id]
 
     viewer = viewer_repo.get_viewer_by_digital_twin_id(db, digital_twin_id)
 
@@ -267,9 +296,26 @@ def export_digital_twin(db: Session, digital_twin_id: int):
                             story_data["baseLayerId"] = str(story.content["baseLayerId"]) if story.content["baseLayerId"] is not None else ""
                         # Add chapters if they exist
                         if "chapters" in story.content:
-                            story_data["chapters"] = story.content["chapters"]
+                            chapters_copy = copy.deepcopy(story.content["chapters"])
+                            for chapter in chapters_copy:
+                                if "steps" in chapter and isinstance(chapter["steps"], list):
+                                    for step in chapter["steps"]:
+                                        # Move requiredLayers to layers, remove title
+                                        if "requiredLayers" in step and isinstance(step["requiredLayers"], list):
+                                            step["layers"] = step["requiredLayers"]
+                                            for req_layer in step["requiredLayers"]:
+                                                if "title" in req_layer:
+                                                    del req_layer["title"]
+                                            del step["requiredLayers"]
+                            # Remove title and buttonText from chapters before export
+                            for chapter in chapters_copy:
+                                if "title" in chapter:
+                                    del chapter["title"]
+                                if "buttonText" in chapter:
+                                    del chapter["buttonText"]
+                            story_data["chapters"] = chapters_copy
                             # Build chapterGroups from chapters
-                            chapter_groups = build_chapter_groups(story.content["chapters"])
+                            chapter_groups = build_chapter_groups(chapters_copy)
                             if chapter_groups:
                                 story_data["chapterGroups"] = chapter_groups
 
@@ -278,13 +324,18 @@ def export_digital_twin(db: Session, digital_twin_id: int):
                     # Log missing story for debugging
                     print(f"Warning: Story {assoc.content_id} referenced in association but not found in database")
 
+
     layer_associations_by_id = {
         assoc.layer_id: assoc for assoc in digital_twin.layer_associations
     }
 
+    # Export layers: background layers first, then feature layers
+    background_layers = [layer for layer in ordered_layers if getattr(layer, 'isBackground', False)]
+    feature_layers = [layer for layer in ordered_layers if not getattr(layer, 'isBackground', False)]
+
     layers_response = [
         transform_layer(layer, layer_associations_by_id.get(layer.id))
-        for layer in layers
+        for layer in background_layers + feature_layers
     ]
 
     # Transform tools to include bookmarks, projects, and stories
@@ -525,10 +576,27 @@ def export_digital_twin(db: Session, digital_twin_id: int):
             }
             tools_with_content.append(stories_tool)
 
+
+    # Export groups in parent-before-child order, recursively, and remove sort_order from output
+    def export_group_hierarchy(groups, parent_id=None):
+        # Get direct children of parent_id, sorted by sort_order
+        children = [g for g in groups if (g.parent_id == parent_id)]
+        children = sorted(children, key=lambda g: getattr(g, 'sort_order', 0))
+        result = []
+        for group in children:
+            group_dict = GroupResponse.model_validate(group).model_dump()
+            group_dict.pop('sort_order', None)
+            result.append(group_dict)
+            # Recursively add children
+            result.extend(export_group_hierarchy(groups, group.id))
+        return result
+
+    exported_groups = export_group_hierarchy(groups, parent_id=None)
+
     export_data = {
         "layers": layers_response,
         "viewer": build_viewer_export(digital_twin, viewer),
-        "groups": [GroupResponse.model_validate(group).model_dump() for group in groups],
+        "groups": exported_groups,
         "tools": tools_with_content,
     }
 
