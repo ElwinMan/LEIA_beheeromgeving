@@ -56,6 +56,18 @@ def transform_layer(layer, assoc=None):
             if v not in (None, ""):
                 settings[k] = v
 
+    elif layer.type == "geojson":
+        geojson_settings = content.get("settings", {})
+        for k, v in geojson_settings.items():
+            if v not in (None, ""):
+                settings[k] = v
+
+    elif layer.type == "modelanimation":
+        modelanimation = content.get("modelanimation", {})
+        for k, v in modelanimation.items():
+            if v not in (None, ""):
+                settings[k] = v
+
     # Always include these keys, even if empty
     always_include = {"imageUrl", "legendUrl", "groupId", "isBackground", "defaultAddToManager", "defaultOn"}
     # Prepare all possible keys and their values
@@ -81,7 +93,9 @@ def transform_layer(layer, assoc=None):
         if k in always_include:
             layer_dict[k] = v
         elif k == "opacity":
-            layer_dict[k] = v
+            # Only export opacity if transparent is true
+            if all_keys.get("transparent", False):
+                layer_dict[k] = v
         elif k == "transparent":
             if v:
                 layer_dict[k] = v

@@ -14,7 +14,8 @@
     { value: 'wms', label: 'WMS' },
     { value: 'wmts', label: 'WMTS' },
     { value: '3DTiles', label: '3DTiles' },
-    { value: 'geojson', label: 'GeoJSON' }
+    { value: 'geojson', label: 'GeoJSON' },
+    { value: 'modelanimation', label: 'Model Animation' }
   ];
 
   // Main tab fields
@@ -79,6 +80,22 @@
     slider_default: 0,
     slider_label: 'Extrude Height'
   };
+
+  // ModelAnimation tab fields
+  let modelUrl: string = '';
+  let timeKey: string = '';
+  let orientationKey: string = '';
+  let modelClampToTerrain: boolean = true;
+  let timeKeyDate: string = '';
+  let timeKeyTime: string = '';
+
+  // Helper to update timeKey from date and time inputs
+  $: if (timeKeyDate && timeKeyTime) {
+    const dt = new Date(timeKeyDate + 'T' + timeKeyTime);
+    if (!isNaN(dt.getTime())) {
+      timeKey = dt.toISOString().replace(/\.\d{3}Z$/, 'Z');
+    }
+  }
 
   export function showModal(l: Layer) {
     layer = l;
@@ -150,6 +167,26 @@
       slider_label: 'Extrude Height'
     };
 
+    // Model Animation
+    modelUrl = layer.content?.modelanimation?.modelUrl || '';
+    timeKey = layer.content?.modelanimation?.timeKey || '';
+    orientationKey = layer.content?.modelanimation?.orientationKey || '';
+    modelClampToTerrain = layer.content?.modelanimation?.clampToTerrain ?? true;
+    // Parse timeKey into date and time fields if present
+    if (timeKey) {
+      const d = new Date(timeKey);
+      if (!isNaN(d.getTime())) {
+        timeKeyDate = d.toISOString().slice(0, 10);
+        timeKeyTime = d.toISOString().slice(11, 19);
+      } else {
+        timeKeyDate = '';
+        timeKeyTime = '';
+      }
+    } else {
+      timeKeyDate = '';
+      timeKeyTime = '';
+    }
+
     activeTab = 0;
     modalRef.showModal();
   }
@@ -193,6 +230,14 @@
           tools: {
             extrude: geojsonExtrude
           }
+        }
+      },
+      modelanimation: {
+        modelanimation: {
+          modelUrl,
+          timeKey,
+          orientationKey,
+          clampToGround: modelClampToTerrain
         }
       }
     };
@@ -282,6 +327,16 @@
           tabindex={activeTab === 4 ? 0 : -1}
           on:click={() => (activeTab = 4)}
         >GeoJSON</button>
+      {/if}
+      {#if type === 'modelanimation'}
+        <button
+          type="button"
+          class="tab {activeTab === 5 ? 'tab-active' : ''}"
+          role="tab"
+          aria-selected={activeTab === 5}
+          tabindex={activeTab === 5 ? 0 : -1}
+          on:click={() => (activeTab = 5)}
+        >Model Animation</button>
       {/if}
     </div>
 
@@ -506,6 +561,36 @@
             <label for="geojsonExtrudeLabel" class="block text-xs font-medium mb-1">Slider Label</label>
             <input id="geojsonExtrudeLabel" type="text" class="input input-bordered w-full" bind:value={geojsonExtrude.slider_label} />
           </div>
+        </div>
+      </div>
+    {/if}
+
+    {#if type === 'modelanimation' && activeTab == 5}
+      <!-- Model Animation Tab -->
+      <div class="grid grid-cols-4 gap-4 items-center">
+        <label for="modelUrl" class="pr-4 text-right font-semibold">Model URL:</label>
+        <input id="modelUrl" class="input input-bordered col-span-3 w-full" bind:value={modelUrl} required />
+
+        <label for="orientationKey" class="pr-4 text-right font-semibold">Orientation Key:</label>
+        <input id="orientationKey" class="input input-bordered col-span-3 w-full" bind:value={orientationKey} />
+
+        <label for="clampToTerrain" class="pr-4 text-right font-semibold">Clamp To Terrain:</label>
+        <input id="clampToTerrain" type="checkbox" class="checkbox checkbox-primary col-span-3" bind:checked={modelClampToTerrain} />
+
+        <label for="timeKeyDate" class="pr-4 text-right font-semibold">Time Key:</label>
+        <div class="col-span-3 grid grid-cols-2 gap-2">
+          <div>
+            <label for="timeKeyDate" class="block text-xs font-medium mb-1">Date</label>
+            <input id="timeKeyDate" type="date" class="input input-bordered w-full" bind:value={timeKeyDate} required />
+          </div>
+          <div>
+            <label for="timeKeyTime" class="block text-xs font-medium mb-1">Time</label>
+            <input id="timeKeyTime" type="time" step="1" class="input input-bordered w-full" bind:value={timeKeyTime} required />
+          </div>
+        </div>
+        <div></div>
+        <div class="col-span-3">
+          <span class="text-s text-gray-500">Time Key: <code>{timeKey}</code></span>
         </div>
       </div>
     {/if}
