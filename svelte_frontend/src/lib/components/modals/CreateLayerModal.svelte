@@ -4,7 +4,6 @@
   import type { Layer } from '$lib/types/layer';
   import PositionSelector from '$lib/components/PositionSelector.svelte';
 
-  import { onMount } from 'svelte';
   let modalRef: HTMLDialogElement;
   const dispatch = createEventDispatcher<{ created: Layer }>();
 
@@ -13,9 +12,9 @@
   const typeOptions = [
     { value: 'wms', label: 'WMS' },
     { value: 'wmts', label: 'WMTS' },
-    { value: '3DTiles', label: '3DTiles' }
+    { value: '3DTiles', label: '3DTiles' },
+    { value: 'geojson', label: 'GeoJSON' }
   ];
-  const tabLabels = ['Algemeen'];
 
   // Main tab fields
   let title: string = '';
@@ -79,6 +78,22 @@
   let filter = {
     filterAttribute: '',
     classMapping: {}
+  };
+
+  // GeoJSON tab fields
+  let geojsonUrl: string = '';
+  let geojsonStyle = {
+    stroke: '#0000ff',
+    strokeWidth: 1,
+    fill: '#ff0000'
+  };
+  let geojsonClampToGround: boolean = true;
+  let geojsonExtrude = {
+    slider_min: 0,
+    slider_max: 10,
+    slider_step: 1,
+    slider_default: 0,
+    slider_label: 'Extrude Height'
   };
 
   export let isBackgroundPage: boolean = false;
@@ -186,6 +201,16 @@
           themes,
           filter
         }
+      },
+      geojson: {
+        settings: {
+          url: geojsonUrl,
+          style: geojsonStyle,
+          clampToGround: geojsonClampToGround,
+          tools: {
+            extrude: geojsonExtrude
+          }
+        }
       }
     };
 
@@ -211,10 +236,13 @@
       if (type === 'wms') featureName = wmsFeatureName;
       else if (type === 'wmts') featureName = wmtsFeatureName;
 
+      // For geojson, use geojsonUrl as main url
+      const url = type === 'geojson' ? geojsonUrl : mainUrl;
+
       const payload = {
         type,
         title,
-        url: mainUrl,
+        url,
         featureName,
         isBackground: isBackgroundPage,
         content
@@ -271,6 +299,16 @@
           tabindex={activeTab === 3 ? 0 : -1}
           on:click={() => (activeTab = 3)}
         >3DTiles</button>
+      {/if}
+      {#if type === 'geojson'}
+        <button
+          type="button"
+          class="tab {activeTab === 4 ? 'tab-active' : ''}"
+          role="tab"
+          aria-selected={activeTab === 4}
+          tabindex={activeTab === 4 ? 0 : -1}
+          on:click={() => (activeTab = 4)}
+        >GeoJSON</button>
       {/if}
     </div>
 
@@ -553,6 +591,63 @@
             }
             filter.classMapping = { ...filter.classMapping, [nextKey]: '' };
           }}>+ Add Class Mapping</button>
+        </div>
+      </div>
+    {/if}
+
+    {#if type === 'geojson' && activeTab == 4}
+      <!-- GeoJSON Tab -->
+      <div class="grid grid-cols-4 gap-4 items-center">
+        <label for="geojsonUrl" class="pr-4 text-right font-semibold">GeoJSON URL:</label>
+        <input id="geojsonUrl" class="input input-bordered col-span-3 w-full" bind:value={geojsonUrl} required />
+
+        <label for="geojsonClampToGround" class="pr-4 text-right font-semibold">Clamp To Ground:</label>
+        <input id="geojsonClampToGround" type="checkbox" class="checkbox checkbox-primary col-span-3" bind:checked={geojsonClampToGround} />
+
+        <label for="geojsonStyleGroup" class="pr-4 text-right font-semibold">Style:</label>
+        <div class="col-span-3 grid grid-cols-2 gap-2">
+          <div>
+            <label for="geojsonStroke" class="block text-xs font-medium mb-1">Stroke</label>
+            <input id="geojsonStroke" type="color" class="h-8 w-12 rounded border border-gray-300 p-0" bind:value={geojsonStyle.stroke} />
+            <input id="geojsonStrokeText" type="text" class="input input-bordered mt-1 w-full" bind:value={geojsonStyle.stroke} />
+          </div>
+          <div>
+            <label for="geojsonFill" class="block text-xs font-medium mb-1">Fill</label>
+            <input id="geojsonFill" type="color" class="h-8 w-12 rounded border border-gray-300 p-0" bind:value={geojsonStyle.fill} />
+            <input id="geojsonFillText" type="text" class="input input-bordered mt-1 w-full" bind:value={geojsonStyle.fill} />
+          </div>
+        </div>
+        <div></div>
+        <div class="col-span-3 grid grid-cols-2 gap-2 mt-2">
+          <div>
+            <label for="geojsonStrokeWidth" class="block text-xs font-medium mb-1">Stroke Width</label>
+            <input id="geojsonStrokeWidth" type="number" min="1" class="input input-bordered w-full" bind:value={geojsonStyle.strokeWidth} />
+          </div>
+          <div></div>
+        </div>
+
+        <label for="geojsonExtrudeGroup" class="pr-4 text-right font-semibold">Extrude Tool:</label>
+        <div class="col-span-3 grid grid-cols-5 gap-2">
+          <div>
+            <label for="geojsonExtrudeMin" class="block text-xs font-medium mb-1">Slider Min</label>
+            <input id="geojsonExtrudeMin" type="number" class="input input-bordered w-full" bind:value={geojsonExtrude.slider_min} />
+          </div>
+          <div>
+            <label for="geojsonExtrudeMax" class="block text-xs font-medium mb-1">Slider Max</label>
+            <input id="geojsonExtrudeMax" type="number" class="input input-bordered w-full" bind:value={geojsonExtrude.slider_max} />
+          </div>
+          <div>
+            <label for="geojsonExtrudeStep" class="block text-xs font-medium mb-1">Slider Step</label>
+            <input id="geojsonExtrudeStep" type="number" class="input input-bordered w-full" bind:value={geojsonExtrude.slider_step} />
+          </div>
+          <div>
+            <label for="geojsonExtrudeDefault" class="block text-xs font-medium mb-1">Slider Default</label>
+            <input id="geojsonExtrudeDefault" type="number" class="input input-bordered w-full" bind:value={geojsonExtrude.slider_default} />
+          </div>
+          <div>
+            <label for="geojsonExtrudeLabel" class="block text-xs font-medium mb-1">Slider Label</label>
+            <input id="geojsonExtrudeLabel" type="text" class="input input-bordered w-full" bind:value={geojsonExtrude.slider_label} />
+          </div>
         </div>
       </div>
     {/if}
