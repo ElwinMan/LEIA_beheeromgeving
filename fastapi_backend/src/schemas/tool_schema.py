@@ -1,9 +1,16 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer
 from typing import Optional, Dict, Any, List
+from datetime import datetime
 
 class ToolBase(BaseModel):
     name: str
     content: Optional[Dict[str, Any]] = None
+    last_updated: datetime
+
+    @field_serializer("last_updated")
+    def format_last_updated(self, value: datetime) -> str:
+        return value.isoformat()
+
 
 class ToolCreate(ToolBase):
     pass

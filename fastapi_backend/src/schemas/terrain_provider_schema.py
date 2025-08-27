@@ -1,10 +1,16 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer
 from typing import Optional, List
+from datetime import datetime
 
 class TerrainProviderBase(BaseModel):
     title: str
     url: str
     vertexNormals: Optional[bool] = None
+    last_updated: datetime
+
+    @field_serializer("last_updated")
+    def format_last_updated(self, value: datetime) -> str:
+        return value.isoformat()
 
 class TerrainProviderCreate(TerrainProviderBase):
     pass

@@ -6,4 +6,5 @@ export interface Layer {
   featureName: string;
   isBackground: boolean;
   content: any;
+  last_updated: string;
 }

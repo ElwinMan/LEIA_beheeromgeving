@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, JSON
+from sqlalchemy import Column, Integer, String, JSON, DateTime
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 from db.database import Base
 
 class Tool(Base):
@@ -8,6 +9,7 @@ class Tool(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     content = Column(JSON, nullable=True)
+    last_updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
 
     tool_associations = relationship(
         "DigitalTwinToolAssociation",

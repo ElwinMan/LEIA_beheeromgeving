@@ -1,5 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer
 from typing import Optional, Dict, Any, List
+from datetime import datetime
 
 class LayerBase(BaseModel):
     type: str
@@ -8,6 +9,11 @@ class LayerBase(BaseModel):
     featureName: Optional[str]
     isBackground: bool
     content: Optional[Dict[str, Any]] = None
+    last_updated: datetime
+
+    @field_serializer("last_updated")
+    def format_last_updated(self, value: datetime) -> str:
+        return value.isoformat()
 
 class LayerCreate(LayerBase):
     pass

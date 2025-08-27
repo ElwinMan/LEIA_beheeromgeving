@@ -7,6 +7,7 @@
   import { createEventDispatcher } from 'svelte';
   import TableControls from './TableControls.svelte';
   import SortableTableHeader from "$lib/components/tables/SortableTableHeader.svelte";
+  import DateTimeCell from "$lib/components/DateTimeCell.svelte";
 
   let { bookmarks = [] } = $props<{
     bookmarks?: Bookmark[]
@@ -166,6 +167,13 @@
             />
             <th class="bg-base-200 font-bold">Positie</th>
             <th class="bg-base-200 font-bold">Camera</th>
+            <SortableTableHeader
+              column="last_updated"
+              label="Gewijzigd"
+              {sortColumn}
+              {sortDirection}
+              {setSort}
+            />
             <th class="bg-base-200 font-bold">Acties</th>
           </tr>
         </thead>
@@ -188,6 +196,7 @@
                   <div>Duur: {bookmark.duration.toFixed(1)}s</div>
                 </div>
               </td>
+              <td class="text-sm"><DateTimeCell value={bookmark.last_updated} /></td>
               <td class="text-sm relative">
                 <div class="dropdown dropdown-end">
                   <button

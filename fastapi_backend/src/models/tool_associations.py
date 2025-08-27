@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, JSON, Boolean, Float
+from sqlalchemy import Column, Integer, String, JSON, Boolean, Float, DateTime
+from sqlalchemy.sql import func
 from db.database import Base
 
 class Bookmark(Base):
@@ -12,6 +13,7 @@ class Bookmark(Base):
     heading = Column(Float, nullable=False)
     pitch = Column(Float, nullable=False)
     duration = Column(Float, nullable=False)
+    last_updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
 
 class Project(Base):
     __tablename__ = "projects"
@@ -19,6 +21,7 @@ class Project(Base):
     name = Column(String(255), nullable=False)
     description = Column(String(255), nullable=True)
     content = Column(JSON, nullable=True)
+    last_updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
 
 class TerrainProvider(Base):
     __tablename__ = "terrain_providers"
@@ -26,6 +29,7 @@ class TerrainProvider(Base):
     title = Column(String(255), nullable=False)
     url = Column(String(255), nullable=False)
     vertexNormals = Column(Boolean, nullable=True)
+    last_updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
 
 class Story(Base):
     __tablename__ = "stories"
@@ -33,3 +37,4 @@ class Story(Base):
     name = Column(String(255), nullable=False)
     description = Column(String(255), nullable=True)
     content = Column(JSON, nullable=True)
+    last_updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())

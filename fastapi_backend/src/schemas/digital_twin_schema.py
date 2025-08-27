@@ -15,7 +15,7 @@ class DigitalTwinBase(BaseModel):
 
     @field_serializer("last_updated")
     def format_last_updated(self, value: datetime) -> str:
-        return value.strftime("%Y-%m-%d %H:%M")
+        return value.isoformat()
 
 class DigitalTwinCreate(DigitalTwinBase):
     pass

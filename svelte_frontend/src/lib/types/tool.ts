@@ -2,6 +2,7 @@ export interface Tool {
   id: number;
   name: string;
   content?: any;
+  last_updated: string;
 }
 
 // Content Type for polymorphic relationships
@@ -22,6 +23,7 @@ export interface Bookmark {
   heading: number;
   pitch: number;
   duration: number;
+  last_updated: string;
 }
 
 // Projects
@@ -30,6 +32,7 @@ export interface Project {
   name: string;
   description?: string;
   content?: any;
+  last_updated: string;
 }
 
 // Terrain Provider
@@ -38,6 +41,7 @@ export interface TerrainProvider {
   title: string;
   url: string;
   vertexNormals?: string;
+  last_updated: string;
 }
 
 // Story
@@ -46,6 +50,7 @@ export interface Story {
   name: string;
   description?: string;
   content?: any;
+  last_updated: string;
 }
 
 // Story reusable types

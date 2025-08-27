@@ -8,6 +8,7 @@
   import ShowLayerUsageModal from '../modals/ShowLayerUsageModal.svelte';
   import TableControls from './TableControls.svelte';
   import SortableTableHeader from "$lib/components/tables/SortableTableHeader.svelte";
+  import DateTimeCell from "$lib/components/DateTimeCell.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -196,6 +197,13 @@
               {sortDirection}
               {setSort}
             />
+            <SortableTableHeader
+              column="last_updated"
+              label="Gewijzigd"
+              {sortColumn}
+              {sortDirection}
+              {setSort}
+            />
             <th class="bg-base-200 font-bold">Acties</th>
           </tr>
         </thead>
@@ -206,6 +214,7 @@
               <td class="text-sm">{layer.type || '-'}</td>
               <td class="text-sm">{truncate(layer.url, 60) || '-'}</td>
               <td class="text-sm">{layer.featureName || '-'}</td>
+              <td class="text-sm"><DateTimeCell value={layer.last_updated} /></td>
               <td>
                 <div class="dropdown dropdown-end">
                   <button

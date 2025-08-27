@@ -7,6 +7,7 @@
   import { createEventDispatcher } from 'svelte';
   import TableControls from './TableControls.svelte';
   import SortableTableHeader from "$lib/components/tables/SortableTableHeader.svelte";
+  import DateTimeCell from "$lib/components/DateTimeCell.svelte";
 
   let modalComponent: any;
 
@@ -169,6 +170,13 @@
               {sortDirection}
               {setSort}
             />
+            <SortableTableHeader
+              column="last_updated"
+              label="Gewijzigd"
+              {sortColumn}
+              {sortDirection}
+              {setSort}
+            />
             <th class="bg-base-200 font-bold">Acties</th>
           </tr>
         </thead>
@@ -178,6 +186,7 @@
               <td class="text-sm font-bold">{tp.title || '-'}</td>
               <td class="text-sm">{tp.url || '-'}</td>
               <td class="text-sm">{tp.vertexNormals ? 'Ja' : 'Nee'}</td>
+              <td class="text-sm"><DateTimeCell value={tp.last_updated} /></td>
               <td class="text-sm relative">
                 <div class="dropdown dropdown-end">
                   <button

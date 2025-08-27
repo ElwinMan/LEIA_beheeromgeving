@@ -4,6 +4,7 @@
   import { portal } from 'svelte-portal';
   import { fetchDigitalTwinsPaginated } from '$lib/api';
   import SortableTableHeader from '$lib/components/tables/SortableTableHeader.svelte';
+  import DateTimeCell from "$lib/components/DateTimeCell.svelte";
 
   let openIndex = $state<number | null>(null);
   let summaryRefs = $state<Array<HTMLElement | null>>([]);
@@ -165,7 +166,7 @@
               <td class="text-sm">{twin.subtitle || '-'}</td>
               <td class="text-sm">{twin.owner || '-'}</td>
               <td class="text-sm">{twin.private || '-'}</td>
-              <td class="text-sm">{twin.last_updated || '-'}</td>
+              <td class="text-sm"><DateTimeCell value={twin.last_updated} /></td>
               <td>
                 <div class="dropdown dropdown-end">
                   <button

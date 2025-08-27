@@ -7,6 +7,7 @@
   import { tick } from 'svelte';
   import TableControls from './TableControls.svelte';
   import SortableTableHeader from "$lib/components/tables/SortableTableHeader.svelte";
+  import DateTimeCell from "$lib/components/DateTimeCell.svelte";
 
   const dispatch = createEventDispatcher<{ updated: void }>();
 
@@ -155,14 +156,23 @@
               {sortDirection}
               {setSort}
             />
+            <SortableTableHeader
+              column="last_updated"
+              label="Gewijzigd"
+              {sortColumn}
+              {sortDirection}
+              {setSort}
+              className="bg-base-200 font-bold cursor-pointer text-right"
+            />
             <th class="bg-base-200 pr-10 text-right font-bold">Acties</th>
           </tr>
         </thead>
         <tbody>
           {#each tools as tool, idx}
             <tr class="hover">
-              <td class="w-full text-sm font-bold">{tool.name || '-'}</td>
-              <td class="text-sm">
+              <td class="text-sm font-bold">{tool.name || '-'}</td>
+              <td class="text-sm text-right"><DateTimeCell value={tool.last_updated} /></td>
+              <td class="text-sm text-right">
                 <div class="dropdown dropdown-end">
                   <button
                     bind:this={summaryRefs[idx]}
