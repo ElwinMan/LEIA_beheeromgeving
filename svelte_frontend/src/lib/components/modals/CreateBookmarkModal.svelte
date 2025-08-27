@@ -4,6 +4,7 @@
   import type { Bookmark } from '$lib/types/tool';
   import AlertBanner from '$lib/components/AlertBanner.svelte';
   import PositionSelector from '$lib/components/PositionSelector.svelte';
+  import MissingRequiredFields from '$lib/components/MissingRequiredFields.svelte';
 
   let modalRef: HTMLDialogElement;
   const dispatch = createEventDispatcher<{ created: Bookmark }>();
@@ -16,11 +17,12 @@
   let heading = 0;
   let pitch = 0;
   let duration = 0;
+  let missingFields: string[] = [];
 
   let errorBanner: InstanceType<typeof AlertBanner> | null = null;
   let successBanner: InstanceType<typeof AlertBanner> | null = null;
 
-  export function showModal() {
+  function resetModal() {
     title = '';
     description = '';
     x = 0;
@@ -29,13 +31,27 @@
     heading = 0;
     pitch = 0;
     duration = 0;
+    missingFields = [];
     errorBanner?.hide?.();
     successBanner?.hide?.();
+  }
+
+  export function showModal() {
+    resetModal();
     modalRef.showModal();
+  }
+
+  function getMissingRequiredFields(): string[] {
+    const fields: { label: string; value: any }[] = [
+      { label: 'Titel', value: title }
+    ];
+    return fields.filter(f => !f.value || (typeof f.value === 'string' && !f.value.trim())).map(f => f.label);
   }
 
   async function handleSubmit(event: Event) {
     event.preventDefault();
+    missingFields = getMissingRequiredFields();
+    if (missingFields.length > 0) return;
 
     const payload = {
       title,
@@ -45,7 +61,8 @@
       z,
       heading,
       pitch,
-      duration
+      duration,
+      last_updated: new Date().toISOString()
     };
 
     try {
@@ -85,13 +102,16 @@
   />
 
   <form
-    on:submit|preventDefault={handleSubmit}
+    onsubmit={handleSubmit}
     class="modal-box grid w-full max-w-4xl min-h-[700px] grid-cols-4 items-center gap-4"
   >
-    <h3 class="col-span-4 mb-4 text-lg font-bold">Nieuwe Bookmark Aanmaken</h3>
+    <div class="form-control col-span-4">
+      <h3 class="mb-4 text-lg font-bold">Nieuwe Bookmark Aanmaken</h3>
+      <MissingRequiredFields {missingFields} />
+    </div>
 
-    <label for="title" class="pr-4 text-right font-semibold">Titel:</label>
-    <input id="title" class="input input-bordered col-span-3 w-full" bind:value={title} required />
+    <label for="title" class="pr-4 text-right font-semibold">Titel <span class="text-error">*</span>:</label>
+    <input id="title" class="input input-bordered col-span-3 w-full" bind:value={title} />
 
     <label for="description" class="pr-4 text-right font-semibold">Beschrijving:</label>
     <input id="description" class="input input-bordered col-span-3 w-full" bind:value={description} />
@@ -123,7 +143,7 @@
     </div>
 
     <div class="col-span-4 mt-6 flex justify-end gap-2">
-      <button type="button" class="btn btn-ghost" on:click={() => modalRef.close()}>Annuleren</button>
+      <button type="button" class="btn btn-ghost" onclick={() => { modalRef.close(); resetModal(); }}>Annuleren</button>
       <button type="submit" class="btn btn-primary">Aanmaken</button>
     </div>
   </form>

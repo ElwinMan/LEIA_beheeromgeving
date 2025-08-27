@@ -3,6 +3,7 @@
   import { createLayer } from '$lib/api';
   import type { Layer } from '$lib/types/layer';
   import PositionSelector from '$lib/components/PositionSelector.svelte';
+  import MissingRequiredFields from '$lib/components/MissingRequiredFields.svelte';
 
   let modalRef: HTMLDialogElement;
   const dispatch = createEventDispatcher<{ created: Layer }>();
@@ -16,6 +17,8 @@
     { value: 'geojson', label: 'GeoJSON' },
     { value: 'modelanimation', label: 'Model Animation' }
   ];
+
+  let missingFields: string[] = [];
 
   // Main tab fields
   let title: string = '';
@@ -105,20 +108,15 @@
   let timeKeyDate: string = '';
   let timeKeyTime: string = '';
 
-  // Helper to update timeKey from date and time inputs
-  $: if (timeKeyDate && timeKeyTime) {
-    // Compose ISO string: 'YYYY-MM-DDTHH:mm:ssZ'
-    const dt = new Date(timeKeyDate + 'T' + timeKeyTime);
-    if (!isNaN(dt.getTime())) {
-      // Always output in UTC, with 'Z'
-      timeKey = dt.toISOString().replace(/\.\d{3}Z$/, 'Z');
-    }
-  }
-
   export let isBackgroundPage: boolean = false;
 
-  export function showModal() {
+  function resetModal() {
     resetForm();
+    missingFields = [];
+  }
+
+  export function showModal() {
+    resetModal();
     modalRef?.showModal();
   }
 
@@ -184,8 +182,12 @@
 
     activeTab = 0;
   }
-
+  
   async function handleSubmit(event: Event) {
+    event.preventDefault();
+    missingFields = getMissingRequiredFields();
+    if (missingFields.length > 0) return;
+
     // Sanitize theme condition input: wrap variable in ${...} if not present
     if (type === '3DTiles' && themes.length > 0) {
       themes = themes.map(theme => ({
@@ -207,7 +209,6 @@
         })
       }));
     }
-    event.preventDefault();
 
     // Parse matrixids from textarea
     wmtsMatrixIds = wmtsMatrixIdsText
@@ -294,7 +295,8 @@
         url,
         featureName,
         isBackground: isBackgroundPage,
-        content
+        content,
+        last_updated: new Date().toISOString()
       };
       const newLayer = await createLayer(payload);
 
@@ -304,11 +306,49 @@
       console.error('Layer creation failed', error);
     }
   }
+
+  function getMissingRequiredFields(): string[] {
+    const fields: { label: string; value: any }[] = [];
+
+    // Always check Algemeen tab required fields
+    fields.push(
+      { label: 'Title', value: title },
+      { label: 'Type', value: type },
+      { label: 'URL', value: mainUrl }
+    );
+
+    // Type-specific required fields
+    if (type === 'geojson') {
+      fields.push({ label: 'GeoJSON URL', value: geojsonUrl });
+    }
+    if (type === 'modelanimation') {
+      fields.push(
+        { label: 'Model URL', value: modelUrl },
+        { label: 'Date', value: timeKeyDate },
+        { label: 'Time', value: timeKeyTime }
+      );
+    }
+
+    return fields.filter(f => !f.value || (typeof f.value === 'string' && !f.value.trim())).map(f => f.label);
+  }
+
+  // Helper to update timeKey from date and time inputs (used in ModelAnimation Tab)
+  $: if (timeKeyDate && timeKeyTime) {
+    // Compose ISO string: 'YYYY-MM-DDTHH:mm:ssZ'
+    const dt = new Date(timeKeyDate + 'T' + timeKeyTime);
+    if (!isNaN(dt.getTime())) {
+      // Always output in UTC, with 'Z'
+      timeKey = dt.toISOString().replace(/\.\d{3}Z$/, 'Z');
+    }
+  }
 </script>
 
 <dialog bind:this={modalRef} class="modal">
-  <form on:submit|preventDefault={handleSubmit} class="modal-box w-full max-w-4xl">
-    <h3 class="mb-4 text-lg font-bold">Nieuwe Layer Aanmaken</h3>
+  <form onsubmit={handleSubmit} class="modal-box w-full max-w-4xl">
+    <div>
+      <h3 class="mb-4 text-lg font-bold">Nieuwe Layer Aanmaken</h3>
+      <MissingRequiredFields {missingFields} />
+    </div>
     <!-- Only show tabs if a type is selected -->
     <div class="tabs tabs-border mb-4" role="tablist">
       <button
@@ -317,7 +357,7 @@
         role="tab"
         aria-selected={activeTab === 0}
         tabindex={activeTab === 0 ? 0 : -1}
-        on:click={() => (activeTab = 0)}
+        onclick={() => (activeTab = 0)}
       >Algemeen</button>
       {#if type === 'wms'}
         <button
@@ -326,7 +366,7 @@
           role="tab"
           aria-selected={activeTab === 1}
           tabindex={activeTab === 1 ? 0 : -1}
-          on:click={() => (activeTab = 1)}
+          onclick={() => (activeTab = 1)}
         >WMS</button>
       {/if}
       {#if type === 'wmts'}
@@ -336,7 +376,7 @@
           role="tab"
           aria-selected={activeTab === 2}
           tabindex={activeTab === 2 ? 0 : -1}
-          on:click={() => (activeTab = 2)}
+          onclick={() => (activeTab = 2)}
         >WMTS</button>
       {/if}
       {#if type === '3DTiles'}
@@ -346,7 +386,7 @@
           role="tab"
           aria-selected={activeTab === 3}
           tabindex={activeTab === 3 ? 0 : -1}
-          on:click={() => (activeTab = 3)}
+          onclick={() => (activeTab = 3)}
         >3DTiles</button>
       {/if}
       {#if type === 'geojson'}
@@ -356,7 +396,7 @@
           role="tab"
           aria-selected={activeTab === 4}
           tabindex={activeTab === 4 ? 0 : -1}
-          on:click={() => (activeTab = 4)}
+          onclick={() => (activeTab = 4)}
         >GeoJSON</button>
       {/if}
       {#if type === 'modelanimation'}
@@ -366,7 +406,7 @@
           role="tab"
           aria-selected={activeTab === 5}
           tabindex={activeTab === 5 ? 0 : -1}
-          on:click={() => (activeTab = 5)}
+          onclick={() => (activeTab = 5)}
         >Model Animation</button>
       {/if}
     </div>
@@ -374,19 +414,19 @@
     {#if activeTab === 0}
       <!-- Algemeen Tab -->
       <div class="grid grid-cols-4 gap-4 items-center">
-        <label for="title" class="pr-4 text-right font-semibold">Title:</label>
-        <input id="title" class="input input-bordered col-span-3 w-full" bind:value={title} required />
+        <label for="title" class="pr-4 text-right font-semibold">Title <span class="text-error">*</span>:</label>
+        <input id="title" class="input input-bordered col-span-3 w-full" bind:value={title} />
 
-        <label for="type" class="pr-4 text-right font-semibold">Type:</label>
-        <select id="type" class="select select-bordered col-span-3 w-full" bind:value={type} required>
+        <label for="type" class="pr-4 text-right font-semibold">Type <span class="text-error">*</span>:</label>
+        <select id="type" class="select select-bordered col-span-3 w-full" bind:value={type} >
           <option value="" disabled selected>Kies een type...</option>
           {#each typeOptions as opt}
             <option value={opt.value}>{opt.label}</option>
           {/each}
         </select>
 
-        <label for="mainUrl" class="pr-4 text-right font-semibold">URL:</label>
-        <input id="mainUrl" class="input input-bordered col-span-3 w-full" bind:value={mainUrl} required />
+        <label for="mainUrl" class="pr-4 text-right font-semibold">URL <span class="text-error">*</span>:</label>
+        <input id="mainUrl" class="input input-bordered col-span-3 w-full" bind:value={mainUrl} />
 
         <label for="imageUrl" class="pr-4 text-right font-semibold">Image URL:</label>
         <input id="imageUrl" class="input input-bordered col-span-3 w-full" bind:value={imageUrl} />
@@ -415,7 +455,7 @@
           step="1"
           class="input input-bordered col-span-3 w-full"
           bind:value={opacity}
-          on:input={() => { if (opacity > 100) opacity = 100; if (opacity < 0) opacity = 0; }}
+          oninput={() => { if (opacity > 100) opacity = 100; if (opacity < 0) opacity = 0; }}
           disabled={!transparent}
         />
 
@@ -550,7 +590,7 @@
           class="textarea textarea-bordered col-span-3 w-full"
           rows="6"
           bind:value={styleJson}
-          on:input={(e) => {
+          oninput={(e) => {
             const target = e.target as HTMLTextAreaElement | null;
             if (target) {
               try {
@@ -565,7 +605,7 @@
         <div class="col-span-4 mt-4">
           <div class="flex justify-between items-center mb-2">
             <span class="font-semibold">Themes</span>
-            <button type="button" class="btn btn-sm btn-primary" on:click={() => themes = [...themes, { title: '', conditions: [], legend: [] }]}>+ Add Theme</button>
+            <button type="button" class="btn btn-sm btn-primary" onclick={() => themes = [...themes, { title: '', conditions: [], legend: [] }]}>+ Add Theme</button>
           </div>
           {#if themes.length === 0}
             <div class="text-sm text-gray-500">No themes added yet.</div>
@@ -574,7 +614,7 @@
             <div class="border rounded p-3 mb-3 bg-gray-50">
               <div class="flex justify-between items-center mb-2">
                 <span class="font-semibold">Theme {i + 1}</span>
-                <button type="button" class="btn btn-xs btn-error" on:click={() => themes = themes.filter((_, idx) => idx !== i)}>Remove</button>
+                <button type="button" class="btn btn-xs btn-error" onclick={() => themes = themes.filter((_, idx) => idx !== i)}>Remove</button>
               </div>
               <div class="mb-2">
                 <label for={`theme-title-${i}`} class="block text-xs font-medium mb-1">Title (unique):</label>
@@ -586,10 +626,10 @@
                   <div class="flex gap-2 mb-1">
                     <input id={`theme-cond-${i}-${j}-0`} class="input input-bordered w-1/2" bind:value={cond[0]} placeholder='e.g. value === "A"' />
                     <input id={`theme-cond-${i}-${j}-1`} class="input input-bordered w-1/2" bind:value={cond[1]} placeholder='e.g. color("#009037")' />
-                    <button type="button" class="btn btn-xs btn-error" on:click={() => theme.conditions = theme.conditions.filter((_, idx) => idx !== j)}>Remove</button>
+                    <button type="button" class="btn btn-xs btn-error" onclick={() => theme.conditions = theme.conditions.filter((_, idx) => idx !== j)}>Remove</button>
                   </div>
                 {/each}
-                <button type="button" class="btn btn-xs btn-primary mt-1" on:click={() => theme.conditions = [...theme.conditions, ['', '']]}>+ Add Condition</button>
+                <button type="button" class="btn btn-xs btn-primary mt-1" onclick={() => theme.conditions = [...theme.conditions, ['', '']]}>+ Add Condition</button>
               </div>
               <div>
                 <label for={`theme-legend-${i}`} class="block text-xs font-medium mb-1">Legend</label>
@@ -597,10 +637,10 @@
                   <div class="flex gap-2 mb-1">
                     <input id={`theme-legend-${i}-${k}-color`} class="input input-bordered w-1/2" bind:value={entry.color} placeholder='e.g. #009037' />
                     <input id={`theme-legend-${i}-${k}-label`} class="input input-bordered w-1/2" bind:value={entry.label} placeholder='e.g. A' />
-                    <button type="button" class="btn btn-xs btn-error" on:click={() => theme.legend = theme.legend.filter((_, idx) => idx !== k)}>Remove</button>
+                    <button type="button" class="btn btn-xs btn-error" onclick={() => theme.legend = theme.legend.filter((_, idx) => idx !== k)}>Remove</button>
                   </div>
                 {/each}
-                <button type="button" class="btn btn-xs btn-primary mt-1" on:click={() => theme.legend = [...theme.legend, { color: '', label: '' }]}>+ Add Legend Entry</button>
+                <button type="button" class="btn btn-xs btn-primary mt-1" onclick={() => theme.legend = [...theme.legend, { color: '', label: '' }]}>+ Add Legend Entry</button>
               </div>
             </div>
           {/each}
@@ -614,7 +654,7 @@
           {#each Object.entries(filter.classMapping) as [key, value], idx}
             <div class="flex gap-2 mb-1">
               <input id={`filter-classmapping-${idx}-key`} class="input input-bordered w-1/3" value={key} placeholder='Class value (e.g. 0)'
-                on:input={(e) => {
+                oninput={(e) => {
                   const target = e.target as HTMLInputElement | null;
                   if (!target) return;
                   const newKey = target.value;
@@ -628,21 +668,21 @@
                 }} />
               <input id={`filter-classmapping-${idx}-value`} class="input input-bordered w-2/3" value={value}
                 placeholder='Class label (e.g. Class 0)'
-                on:input={(e) => {
+                oninput={(e) => {
                   const target = e.target as HTMLInputElement | null;
                   if (!target) return;
                   const mapping: Record<string, string> = { ...filter.classMapping };
                   mapping[key] = target.value;
                   filter.classMapping = mapping;
                 }} />
-              <button type="button" class="btn btn-xs btn-error" on:click={() => {
+              <button type="button" class="btn btn-xs btn-error" onclick={() => {
                 const mapping: Record<string, string> = { ...filter.classMapping };
                 delete mapping[key];
                 filter.classMapping = mapping;
               }}>Remove</button>
             </div>
           {/each}
-          <button type="button" class="btn btn-xs btn-primary mt-1" on:click={() => {
+          <button type="button" class="btn btn-xs btn-primary mt-1" onclick={() => {
             let nextKey = '0';
             const keys = Object.keys(filter.classMapping).map(Number).filter(n => !isNaN(n));
             if (keys.length) {
@@ -657,8 +697,8 @@
     {#if type === 'geojson' && activeTab == 4}
       <!-- GeoJSON Tab -->
       <div class="grid grid-cols-4 gap-4 items-center">
-        <label for="geojsonUrl" class="pr-4 text-right font-semibold">GeoJSON URL:</label>
-        <input id="geojsonUrl" class="input input-bordered col-span-3 w-full" bind:value={geojsonUrl} required />
+        <label for="geojsonUrl" class="pr-4 text-right font-semibold">GeoJSON URL <span class="text-error">*</span>:</label>
+        <input id="geojsonUrl" class="input input-bordered col-span-3 w-full" bind:value={geojsonUrl} />
 
         <label for="geojsonClampToGround" class="pr-4 text-right font-semibold">Clamp To Ground:</label>
         <input id="geojsonClampToGround" type="checkbox" class="checkbox checkbox-primary col-span-3" bind:checked={geojsonClampToGround} />
@@ -714,8 +754,8 @@
     {#if type === 'modelanimation' && activeTab == 5}
       <!-- Model Animation Tab -->
       <div class="grid grid-cols-4 gap-4 items-center">
-        <label for="modelUrl" class="pr-4 text-right font-semibold">Model URL:</label>
-        <input id="modelUrl" class="input input-bordered col-span-3 w-full" bind:value={modelUrl} required />
+        <label for="modelUrl" class="pr-4 text-right font-semibold">Model URL <span class="text-error">*</span>:</label>
+        <input id="modelUrl" class="input input-bordered col-span-3 w-full" bind:value={modelUrl} />
 
         <label for="orientationKey" class="pr-4 text-right font-semibold">Orientation Key:</label>
         <input id="orientationKey" class="input input-bordered col-span-3 w-full" bind:value={orientationKey} />
@@ -726,12 +766,12 @@
         <label for="timeKeyDate" class="pr-4 text-right font-semibold">Time Key:</label>
         <div class="col-span-3 grid grid-cols-2 gap-2">
           <div>
-            <label for="timeKeyDate" class="block text-xs font-medium mb-1">Date</label>
-            <input id="timeKeyDate" type="date" class="input input-bordered w-full" bind:value={timeKeyDate} required />
+            <label for="timeKeyDate" class="block text-xs font-medium mb-1">Date <span class="text-error">*</span></label>
+            <input id="timeKeyDate" type="date" class="input input-bordered w-full" bind:value={timeKeyDate} />
           </div>
           <div>
-            <label for="timeKeyTime" class="block text-xs font-medium mb-1">Time</label>
-            <input id="timeKeyTime" type="time" step="1" class="input input-bordered w-full" bind:value={timeKeyTime} required />
+            <label for="timeKeyTime" class="block text-xs font-medium mb-1">Time <span class="text-error">*</span></label>
+            <input id="timeKeyTime" type="time" step="1" class="input input-bordered w-full" bind:value={timeKeyTime} />
           </div>
         </div>
         <div></div>
@@ -742,7 +782,7 @@
     {/if}
 
     <div class="mt-6 flex justify-end gap-2">
-      <button type="button" class="btn btn-ghost" on:click={() => modalRef.close()}>Annuleren</button>
+  <button type="button" class="btn btn-ghost" onclick={() => { modalRef.close(); resetModal(); }}>Annuleren</button>
       <button type="submit" class="btn btn-primary">Aanmaken</button>
     </div>
   </form>

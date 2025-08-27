@@ -3,6 +3,8 @@
   import { updateLayer } from '$lib/api';
   import { createEventDispatcher } from 'svelte';
   import PositionSelector from '$lib/components/PositionSelector.svelte';
+  import MissingRequiredFields from '$lib/components/MissingRequiredFields.svelte';
+  let missingFields: string[] = [];
 
   export let layer: Layer | null = null;
   let modalRef: HTMLDialogElement;
@@ -97,6 +99,10 @@
     }
   }
 
+  function resetModal() {
+    missingFields = [];
+  }
+
   export function showModal(l: Layer) {
     layer = l;
     title = layer.title || '';
@@ -188,12 +194,40 @@
     }
 
     activeTab = 0;
+    resetModal();
     modalRef.showModal();
+  }
+
+  function getMissingRequiredFields(): string[] {
+    const fields: { label: string; value: any }[] = [];
+
+    // Always check Algemeen tab required fields
+    fields.push(
+      { label: 'Title', value: title },
+      { label: 'Type', value: type },
+      { label: 'URL', value: mainUrl }
+    );
+
+    // Type-specific required fields
+    if (type === 'geojson') {
+      fields.push({ label: 'GeoJSON URL', value: geojsonUrl });
+    }
+    if (type === 'modelanimation') {
+      fields.push(
+        { label: 'Model URL', value: modelUrl },
+        { label: 'Date', value: timeKeyDate },
+        { label: 'Time', value: timeKeyTime }
+      );
+    }
+
+    return fields.filter(f => !f.value || (typeof f.value === 'string' && !f.value.trim())).map(f => f.label);
   }
 
   async function handleSubmit(event: Event) {
     event.preventDefault();
     if (!layer) return;
+    missingFields = getMissingRequiredFields();
+    if (missingFields.length > 0) return;
 
     const tabContentMap: Record<string, any> = {
       wms: {
@@ -278,7 +312,8 @@
 
 <dialog bind:this={modalRef} class="modal">
   <form on:submit|preventDefault={handleSubmit} class="modal-box w-full max-w-4xl">
-    <h3 class="mb-4 text-lg font-bold">Laag details bewerken</h3>
+  <h3 class="mb-4 text-lg font-bold">Laag details bewerken</h3>
+  <MissingRequiredFields {missingFields} />
     <div class="tabs tabs-border mb-4" role="tablist">
       <button
         type="button"
@@ -343,19 +378,19 @@
     {#if activeTab === 0}
       <!-- Algemeen Tab -->
       <div class="grid grid-cols-4 gap-4 items-center">
-        <label for="title" class="pr-4 text-right font-semibold">Title:</label>
-        <input id="title" class="input input-bordered col-span-3 w-full" bind:value={title} required />
+        <label for="title" class="pr-4 text-right font-semibold">Title:<span class="text-error">*</span></label>
+        <input id="title" class="input input-bordered col-span-3 w-full" bind:value={title} />
 
-        <label for="type" class="pr-4 text-right font-semibold">Type:</label>
-        <select id="type" class="select select-bordered col-span-3 w-full" bind:value={type} required>
+        <label for="type" class="pr-4 text-right font-semibold">Type:<span class="text-error">*</span></label>
+        <select id="type" class="select select-bordered col-span-3 w-full" bind:value={type} >
           <option value="" disabled selected>Kies een type...</option>
           {#each typeOptions as opt}
             <option value={opt.value}>{opt.label}</option>
           {/each}
         </select>
 
-        <label for="mainUrl" class="pr-4 text-right font-semibold">URL:</label>
-        <input id="mainUrl" class="input input-bordered col-span-3 w-full" bind:value={mainUrl} required />
+        <label for="mainUrl" class="pr-4 text-right font-semibold">URL:<span class="text-error">*</span></label>
+        <input id="mainUrl" class="input input-bordered col-span-3 w-full" bind:value={mainUrl} />
 
         <label for="imageUrl" class="pr-4 text-right font-semibold">Image URL:</label>
         <input id="imageUrl" class="input input-bordered col-span-3 w-full" bind:value={imageUrl} />
@@ -512,7 +547,7 @@
       <!-- GeoJSON Tab -->
       <div class="grid grid-cols-4 gap-4 items-center">
         <label for="geojsonUrl" class="pr-4 text-right font-semibold">GeoJSON URL:</label>
-        <input id="geojsonUrl" class="input input-bordered col-span-3 w-full" bind:value={geojsonUrl} required />
+        <input id="geojsonUrl" class="input input-bordered col-span-3 w-full" bind:value={geojsonUrl} />
 
         <label for="geojsonClampToGround" class="pr-4 text-right font-semibold">Clamp To Ground:</label>
         <input id="geojsonClampToGround" type="checkbox" class="checkbox checkbox-primary col-span-3" bind:checked={geojsonClampToGround} />
@@ -568,8 +603,8 @@
     {#if type === 'modelanimation' && activeTab == 5}
       <!-- Model Animation Tab -->
       <div class="grid grid-cols-4 gap-4 items-center">
-        <label for="modelUrl" class="pr-4 text-right font-semibold">Model URL:</label>
-        <input id="modelUrl" class="input input-bordered col-span-3 w-full" bind:value={modelUrl} required />
+        <label for="modelUrl" class="pr-4 text-right font-semibold">Model URL:<span class="text-error">*</span></label>
+        <input id="modelUrl" class="input input-bordered col-span-3 w-full" bind:value={modelUrl} />
 
         <label for="orientationKey" class="pr-4 text-right font-semibold">Orientation Key:</label>
         <input id="orientationKey" class="input input-bordered col-span-3 w-full" bind:value={orientationKey} />
@@ -580,12 +615,12 @@
         <label for="timeKeyDate" class="pr-4 text-right font-semibold">Time Key:</label>
         <div class="col-span-3 grid grid-cols-2 gap-2">
           <div>
-            <label for="timeKeyDate" class="block text-xs font-medium mb-1">Date</label>
-            <input id="timeKeyDate" type="date" class="input input-bordered w-full" bind:value={timeKeyDate} required />
+            <label for="timeKeyDate" class="block text-xs font-medium mb-1">Date<span class="text-error">*</span></label>
+            <input id="timeKeyDate" type="date" class="input input-bordered w-full" bind:value={timeKeyDate} />
           </div>
           <div>
-            <label for="timeKeyTime" class="block text-xs font-medium mb-1">Time</label>
-            <input id="timeKeyTime" type="time" step="1" class="input input-bordered w-full" bind:value={timeKeyTime} required />
+            <label for="timeKeyTime" class="block text-xs font-medium mb-1">Time<span class="text-error">*</span></label>
+            <input id="timeKeyTime" type="time" step="1" class="input input-bordered w-full" bind:value={timeKeyTime} />
           </div>
         </div>
         <div></div>
@@ -596,7 +631,7 @@
     {/if}
 
     <div class="mt-6 flex justify-end gap-2">
-      <button type="button" class="btn btn-ghost" on:click={() => modalRef.close()}>
+      <button type="button" class="btn btn-ghost" on:click={() => { modalRef.close(); resetModal(); }}>
         Annuleren
       </button>
       <button type="submit" class="btn btn-primary">Opslaan</button>

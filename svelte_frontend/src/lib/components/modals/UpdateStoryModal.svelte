@@ -5,6 +5,7 @@
   import type { Layer } from '$lib/types/layer';
   import AlertBanner from '$lib/components/AlertBanner.svelte';
   import PositionSelector from '$lib/components/PositionSelector.svelte';
+  import MissingRequiredFields from '$lib/components/MissingRequiredFields.svelte';
 
   export let story: Story | null = null;
   let modalRef: HTMLDialogElement;
@@ -20,6 +21,21 @@
     statisticsApi: ''
   };
   let baseLayerId = '';
+  let missingFields: string[] = [];
+  function resetModal() {
+    name = '';
+    description = '';
+    width = '600px';
+    force2DMode = false;
+    requestPolygonArea = { enabled: false, statisticsApi: '' };
+    baseLayerId = '';
+    chapters = [createNewChapter(0)];
+    activeChapterIndex = 0;
+    activeStepIndex = 0;
+    missingFields = [];
+    errorBanner?.hide?.();
+    successBanner?.hide?.();
+  }
 
   // Available options
   let availableTerrainProviders: TerrainProvider[] = [];
@@ -201,11 +217,19 @@
     chapters = [...chapters];
   }
 
+  function getMissingRequiredFields(): string[] {
+    const fields: { label: string; value: any }[] = [
+      { label: 'Naam', value: name }
+    ];
+    return fields.filter(f => !f.value || (typeof f.value === 'string' && !f.value.trim())).map(f => f.label);
+  }
+
   async function handleSubmit(event: Event) {
     event.preventDefault();
     if (!story) return;
 
-    if (!name.trim()) {
+    missingFields = getMissingRequiredFields();
+    if (missingFields.length > 0) {
       errorBanner?.show();
       return;
     }
@@ -246,7 +270,8 @@
     const payload = {
       name,
       description,
-      content
+      content,
+      last_updated: new Date().toISOString()
     };
 
     try {
@@ -282,12 +307,15 @@
     onsubmit={handleSubmit}
     class="modal-box w-full max-w-6xl grid grid-cols-12 gap-4"
   >
-    <h3 class="col-span-12 mb-4 text-lg font-bold">Story bewerken</h3>
+  <div class="form-control mb2 col-span-12">
+    <h3 class="mb-4 text-lg font-bold">Story bewerken</h3>
+    <MissingRequiredFields {missingFields} />
+  </div>
 
     <!-- Basic Story Information -->
     <div class="col-span-12 grid grid-cols-4 gap-4 items-center">
-      <label for="name" class="text-right font-semibold">Naam:</label>
-      <input id="name" class="input input-bordered col-span-3 w-full" bind:value={name} required />
+      <label for="name" class="text-right font-semibold">Naam <span class="text-error">*</span>:</label>
+      <input id="name" class="input input-bordered col-span-3 w-full" bind:value={name} />
 
       <label for="description" class="text-right font-semibold">Beschrijving:</label>
       <input id="description" class="input input-bordered col-span-3 w-full" bind:value={description} />
@@ -298,10 +326,10 @@
       <label for="force-2d-mode" class="text-right font-semibold">Force 2D Mode:</label>
       <input id="force-2d-mode" type="checkbox" class="checkbox checkbox-primary" bind:checked={force2DMode} />
 
-    <label for="request-polygon-area-enabled" class="text-right font-semibold">Request Polygon Area:</label>
-    <input id="request-polygon-area-enabled" type="checkbox" class="checkbox checkbox-primary" bind:checked={requestPolygonArea.enabled} />
-    <label for="request-polygon-area-api" class="text-right font-semibold">Statistics API:</label>
-    <input id="request-polygon-area-api" class="input input-bordered col-span-3 w-full" bind:value={requestPolygonArea.statisticsApi} placeholder="https://..." />
+      <label for="request-polygon-area-enabled" class="text-right font-semibold">Request Polygon Area:</label>
+      <input id="request-polygon-area-enabled" type="checkbox" class="checkbox checkbox-primary" bind:checked={requestPolygonArea.enabled} />
+      <label for="request-polygon-area-api" class="text-right font-semibold">Statistics API:</label>
+      <input id="request-polygon-area-api" class="input input-bordered col-span-3 w-full" bind:value={requestPolygonArea.statisticsApi} placeholder="https://..." />
 
       <label for="base-layer" class="text-right font-semibold">Base Layer:</label>
       <select id="base-layer" class="select select-bordered col-span-3" bind:value={baseLayerId}>
@@ -542,7 +570,7 @@
     </div>
 
     <div class="col-span-12 mt-6 flex justify-end gap-2">
-      <button type="button" class="btn btn-ghost" onclick={() => modalRef.close()}>Annuleren</button>
+      <button type="button" class="btn btn-ghost" onclick={() => { modalRef.close(); resetModal(); }}>Annuleren</button>
       <button type="submit" class="btn btn-primary">Opslaan</button>
     </div>
   </form>

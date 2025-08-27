@@ -7,7 +7,7 @@ class Tool(Base):
     __tablename__ = "tool"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
+    name = Column(String, unique=True, nullable=False)
     content = Column(JSON, nullable=True)
     last_updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
 

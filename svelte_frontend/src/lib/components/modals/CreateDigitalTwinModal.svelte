@@ -7,8 +7,11 @@
   import type { LayerBulkOperation } from '$lib/types/digitalTwinAssociation';
   import type { Layer } from '$lib/types/layer';
   import AlertBanner from '$lib/components/AlertBanner.svelte';
+  import MissingRequiredFields from '$lib/components/MissingRequiredFields.svelte';
 
   const dispatch = createEventDispatcher<{ created: DigitalTwin }>();
+  
+  let missingFields: string[] = [];
 
   let modalRef: HTMLDialogElement | null = null;
   let errorBanner: InstanceType<typeof AlertBanner> | null = null;
@@ -114,10 +117,15 @@
       }
   };
 
-  export function showModal() {
+  function resetModal() {
     resetForm();
+    missingFields = [];
     errorBanner?.hide?.();
     successBanner?.hide?.();
+  }
+
+  export function showModal() {
+    resetModal();
     modalRef?.showModal();
   }
 
@@ -129,7 +137,19 @@
     isPrivate = false;
   }
 
-  async function handleSubmit() {
+  function getMissingRequiredFields(): string[] {
+    const requiredFields = [
+      { label: 'Naam', value: name },
+      { label: 'Titel', value: title },
+      { label: 'Eigenaar', value: owner }
+    ];
+    return requiredFields.filter(field => !field.value || (typeof field.value === 'string' && !field.value.trim())).map(field => field.label);
+  }
+
+  async function handleSubmit(event: Event) {
+    event.preventDefault();
+    missingFields = getMissingRequiredFields();
+    if (missingFields.length > 0) return;
     try {
       const newTwin = await createDigitalTwin({
         name,
@@ -209,21 +229,37 @@
     message={errorMessage}
   />
 
-  <form on:submit|preventDefault={handleSubmit} class="modal-box space-y-4">
-    <h3 class="text-lg font-bold">Digital Twin Aanmaken</h3>
+  <form onsubmit={handleSubmit} class="modal-box space-y-4">
+    <div class="form-control mb2">
+      <h3 class="text-lg font-bold">Digital Twin Aanmaken</h3>
+      <MissingRequiredFields {missingFields} />
+    </div>
 
-    <input class="input input-bordered w-full" placeholder="Naam" bind:value={name} required />
-    <input class="input input-bordered w-full" placeholder="Titel" bind:value={title} required />
-    <input class="input input-bordered w-full" placeholder="Subtitel" bind:value={subtitle} />
-    <input class="input input-bordered w-full" placeholder="Eigenaar" bind:value={owner} required />
-
-    <label class="flex items-center gap-2">
-      <input type="checkbox" class="checkbox" bind:checked={isPrivate} />
-      Privé
-    </label>
+    <div class="form-control mb-2">
+      <label for="name" class="label font-semibold">Naam <span class="text-error">*</span></label>
+      <input id="name" class="input input-bordered w-full" placeholder="Naam" bind:value={name} />
+    </div>
+    <div class="form-control mb-2">
+      <label for="title" class="label font-semibold">Titel <span class="text-error">*</span></label>
+      <input id="title" class="input input-bordered w-full" placeholder="Titel" bind:value={title} />
+    </div>
+    <div class="form-control mb-2">
+      <label for="subtitle" class="label font-semibold">Subtitel</label>
+      <input id="subtitle" class="input input-bordered w-full" placeholder="Subtitel" bind:value={subtitle} />
+    </div>
+    <div class="form-control mb-2">
+      <label for="owner" class="label font-semibold">Eigenaar <span class="text-error">*</span></label>
+      <input id="owner" class="input input-bordered w-full" placeholder="Eigenaar" bind:value={owner} />
+    </div>
+    <div class="form-control mb-2">
+      <label class="flex items-center gap-2">
+        <input type="checkbox" class="checkbox" bind:checked={isPrivate} />
+        Privé
+      </label>
+    </div>
 
     <div class="flex justify-end gap-2 pt-4">
-      <button type="button" class="btn btn-ghost" on:click={() => modalRef?.close()}>Annuleren</button>
+      <button type="button" class="btn btn-ghost" onclick={() => { modalRef?.close(); resetModal(); }}>Annuleren</button>
       <button type="submit" class="btn btn-primary">Aanmaken</button>
     </div>
   </form>

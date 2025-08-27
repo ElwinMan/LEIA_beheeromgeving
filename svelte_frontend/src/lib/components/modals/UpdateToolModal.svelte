@@ -2,63 +2,127 @@
   import type { Tool } from '$lib/types/tool';
   import { createEventDispatcher } from 'svelte';
   import { updateTool } from '$lib/api';
+  import AlertBanner from '$lib/components/AlertBanner.svelte';
+  import MissingRequiredFields from '$lib/components/MissingRequiredFields.svelte';
 
   export let tool: Tool | null = null;
   let modalRef: HTMLDialogElement;
 
-  let name = '';
-  let content = '';
+  let name: string = '';
+  let content: string | null = null;
+  let missingFields: string[] = [];
+  let errorBanner: InstanceType<typeof AlertBanner> | null = null;
+  let errorMessage: string = "Content moet geldig JSON zijn!";
+
+  const jsonPlaceholder = `{
+  "variable": "value",
+  "variable2": "value2",
+  "number1": 1,
+  "array": [
+    {"variableInArray": "value3"}
+  ]
+}`;
 
   const dispatch = createEventDispatcher();
+
+  function resetModal() {
+    missingFields = [];
+    errorBanner?.hide?.();
+  }
 
   export function showModal(t: Tool) {
     tool = t;
     name = t.name || '';
-    content = t.content ? JSON.stringify(t.content, null, 2) : '';
+    content = t.content ? JSON.stringify(t.content, null, 2) : null;
+    errorMessage = "Content moet geldig JSON zijn!";
+    resetModal();
     modalRef.showModal();
+  }
+
+  function getMissingRequiredFields(): string[] {
+    const fields: { label: string; value: any }[] = [
+      { label: 'Naam', value: name }
+    ];
+    return fields.filter(f => !f.value || (typeof f.value === 'string' && !f.value.trim())).map(f => f.label);
   }
 
   async function handleSubmit(event: Event) {
     event.preventDefault();
-    if (!tool) return;
+    errorMessage = "Content moet geldig JSON zijn!";
+    missingFields = getMissingRequiredFields();
+    if (missingFields.length > 0) return;
 
-    let payload: any = { name };
-    if (content && content.trim() !== '') {
+    if (!tool) return;
+    let payload: any = {
+      name,
+      last_updated: new Date().toISOString()
+    };
+    if (typeof content === 'string' && content.trim() !== '') {
       try {
         payload.content = JSON.parse(content);
+        errorBanner?.hide?.();
       } catch (e) {
-        alert('Content moet geldig JSON zijn!');
+        errorBanner?.show();
         return;
       }
+    } else {
+      errorBanner?.hide?.();
     }
 
     try {
       const updated = await updateTool(String(tool.id), payload);
       dispatch('updated', updated);
       modalRef.close();
-    } catch (error) {
+    } catch (error: any) {
+      if (
+        error?.status === 409 ||
+        (error?.message && (
+          error.message.includes('duplicate key')
+        ))
+      ) {
+        errorMessage = "Deze naam is al in gebruik. Kies een andere naam.";
+      } else {
+        errorMessage = "Content moet geldig JSON zijn!";
+      }
+      errorBanner?.show();
       console.error('Update failed', error);
     }
   }
 </script>
 
+
 <dialog bind:this={modalRef} class="modal">
-  <form on:submit|preventDefault={handleSubmit} class="modal-box grid w-full max-w-4xl grid-cols-4 items-center gap-4">
-    <h3 class="col-span-4 mb-4 text-lg font-bold">Tool bewerken</h3>
+  <AlertBanner
+    bind:this={errorBanner}
+    type="error"
+    message={errorMessage}
+  />
+  <form on:submit|preventDefault={handleSubmit} class="modal-box w-full max-w-4xl space-y-4">
+    <h3 class="mb-4 text-lg font-bold">Tool bewerken</h3>
 
-    <label for="name" class="pr-4 text-right font-semibold">Naam:</label>
-    <input id="name" type="text" class="input input-bordered col-span-3 w-full" bind:value={name} required />
+    <div class="form-control">
+      <MissingRequiredFields {missingFields} />
+    </div>
 
-    <label for="content" class="pr-4 text-right font-semibold">Content:</label>
-    <textarea
-      id="content"
-      class="textarea textarea-bordered col-span-3 w-full min-h-[12rem]"
-      bind:value={content}
-      rows="10"
-    ></textarea>
+    <div class="form-control">
+      <label for="name" class="label font-semibold">Naam <span class="text-error">*</span></label>
+      <input id="name" class="input input-bordered w-full" bind:value={name} />
+    </div>
 
-    <div class="col-span-4 mt-6 flex justify-end gap-2">
-      <button type="button" class="btn btn-ghost" on:click={() => modalRef.close()}>Annuleren</button>
+    <div class="form-control">
+      <label for="content" class="label font-semibold">Content:</label>
+      <span class="text-xs text-gray-500 ml-2">(Moet JSON formaat zijn)</span>
+      <textarea
+        id="content"
+        class="textarea textarea-bordered w-full min-h-[12rem]"
+        bind:value={content}
+        rows="10"
+        placeholder={jsonPlaceholder}
+      ></textarea>
+    </div>
+
+    <div class="flex justify-end gap-2 pt-4">
+      <button type="button" class="btn btn-ghost" on:click={() => { modalRef.close(); resetModal(); }}>Annuleren</button>
       <button type="submit" class="btn btn-primary">Opslaan</button>
     </div>
   </form>

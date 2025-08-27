@@ -18,21 +18,26 @@ export async function fetchDigitalTwin(id: string, fetchFn?: typeof fetch) {
 }
 
 export async function updateDigitalTwin(digitalTwinId: string, data: Partial<DigitalTwin>) {
-  try {
-    const res = await fetch(`${API_BASE}/digital-twins/${digitalTwinId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(data)
-    });
-
-    if (!res.ok) throw new Error(`Failed to update digital twin with ID ${digitalTwinId}`);
-    return await res.json();
-  } catch (error) {
-    console.error('Error updating digital twin:', error);
+  const response = await fetch(`${API_BASE}/digital-twins/${digitalTwinId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  });
+  if (!response.ok) {
+    let errorText = '';
+    try {
+      const errorJson = await response.json();
+      errorText = JSON.stringify(errorJson);
+    } catch {
+      errorText = await response.text();
+    }
+    const error: any = new Error(errorText || `Failed to update digital twin with ID ${digitalTwinId}`);
+    error.status = response.status;
     throw error;
   }
+  return await response.json();
 }
 
 export async function fetchDigitalTwinViewer(id: string): Promise<DigitalTwinViewerResponse> {
@@ -245,23 +250,45 @@ export async function fetchTool(id: string, fetchFn?: typeof fetch) {
 }
 
 export async function createTool(data: any) {
-  const res = await fetch(`${API_BASE}/tools`, {
+  const response = await fetch(`${API_BASE}/tools`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
-  if (!res.ok) throw new Error('Failed to create tool');
-  return await res.json();
+  if (!response.ok) {
+    let errorText = '';
+    try {
+      const errorJson = await response.json();
+      errorText = JSON.stringify(errorJson);
+    } catch {
+      errorText = await response.text();
+    }
+    const error: any = new Error(errorText || 'Failed to create tool');
+    error.status = response.status;
+    throw error;
+  }
+  return await response.json();
 }
 
 export async function updateTool(id: string, data: any) {
-  const res = await fetch(`${API_BASE}/tools/${id}`, {
+  const response = await fetch(`${API_BASE}/tools/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
-  if (!res.ok) throw new Error(`Failed to update tool with ID ${id}`);
-  return await res.json();
+  if (!response.ok) {
+    let errorText = '';
+    try {
+      const errorJson = await response.json();
+      errorText = JSON.stringify(errorJson);
+    } catch {
+      errorText = await response.text();
+    }
+    const error: any = new Error(errorText || `Failed to update tool with ID ${id}`);
+    error.status = response.status;
+    throw error;
+  }
+  return await response.json();
 }
 
 export async function deleteTool(id: string) {

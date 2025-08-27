@@ -10,6 +10,7 @@
   let errorBanner: InstanceType<typeof AlertBanner> | null = null;
   let requiredBanner: InstanceType<typeof AlertBanner> | null = null;
   let requiredFieldMessage: string = '';
+  let errorMessage: string = 'Fout bij het opslaan!';
 
   let digitalTwin: DigitalTwin | null = null;
   let isReady = false;
@@ -71,8 +72,19 @@
         private: isPrivate
       });
       successBanner?.show();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      // Check for duplicate name error (status 409 or message contains known phrases)
+      if (
+        err?.status === 409 ||
+        (err?.message && (
+          err.message.includes('duplicate key')
+        ))
+      ) {
+        errorMessage = 'Deze naam is al in gebruik. Kies een andere naam.';
+      } else {
+        errorMessage = 'Fout bij het opslaan!';
+      }
       errorBanner?.show();
     }
   }
@@ -84,18 +96,17 @@
   type="success"
   message="Digital Twin omschrijving bijgewerkt!"
 />
-<AlertBanner bind:this={errorBanner} type="error" message="Fout bij het opslaan!" />
+<AlertBanner bind:this={errorBanner} type="error" message={errorMessage} />
 <AlertBanner bind:this={requiredBanner} type="error" message={requiredFieldMessage} />
 
 {#if isReady}
-  <form on:submit={handleSubmit} class="space-y-4">
+  <form onsubmit={handleSubmit} class="space-y-4">
     <div class="flex flex-col">
-      <label for="title" class="mb-1 font-semibold">Titel:</label>
+      <label for="title" class="mb-1 font-semibold">Titel <span class="text-error">*</span>:</label>
       <input
         id="title"
-        class="input input-bordered"
+        class="input input-bordered { !title.trim() ? 'border-error' : '' }"
         bind:value={title}
-        class:error={!title.trim()}
       />
       {#if !title.trim()}
         <span class="text-error mt-1 text-sm">Titel is verplicht</span>
@@ -104,9 +115,9 @@
 
     <div class="flex flex-col">
       <label for="name" class="mb-1 font-semibold">
-        Naam <span class="opacity-50">(bestandsnaam)</span>:
+        Naam <span class="opacity-50">(bestandsnaam)</span> <span class="text-error">*</span>:
       </label>
-      <input id="name" class="input input-bordered" bind:value={name} class:error={!name.trim()} />
+      <input id="name" class="input input-bordered { !name.trim() ? 'border-error' : '' }" bind:value={name} />
       {#if !name.trim()}
         <span class="text-error mt-1 text-sm">Naam is verplicht</span>
       {/if}

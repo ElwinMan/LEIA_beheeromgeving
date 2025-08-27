@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { createProject, fetchLayers } from '$lib/api';
+  import MissingRequiredFields from '$lib/components/MissingRequiredFields.svelte';
   import type { Project } from '$lib/types/tool';
   import type { Layer } from '$lib/types/layer';
   import AlertBanner from '$lib/components/AlertBanner.svelte';
@@ -21,6 +22,7 @@
   let heading = 0;
   let pitch = 0;
   let duration = 0;
+  let missingFields: string[] = [];
 
   let errorBanner: InstanceType<typeof AlertBanner> | null = null;
   let successBanner: InstanceType<typeof AlertBanner> | null = null;
@@ -34,7 +36,7 @@
     }
   });
 
-  export function showModal() {
+  function resetModal() {
     name = '';
     description = '';
     polygonData = [];
@@ -45,8 +47,13 @@
     heading = 0;
     pitch = 0;
     duration = 0;
+    missingFields = [];
     errorBanner?.hide?.();
     successBanner?.hide?.();
+  }
+
+  export function showModal() {
+    resetModal();
     modalRef.showModal();
   }
 
@@ -58,8 +65,23 @@
     }
   }
 
+  function getMissingRequiredFields(): string[] {
+    const requiredFields = [
+      { label: 'Naam', value: name },
+      { label: 'X-coördinaat', value: x },
+      { label: 'Y-coördinaat', value: y },
+      { label: 'Z-coördinaat', value: z },
+      { label: 'Heading', value: heading },
+      { label: 'Pitch', value: pitch },
+      { label: 'Duur', value: duration }
+    ];
+    return requiredFields.filter(field => field.value === '' || field.value === null || (typeof field.value === 'string' && !field.value.trim())).map(field => field.label);
+  }
+
   async function handleSubmit(event: Event) {
     event.preventDefault();
+    missingFields = getMissingRequiredFields();
+    if (missingFields.length > 0) return;
 
     const content = {
       polygon: polygonData.length > 0 ? polygonData : null,
@@ -77,7 +99,8 @@
     const payload = {
       name,
       description,
-      content
+      content,
+      last_updated: new Date().toISOString()
     };
 
     try {
@@ -137,13 +160,16 @@
   />
 
   <form
-    on:submit|preventDefault={handleSubmit}
+    onsubmit={handleSubmit}
     class="modal-box grid w-full max-w-4xl max-h-[90vh] grid-cols-4 items-center gap-4 overflow-y-auto"
   >
-    <h3 class="col-span-4 mb-4 text-lg font-bold">Nieuw Project Aanmaken</h3>
+    <div class="form-control mb2 col-span-4">
+      <h3 class="text-lg font-bold">Nieuw Project Aanmaken</h3>
+      <MissingRequiredFields {missingFields} />
+    </div>
 
-    <label for="name" class="pr-4 text-right font-semibold">Naam:</label>
-    <input id="name" class="input input-bordered col-span-3 w-full" bind:value={name} required />
+    <label for="name" class="pr-4 text-right font-semibold">Naam <span class="text-error">*</span>:</label>
+    <input id="name" class="input input-bordered col-span-3 w-full" bind:value={name} />
 
     <label for="description" class="pr-4 text-right font-semibold">Beschrijving:</label>
     <input id="description" class="input input-bordered col-span-3 w-full" bind:value={description} />
@@ -152,19 +178,19 @@
     <h4 class="col-span-4 mt-4 font-semibold">Camera Positie</h4>
 
     <!-- X, Y, Z coordinates row -->
-    <label for="x" class="pr-4 text-right font-semibold">Coördinaten (X, Y, Z):</label>
+    <label for="x" class="pr-4 text-right font-semibold">Coördinaten (X, Y, Z) <span class="text-error">*</span>:</label>
     <div class="col-span-3 flex gap-2">
-      <input id="x" type="number" step="any" class="input input-bordered w-full" bind:value={x} required placeholder="X-coördinaat" />
-      <input id="y" type="number" step="any" class="input input-bordered w-full" bind:value={y} required placeholder="Y-coördinaat" />
-      <input id="z" type="number" step="any" class="input input-bordered w-full" bind:value={z} required placeholder="Z-coördinaat" />
+      <input id="x" type="number" step="any" class="input input-bordered w-full" bind:value={x} placeholder="X-coördinaat" />
+      <input id="y" type="number" step="any" class="input input-bordered w-full" bind:value={y} placeholder="Y-coördinaat" />
+      <input id="z" type="number" step="any" class="input input-bordered w-full" bind:value={z} placeholder="Z-coördinaat" />
     </div>
 
     <!-- Heading, Pitch, Duration row -->
-    <label for="heading" class="pr-4 text-right font-semibold">Oriëntatie & Duur:</label>
+    <label for="heading" class="pr-4 text-right font-semibold">Oriëntatie & Duur <span class="text-error">*</span>:</label>
     <div class="col-span-3 flex gap-2">
-      <input id="heading" type="number" step="any" class="input input-bordered w-full" bind:value={heading} required placeholder="Heading (graden)" />
-      <input id="pitch" type="number" step="any" class="input input-bordered w-full" bind:value={pitch} required placeholder="Pitch (graden)" />
-      <input id="duration" type="number" step="any" class="input input-bordered w-full" bind:value={duration} required placeholder="Duur (seconden)" />
+      <input id="heading" type="number" step="any" class="input input-bordered w-full" bind:value={heading} placeholder="Heading (graden)" />
+      <input id="pitch" type="number" step="any" class="input input-bordered w-full" bind:value={pitch} placeholder="Pitch (graden)" />
+      <input id="duration" type="number" step="any" class="input input-bordered w-full" bind:value={duration} placeholder="Duur (seconden)" />
     </div>
 
     <!-- Camera Position Selection -->
@@ -200,7 +226,7 @@
           class="textarea textarea-bordered w-full h-20 text-xs font-mono"
           placeholder="[[longitude, latitude], [longitude, latitude], ...]"
           value={JSON.stringify(polygonData)}
-          on:input={(e) => {
+          oninput={(e) => {
             try {
               const parsed = JSON.parse(e.currentTarget.value);
               if (Array.isArray(parsed)) {
@@ -234,7 +260,7 @@
             type="checkbox" 
             class="checkbox checkbox-primary"
             checked={selectedLayers.includes(layer.title)}
-            on:change={(e) => handleLayerChange(layer.title, e.currentTarget.checked)}
+            onchange={(e) => handleLayerChange(layer.title, e.currentTarget.checked)}
           />
           <span class="text-sm">{layer.title}</span>
         </label>
@@ -242,7 +268,7 @@
     </div>
 
     <div class="col-span-4 mt-6 flex justify-end gap-2">
-      <button type="button" class="btn btn-ghost" on:click={() => modalRef.close()}>Annuleren</button>
+      <button type="button" class="btn btn-ghost" onclick={() => { modalRef.close(); resetModal(); }}>Annuleren</button>
       <button type="submit" class="btn btn-primary">Aanmaken</button>
     </div>
   </form>

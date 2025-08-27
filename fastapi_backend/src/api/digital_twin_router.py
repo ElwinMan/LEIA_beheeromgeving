@@ -87,7 +87,16 @@ def update_digital_twin(digital_twin_id: int, data: DigitalTwinUpdate, db: Sessi
     db_twin = service.get_digital_twin(digital_twin_id, db)
     if not db_twin:
         raise HTTPException(status_code=404, detail="Digital twin not found")
-    return service.update_digital_twin(db_twin, data, db)
+    try:
+        return service.update_digital_twin(db_twin, data, db)
+    except IntegrityError as e:
+        # Check for unique constraint violation
+        if 'unique constraint' in str(e).lower() or 'duplicate key' in str(e).lower():
+            raise HTTPException(
+                status_code=409,
+                detail="Deze naam is al in gebruik. Kies een andere naam."
+            )
+        raise
 
 @router.delete("/{digital_twin_id}", status_code=204)
 def delete_digital_twin(digital_twin_id: int, db: Session = Depends(get_db)):
