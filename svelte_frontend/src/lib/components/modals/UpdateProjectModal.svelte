@@ -16,12 +16,15 @@
   let description = '';
   let polygonData: number[][] = [];
   let selectedLayers: string[] = [];
-  let x = 0;
-  let y = 0;
-  let z = 0;
-  let heading = 0;
-  let pitch = 0;
-  let duration = 0;
+  let layerCatalogSearchTerm = '';
+  let startPosition = {
+    x: 0,
+    y: 0,
+    z: 0,
+    heading: 0,
+    pitch: 0,
+    duration: 0
+  };
   let missingFields: string[] = [];
 
   let errorBanner: InstanceType<typeof AlertBanner> | null = null;
@@ -43,12 +46,14 @@
     description = '';
     polygonData = [];
     selectedLayers = [];
-    x = 0;
-    y = 0;
-    z = 0;
-    heading = 0;
-    pitch = 0;
-    duration = 0;
+    startPosition = {
+      x: 0,
+      y: 0,
+      z: 0,
+      heading: 0,
+      pitch: 0,
+      duration: 0
+    };
     missingFields = [];
     errorBanner?.hide?.();
     successBanner?.hide?.();
@@ -63,19 +68,35 @@
       polygonData = p.content.polygon || [];
       selectedLayers = p.content.layers || [];
       if (p.content.cameraPosition) {
-        x = p.content.cameraPosition.x || 0;
-        y = p.content.cameraPosition.y || 0;
-        z = p.content.cameraPosition.z || 0;
-        heading = p.content.cameraPosition.heading || 0;
-        pitch = p.content.cameraPosition.pitch || 0;
-        duration = p.content.cameraPosition.duration || 0;
+        startPosition = {
+          x: p.content.cameraPosition.x || 0,
+          y: p.content.cameraPosition.y || 0,
+          z: p.content.cameraPosition.z || 0,
+          heading: p.content.cameraPosition.heading || 0,
+          pitch: p.content.cameraPosition.pitch || 0,
+          duration: p.content.cameraPosition.duration || 0
+        };
       } else {
-        x = y = z = heading = pitch = duration = 0;
+        startPosition = {
+          x: 0,
+          y: 0,
+          z: 0,
+          heading: 0,
+          pitch: 0,
+          duration: 0
+        };
       }
     } else {
       polygonData = [];
       selectedLayers = [];
-      x = y = z = heading = pitch = duration = 0;
+      startPosition = {
+        x: 0,
+        y: 0,
+        z: 0,
+        heading: 0,
+        pitch: 0,
+        duration: 0
+      };
     }
     missingFields = [];
     errorBanner?.hide?.();
@@ -85,14 +106,14 @@
   function getMissingRequiredFields(): string[] {
     const requiredFields = [
       { label: 'Naam', value: name },
-      { label: 'X-coördinaat', value: x },
-      { label: 'Y-coördinaat', value: y },
-      { label: 'Z-coördinaat', value: z },
-      { label: 'Heading', value: heading },
-      { label: 'Pitch', value: pitch },
-      { label: 'Duur', value: duration }
+      { label: 'X-coördinaat', value: startPosition.x },
+      { label: 'Y-coördinaat', value: startPosition.y },
+      { label: 'Z-coördinaat', value: startPosition.z },
+      { label: 'Heading', value: startPosition.heading },
+      { label: 'Pitch', value: startPosition.pitch },
+      { label: 'Duur', value: startPosition.duration }
     ];
-    return requiredFields.filter(field => field.value === '' || field.value === null || (typeof field.value === 'string' && !field.value.trim())).map(field => field.label);
+    return requiredFields.filter(field => field.value === '' || field.value === null || (typeof field.value === 'string' && !field.value.toString().trim())).map(field => field.label);
   }
 
   function handleLayerChange(layerTitle: string, checked: boolean) {
@@ -104,12 +125,14 @@
   }
 
   function handlePositionUpdate(event: CustomEvent) {
-    x = event.detail.x;
-    y = event.detail.y;
-    z = event.detail.z;
-    heading = event.detail.heading;
-    pitch = event.detail.pitch;
-    duration = event.detail.duration;
+    startPosition = {
+      x: event.detail.x ?? 0,
+      y: event.detail.y ?? 0,
+      z: event.detail.z ?? 0,
+      heading: event.detail.heading ?? 0,
+      pitch: event.detail.pitch ?? 0,
+      duration: event.detail.duration ?? 0
+    };
   }
 
   function handlePolygonUpdate(event: CustomEvent) {
@@ -118,16 +141,15 @@
 
   function handleCoordinatesSelected(event: CustomEvent) {
     const data = event.detail;
-    
-    // Update camera coordinates
-    x = data.x || 0;
-    y = data.y || 0;
-    z = data.z || 0;
-    heading = data.heading || 0;
-    pitch = data.pitch || 0;
-    duration = data.duration || 0;
-    
-    // Update polygon if provided (from PolygonDrawing component)
+    startPosition = {
+      x: data.x ?? 0,
+      y: data.y ?? 0,
+      z: data.z ?? 0,
+      heading: data.heading ?? 0,
+      pitch: data.pitch ?? 0,
+      duration: data.duration ?? 0
+    };
+    // Update polygon if provided (from PositionSelector component)
     if (data.polygon) {
       polygonData = [...data.polygon];
     }
@@ -155,14 +177,7 @@
     const content = {
       polygon: polygonData,
       layers: selectedLayers,
-      cameraPosition: {
-        x,
-        y,
-        z,
-        heading,
-        pitch,
-        duration
-      }
+      cameraPosition: { ...startPosition }
     };
 
     const payload = {
@@ -199,7 +214,7 @@
   />
 
   <form 
-    on:submit|preventDefault={handleSubmit} 
+    onsubmit={handleSubmit} 
     class="modal-box grid w-full max-w-4xl max-h-[90vh] grid-cols-4 items-center gap-4 overflow-y-auto"
   >
     <div class="form-control mb2 col-span-4">
@@ -216,29 +231,47 @@
     <!-- Camera Position fields -->
     <h4 class="col-span-4 mt-4 font-semibold">Camera Positie</h4>
 
-    <!-- X, Y, Z coordinates row -->
-    <label for="x" class="pr-4 text-right font-semibold">Coördinaten (X, Y, Z) <span class="text-error">*</span>:</label>
+    <!-- X, Y, Z coordinates row with labels above each input -->
+    <span class="pr-4 text-right font-semibold block mb-1">Coördinaten <span class="text-error">*</span>:</span>
     <div class="col-span-3 flex gap-2">
-      <input id="x" type="number" step="any" class="input input-bordered w-full" bind:value={x} placeholder="X-coördinaat" />
-      <input id="y" type="number" step="any" class="input input-bordered w-full" bind:value={y} placeholder="Y-coördinaat" />
-      <input id="z" type="number" step="any" class="input input-bordered w-full" bind:value={z} placeholder="Z-coördinaat" />
+      <div class="flex flex-col w-full">
+        <label for="x" class="block text-xs font-medium mb-1">X</label>
+        <input id="x" type="number" step="any" class="input input-bordered w-full" bind:value={startPosition.x} placeholder="X-coördinaat" />
+      </div>
+      <div class="flex flex-col w-full">
+        <label for="y" class="block text-xs font-medium mb-1">Y</label>
+        <input id="y" type="number" step="any" class="input input-bordered w-full" bind:value={startPosition.y} placeholder="Y-coördinaat" />
+      </div>
+      <div class="flex flex-col w-full">
+        <label for="z" class="block text-xs font-medium mb-1">Z</label>
+        <input id="z" type="number" step="any" class="input input-bordered w-full" bind:value={startPosition.z} placeholder="Z-coördinaat" />
+      </div>
     </div>
 
-    <!-- Heading, Pitch, Duration row -->
-    <label for="heading" class="pr-4 text-right font-semibold">Oriëntatie & Duur <span class="text-error">*</span>:</label>
+    <!-- Heading, Pitch, Duration row with labels above each input -->
+    <span class="pr-4 text-right font-semibold">Oriëntatie & Duur <span class="text-error">*</span>:</span>
     <div class="col-span-3 flex gap-2">
-      <input id="heading" type="number" step="any" class="input input-bordered w-full" bind:value={heading} placeholder="Heading (graden)" />
-      <input id="pitch" type="number" step="any" class="input input-bordered w-full" bind:value={pitch} placeholder="Pitch (graden)" />
-      <input id="duration" type="number" step="any" class="input input-bordered w-full" bind:value={duration} placeholder="Duur (seconden)" />
+      <div class="flex flex-col w-full">
+        <label for="heading" class="block text-xs font-medium mb-1">Heading</label>
+        <input id="heading" type="number" step="any" class="input input-bordered w-full" bind:value={startPosition.heading} placeholder="Heading (graden)" />
+      </div>
+      <div class="flex flex-col w-full">
+        <label for="pitch" class="block text-xs font-medium mb-1">Pitch</label>
+        <input id="pitch" type="number" step="any" class="input input-bordered w-full" bind:value={startPosition.pitch} placeholder="Pitch (graden)" />
+      </div>
+      <div class="flex flex-col w-full">
+        <label for="duration" class="block text-xs font-medium mb-1">Duur</label>
+        <input id="duration" type="number" step="any" class="input input-bordered w-full" bind:value={startPosition.duration} placeholder="Duur (seconden)" />
+      </div>
     </div>
 
     <!-- Camera Position Selection -->
-    <div class="pr-4 text-right font-semibold"></div>
+    <span class="pr-4 text-right font-semibold block mb-1 col-span-1 self-start" id="camera-position-selector-label">Camera Positie Selecteren:</span>
     <div class="col-span-3">
       <PositionSelector 
         title="Camera Positie Selecteren"
         buttonText="Selecteer camera positie op kaart"
-        initialPosition={{ x, y, z, heading, pitch, duration }}
+        initialPosition={startPosition}
         on:coordinatesSelected={handleCoordinatesSelected}
       />
     </div>
@@ -265,7 +298,7 @@
           class="textarea textarea-bordered w-full h-20 text-xs font-mono"
           placeholder="[[longitude, latitude], [longitude, latitude], ...]"
           value={JSON.stringify(polygonData)}
-          on:input={(e) => {
+          oninput={(e) => {
             try {
               const parsed = JSON.parse(e.currentTarget.value);
               if (Array.isArray(parsed)) {
@@ -280,34 +313,65 @@
     </div>
     
     <!-- Polygon Drawing -->
-    <div class="pr-4 text-right font-semibold"></div>
+    <span class="pr-4 text-right font-semibold block mb-1 col-span-1 self-start" id="polygon-drawing-label">Project Gebied Tekenen:</span>
     <div class="col-span-3">
       <PolygonDrawing 
         title="Project Gebied Tekenen"
         buttonText="Teken project gebied op kaart"
-        initialPosition={{ x, y, z, heading, pitch, duration }}
+        initialPosition={startPosition}
         initialPolygon={polygonData}
         on:coordinatesSelected={handlePolygonSelected}
       />
     </div>
 
-    <div class="pr-4 text-right font-semibold">Lagen:</div>
-    <div class="col-span-3 max-h-32 overflow-y-auto border border-base-300 rounded-lg p-2">
-      {#each availableLayers as layer}
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input 
-            type="checkbox" 
-            class="checkbox checkbox-primary"
-            checked={selectedLayers.includes(layer.title)}
-            on:change={(e) => handleLayerChange(layer.title, e.currentTarget.checked)}
+    <div class="col-span-4">
+      <label for="layerCatalogSearch" class="block text-left font-semibold mb-2">Lagen:</label>
+      <div class="grid grid-cols-5 gap-4" style="min-height: 200px;">
+        <!-- Catalogus (left, 2/5) -->
+        <div class="col-span-2 border border-base-300 rounded-lg p-2 h-full max-h-64 overflow-y-auto flex flex-col">
+          <h5 class="font-semibold mb-2">Catalogus</h5>
+          <input
+            id="layerCatalogSearch"
+            type="text"
+            class="input input-bordered w-full mb-2"
+            placeholder="Zoek laag..."
+            bind:value={layerCatalogSearchTerm}
           />
-          <span class="text-sm">{layer.title}</span>
-        </label>
-      {/each}
+          <div class="flex-1 overflow-y-auto">
+            {#each availableLayers.filter(layer =>
+              !selectedLayers.includes(String(layer.id)) &&
+              (layerCatalogSearchTerm.trim() === '' || layer.title.toLowerCase().includes(layerCatalogSearchTerm.trim().toLowerCase()))
+            ) as layer}
+              <div class="flex items-center gap-2 mb-2">
+                <span>{layer.title}</span>
+                <button type="button" class="btn btn-xs btn-primary" onclick={() => selectedLayers = [...selectedLayers, String(layer.id)]}>+</button>
+              </div>
+            {/each}
+          </div>
+        </div>
+        <!-- Toegevoegde lagen (right, 3/5) -->
+        <div class="col-span-3 border border-base-300 rounded-lg p-2 h-full max-h-64 overflow-y-auto flex flex-col">
+          <h5 class="font-semibold mb-2">Toegevoegde lagen</h5>
+          <div class="flex-1 overflow-y-auto">
+            {#if selectedLayers.length === 0}
+              <div class="text-sm text-gray-500">Geen lagen toegevoegd.</div>
+            {:else}
+              {#each selectedLayers as layerId, i}
+                {#if availableLayers.find(l => String(l.id) === layerId)}
+                  <div class="flex items-center gap-4 mb-2 w-full">
+                    <span class="flex-1 truncate font-medium">{availableLayers.find(l => String(l.id) === layerId)?.title}</span>
+                    <button type="button" class="btn btn-xs btn-error" onclick={() => selectedLayers = selectedLayers.filter(l => l !== layerId)} title="Verwijder">x</button>
+                  </div>
+                {/if}
+              {/each}
+            {/if}
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="col-span-4 mt-6 flex justify-end gap-2">
-      <button type="button" class="btn btn-ghost" on:click={() => { modalRef.close(); resetModal(); }}>Annuleren</button>
+      <button type="button" class="btn btn-ghost" onclick={() => { modalRef.close(); resetModal(); }}>Annuleren</button>
       <button type="submit" class="btn btn-primary">Bijwerken</button>
     </div>
   </form>
