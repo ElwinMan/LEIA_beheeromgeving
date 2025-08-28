@@ -48,7 +48,7 @@
     </div>
     <a
       href={downloadUrl}
-      class="btn btn-primary flex items-center gap-2"
+      class="btn btn-primary flex items-center gap-2 ml-auto"
       download
     >
       <img src="/icons/download.svg" alt="Download" class="w-5 h-5" />

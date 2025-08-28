@@ -99,7 +99,12 @@ def seed(db: Session):
             name="search"
         ),
         Tool(
-            name="geocoder"
+            name="geocoder",
+            content={
+                "settings": {
+                    "name": "locatieserver"
+                }
+            }
         ),
         Tool(
             name="projects"

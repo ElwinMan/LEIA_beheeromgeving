@@ -206,6 +206,19 @@
       }));
   }
 
+  // Computed property for LayerLibrary connectors (getter/setter)
+  function getLayerLibraryConnectors(tool: Tool & { enabled: boolean; settings?: Record<string, any> }): any[] {
+    // Defensive: always return array
+    return tool.settings?.connectors ?? [];
+  }
+  function setLayerLibraryConnectors(tool: Tool & { enabled: boolean; settings?: Record<string, any> }, newConnectors: any[]): void {
+    if (tool.settings) {
+      // Deep clone to ensure Svelte reactivity
+      tool.settings.connectors = JSON.parse(JSON.stringify(newConnectors));
+      allTools = [...allTools];
+    }
+  }
+
   async function handleSubmit() {
     try {
       // Get current enabled tools from state
@@ -464,7 +477,18 @@
                                   <label class="label" for="tool-{tool.id}-{setting.key}">
                                     <span class="label-text text-sm font-medium">{setting.label}</span>
                                   </label>
-                                  {#if setting.multiline}
+                                  {#if tool.name?.toLowerCase() === 'geocoder' && setting.key === 'name'}
+                                    <select
+                                      id="tool-{tool.id}-{setting.key}"
+                                      class="select select-bordered select-s w-full focus:border-primary"
+                                      value={setting.value}
+                                      on:change={(e) => updateToolTextSetting(tool.id, setting.key, (e.target as HTMLSelectElement)?.value || '')}
+                                    >
+                                      <option value="locatieserver">locatieserver (Nederland)</option>
+                                      <option value="geolocation">geolocation (België)</option>
+                                      <option value="nominatim">nominatim (Wereldwijd)</option>
+                                    </select>
+                                  {:else if setting.multiline}
                                     <textarea
                                       id="tool-{tool.id}-{setting.key}"
                                       class="textarea textarea-bordered textarea-sm w-full focus:border-primary"
@@ -536,6 +560,101 @@
                                 updateFeatureInfoFields(newFields);
                               }}>+ Add Field</button>
                             </div>
+                          </div>
+                        {/if}
+
+                        <!-- LayerLibrary Connectors UI -->
+                        {#if tool.name?.toLowerCase() === 'layerlibrary'}
+                          <div class="mb-4">
+                            <h5 class="font-semibold text-sm text-base-content uppercase tracking-wide">Connectors</h5>
+                            {#each getLayerLibraryConnectors(tool) as connector, idx (idx)}
+                              <div class="border rounded p-3 mb-2 space-y-2">
+                                <div class="flex justify-between items-center">
+                                  <label class="block text-xs font-semibold mb-1" for={`connector-type-${idx}`}>Type</label>
+                                  <button type="button" class="btn btn-xs btn-error" title="Remove Connector" on:click={() => {
+                                    const connectors = getLayerLibraryConnectors(tool).filter((_, i) => i !== idx);
+                                    setLayerLibraryConnectors(tool, connectors);
+                                  }}>Remove</button>
+                                </div>
+                                <div>
+                                  <label class="block text-xs font-semibold mb-1" for={`connector-url-${idx}`}>URL</label>
+                                  <input id={`connector-url-${idx}`} type="text" class="input input-bordered input-sm w-full" bind:value={connector.url}
+                                    on:input={(e) => {
+                                      const connectors = [...getLayerLibraryConnectors(tool)];
+                                      connectors[idx].url = (e.target as HTMLInputElement).value;
+                                      setLayerLibraryConnectors(tool, connectors);
+                                    }} />
+                                </div>
+                                <div>
+                                  <label class="block text-xs font-semibold mb-1" for={`connector-orgs-${idx}`}>Organizations (comma separated)</label>
+                                  <input id={`connector-orgs-${idx}`} type="text" class="input input-bordered input-sm w-full" value={Array.isArray(connector.organizations) ? connector.organizations.join(', ') : connector.organizations}
+                                    on:input={(e) => {
+                                      const connectors = [...getLayerLibraryConnectors(tool)];
+                                      connectors[idx].organizations = (e.target as HTMLInputElement).value.split(',').map(s => s.trim());
+                                      setLayerLibraryConnectors(tool, connectors);
+                                    }} />
+                                </div>
+                                <div>
+                                  <label class="block text-xs font-semibold mb-1" for={`connector-groups-${idx}`}>Groups (comma separated)</label>
+                                  <input id={`connector-groups-${idx}`} type="text" class="input input-bordered input-sm w-full" value={Array.isArray(connector.groups) ? connector.groups.join(', ') : connector.groups}
+                                    on:input={(e) => {
+                                      const connectors = [...getLayerLibraryConnectors(tool)];
+                                      connectors[idx].groups = (e.target as HTMLInputElement).value.split(',').map(s => s.trim());
+                                      setLayerLibraryConnectors(tool, connectors);
+                                    }} />
+                                </div>
+                                <div>
+                                  <label class="block text-xs font-semibold mb-1" for={`connector-packages-${idx}`}>Packages (comma separated)</label>
+                                  <input id={`connector-packages-${idx}`} type="text" class="input input-bordered input-sm w-full" value={Array.isArray(connector.packages) ? connector.packages.join(', ') : connector.packages}
+                                    on:input={(e) => {
+                                      const connectors = [...getLayerLibraryConnectors(tool)];
+                                      connectors[idx].packages = (e.target as HTMLInputElement).value.split(',').map(s => s.trim());
+                                      setLayerLibraryConnectors(tool, connectors);
+                                    }} />
+                                </div>
+                                <div>
+                                  <span class="block text-xs font-semibold mb-1">Special Resources</span>
+                                  <div class="space-y-1 ml-5">
+                                    <label class="block text-xs" for={`connector-bg-${idx}`}>Background Layers (comma separated)</label>
+                                    <input id={`connector-bg-${idx}`} type="text" class="input input-bordered input-sm w-full" value={Array.isArray(connector.specialResources?.backgroundLayers) ? connector.specialResources.backgroundLayers.join(', ') : connector.specialResources?.backgroundLayers}
+                                      on:input={(e) => {
+                                        const connectors = [...getLayerLibraryConnectors(tool)];
+                                        connectors[idx].specialResources.backgroundLayers = (e.target as HTMLInputElement).value.split(',').map(s => s.trim());
+                                        setLayerLibraryConnectors(tool, connectors);
+                                      }} />
+                                    <label class="block text-xs" for={`connector-on-${idx}`}>Layers Added On (comma separated)</label>
+                                    <input id={`connector-on-${idx}`} type="text" class="input input-bordered input-sm w-full" value={Array.isArray(connector.specialResources?.layersAddedOn) ? connector.specialResources.layersAddedOn.join(', ') : connector.specialResources?.layersAddedOn}
+                                      on:input={(e) => {
+                                        const connectors = [...getLayerLibraryConnectors(tool)];
+                                        connectors[idx].specialResources.layersAddedOn = (e.target as HTMLInputElement).value.split(',').map(s => s.trim());
+                                        setLayerLibraryConnectors(tool, connectors);
+                                      }} />
+                                    <label class="block text-xs" for={`connector-off-${idx}`}>Layers Added Off (comma separated)</label>
+                                    <input id={`connector-off-${idx}`} type="text" class="input input-bordered input-sm w-full" value={Array.isArray(connector.specialResources?.layersAddedOff) ? connector.specialResources.layersAddedOff.join(', ') : connector.specialResources?.layersAddedOff}
+                                      on:input={(e) => {
+                                        const connectors = [...getLayerLibraryConnectors(tool)];
+                                        connectors[idx].specialResources.layersAddedOff = (e.target as HTMLInputElement).value.split(',').map(s => s.trim());
+                                        setLayerLibraryConnectors(tool, connectors);
+                                      }} />
+                                  </div>
+                                </div>
+                              </div>
+                            {/each}
+                            <button type="button" class="btn btn-xs btn-primary mt-2" on:click={() => {
+                              const connectors = [...getLayerLibraryConnectors(tool), {
+                                type: '',
+                                url: '',
+                                organizations: [],
+                                groups: [],
+                                packages: [],
+                                specialResources: {
+                                  backgroundLayers: [],
+                                  layersAddedOn: [],
+                                  layersAddedOff: []
+                                }
+                              }];
+                              setLayerLibraryConnectors(tool, connectors);
+                            }}>+ Add Connector</button>
                           </div>
                         {/if}
                       </div>

@@ -489,6 +489,39 @@ def export_digital_twin(db: Session, digital_twin_id: int):
                 settings = tool_data["content"]["settings"]
             
             if settings:
+                # Clean connectors for layerlibrary tool only before export
+                if tool.name == "layerlibrary" and "connectors" in settings:
+                    def clean_connectors(connectors):
+                        cleaned_connectors = []
+                        for connector in connectors:
+                            cleaned_connector = {}
+                            for k, v in connector.items():
+                                # Remove keys with empty string
+                                if isinstance(v, str) and v == "":
+                                    continue
+                                # Remove arrays that are empty or only contain empty strings
+                                elif isinstance(v, list):
+                                    filtered = [item for item in v if item != ""]
+                                    if filtered:
+                                        cleaned_connector[k] = filtered
+                                # For nested dicts (specialResources)
+                                elif isinstance(v, dict):
+                                    cleaned_nested = {}
+                                    for nk, nv in v.items():
+                                        if isinstance(nv, list):
+                                            filtered_nested = [item for item in nv if item != ""]
+                                            if filtered_nested:
+                                                cleaned_nested[nk] = filtered_nested
+                                        elif isinstance(nv, str) and nv != "":
+                                            cleaned_nested[nk] = nv
+                                    if cleaned_nested:
+                                        cleaned_connector[k] = cleaned_nested
+                                else:
+                                    cleaned_connector[k] = v
+                            cleaned_connectors.append(cleaned_connector)
+                        return cleaned_connectors
+                    settings = copy.deepcopy(settings)
+                    settings["connectors"] = clean_connectors(settings["connectors"])
                 transformed_tool["settings"] = settings
             
             # For other tools, add bookmarks to existing settings if there are any
@@ -602,4 +635,6 @@ def export_digital_twin(db: Session, digital_twin_id: int):
         "tools": tools_with_content,
     }
 
-    return digital_twin.name, export_data
+    # Format filename: lowercase, spaces to underscores
+    export_filename = digital_twin.name.lower().replace(' ', '_') if digital_twin.name else 'export'
+    return export_filename, export_data
