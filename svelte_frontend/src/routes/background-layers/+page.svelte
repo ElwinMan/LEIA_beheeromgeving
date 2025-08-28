@@ -50,7 +50,9 @@
     <span class="ml-3">Laden...</span>
   </div>
 {:else if data.error}
-  <div class="alert alert-error">...error display...</div>
+  <div class="alert alert-error">
+    <span>{data.error}</span>
+  </div>
 {:else}
   <LayerTable
     isBackgroundPage={isBackgroundPage}

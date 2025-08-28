@@ -150,10 +150,9 @@ def build_chapter_groups(chapters):
             # Use chapter.title and chapter.buttonText, fallback to defaults
             title = chapter.get("title") or f"Hoofdstuk {chapter_id}"
             button_text = chapter.get("buttonText") or title
-            formatted_title = f"H{chapter_id}: {title}"
             chapter_group = {
                 "id": chapter_id,
-                "title": formatted_title,
+                "title": title,
                 "buttonText": button_text
             }
             chapter_groups.append(chapter_group)
@@ -310,17 +309,10 @@ def export_digital_twin(db: Session, digital_twin_id: int):
                             story_data["baseLayerId"] = str(story.content["baseLayerId"]) if story.content["baseLayerId"] is not None else ""
                         # Add chapters if they exist
                         if "chapters" in story.content:
-                            chapters_copy = copy.deepcopy(story.content["chapters"])
-                            for chapter in chapters_copy:
-                                if "steps" in chapter and isinstance(chapter["steps"], list):
-                                    for step in chapter["steps"]:
-                                        # Move requiredLayers to layers, remove title
-                                        if "requiredLayers" in step and isinstance(step["requiredLayers"], list):
-                                            step["layers"] = step["requiredLayers"]
-                                            for req_layer in step["requiredLayers"]:
-                                                if "title" in req_layer:
-                                                    del req_layer["title"]
-                                            del step["requiredLayers"]
+                            chapters_copy = story.content["chapters"]
+                            chapter_groups = build_chapter_groups(chapters_copy)
+                            if chapter_groups:
+                                story_data["chapterGroups"] = chapter_groups
                             # Remove title and buttonText from chapters before export
                             for chapter in chapters_copy:
                                 if "title" in chapter:
@@ -328,10 +320,6 @@ def export_digital_twin(db: Session, digital_twin_id: int):
                                 if "buttonText" in chapter:
                                     del chapter["buttonText"]
                             story_data["chapters"] = chapters_copy
-                            # Build chapterGroups from chapters
-                            chapter_groups = build_chapter_groups(chapters_copy)
-                            if chapter_groups:
-                                story_data["chapterGroups"] = chapter_groups
 
                     story_associations.append(story_data)
                 elif not story:

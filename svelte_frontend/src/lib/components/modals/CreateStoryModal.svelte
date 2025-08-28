@@ -188,27 +188,35 @@
         id: chapter.id,
         title: chapter.title,
         buttonText: chapter.buttonText,
-        steps: chapter.steps.map(step => ({
-          title: step.title,
-          html: step.html,
-          globeOpacity: step.globeOpacity,
-          terrain: step.terrain,
-          camera: {
-            x: step.camera.x,
-            y: step.camera.y,
-            z: step.camera.z,
-            heading: step.camera.heading,
-            pitch: step.camera.pitch,
-            duration: step.camera.duration
-          },
-          layers: step.layers.map(layerId => ({ id: layerId })),
-          requiredLayers: step.requiredLayers ? step.requiredLayers.map((l: RequiredLayer) => ({
-            id: l.id,
-            title: l.title,
-            opacity: l.opacity,
-            style: l.style
-          })) : []
-        }))
+        steps: chapter.steps.map(step => {
+          // Merge requiredLayers into layers, preserving all layer info
+          const mergedLayers = [
+            ...step.layers.map(layerId => ({ id: layerId })),
+            ...((step.requiredLayers && step.requiredLayers.length > 0)
+              ? step.requiredLayers.map((l: RequiredLayer) => ({
+                  id: l.id,
+                  title: l.title,
+                  opacity: l.opacity,
+                  style: l.style
+                }))
+              : [])
+          ];
+          return {
+            title: step.title,
+            html: step.html,
+            globeOpacity: step.globeOpacity,
+            terrain: step.terrain,
+            camera: {
+              x: step.camera.x,
+              y: step.camera.y,
+              z: step.camera.z,
+              heading: step.camera.heading,
+              pitch: step.camera.pitch,
+              duration: step.camera.duration
+            },
+            layers: mergedLayers
+          };
+        })
       }))
     };
 

@@ -243,27 +243,35 @@
         id: chapter.id,
         title: chapter.title,
         buttonText: chapter.buttonText,
-        steps: chapter.steps.map(step => ({
-          title: step.title,
-          html: step.html,
-          globeOpacity: step.globeOpacity,
-          terrain: step.terrain,
-          camera: {
-            x: step.camera.x,
-            y: step.camera.y,
-            z: step.camera.z,
-            heading: step.camera.heading,
-            pitch: step.camera.pitch,
-            duration: step.camera.duration
-          },
-          layers: step.layers.map(layerId => ({ id: layerId })),
-          requiredLayers: step.requiredLayers ? step.requiredLayers.map((l: RequiredLayer) => ({
-            id: l.id,
-            title: l.title,
-            opacity: l.opacity,
-            style: l.style
-          })) : []
-        }))
+        steps: chapter.steps.map(step => {
+          // Merge requiredLayers into layers, preserving all layer info
+          const mergedLayers = [
+            ...step.layers.map(layerId => ({ id: layerId })),
+            ...((step.requiredLayers && step.requiredLayers.length > 0)
+              ? step.requiredLayers.map((l: RequiredLayer) => ({
+                  id: l.id,
+                  title: l.title,
+                  opacity: l.opacity,
+                  style: l.style
+                }))
+              : [])
+          ];
+          return {
+            title: step.title,
+            html: step.html,
+            globeOpacity: step.globeOpacity,
+            terrain: step.terrain,
+            camera: {
+              x: step.camera.x,
+              y: step.camera.y,
+              z: step.camera.z,
+              heading: step.camera.heading,
+              pitch: step.camera.pitch,
+              duration: step.camera.duration
+            },
+            layers: mergedLayers
+          };
+        })
       }))
     };
 
@@ -360,7 +368,7 @@
               onclick={() => { activeChapterIndex = chapterIndex; activeStepIndex = 0; }}
             >
               <img src="/icons/folder.svg" alt="Hoofdstuk" class="h-4 w-4 mr-2" />
-              Hoofdstuk {chapterIndex + 1}
+              {chapter.title ? chapter.title : `Hoofdstuk ${chapterIndex + 1}`}
             </button>
             {#if chapters.length > 1}
               <button
@@ -374,6 +382,18 @@
             {/if}
           </div>
         {/each}
+      </div>
+
+      <!-- Chapter Title/ButtonText Inputs -->
+      <div class="mb-4">
+        {#if chapters[activeChapterIndex]}
+          <div class="grid grid-cols-4 gap-4 items-center">
+            <label for="chapter-title" class="text-right font-semibold">Hoofdstuk Titel:</label>
+            <input id="chapter-title" class="input input-bordered col-span-3 w-full" bind:value={chapters[activeChapterIndex].title} placeholder="Titel van hoofdstuk" />
+            <label for="chapter-buttontext" class="text-right font-semibold">Button Text:</label>
+            <input id="chapter-buttontext" class="input input-bordered col-span-3 w-full" bind:value={chapters[activeChapterIndex].buttonText} placeholder="Button tekst" />
+          </div>
+        {/if}
       </div>
 
       <!-- Steps for Active Chapter -->
