@@ -12,7 +12,7 @@ class DigitalTwin(Base):
     title = Column(String, nullable=False)
     subtitle = Column(String, nullable=True)
     owner = Column(String, nullable=True)
-    private = Column(Boolean, default=False)
+    isPrivate = Column(Boolean, default=False)
     last_updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
 
     viewer = relationship(

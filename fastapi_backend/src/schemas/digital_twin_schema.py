@@ -10,7 +10,7 @@ class DigitalTwinBase(BaseModel):
     title: str
     subtitle: Optional[str] = None
     owner: Optional[str] = None
-    private: bool
+    isPrivate: bool
     last_updated: datetime
 
     @field_serializer("last_updated")
@@ -25,7 +25,7 @@ class DigitalTwinUpdate(BaseModel):
     title: Optional[str] = None
     subtitle: Optional[str] = None
     owner: Optional[str] = None
-    private: Optional[bool] = None
+    isPrivate: Optional[bool] = None
 
 class DigitalTwinListResponse(DigitalTwinBase):
     id: int

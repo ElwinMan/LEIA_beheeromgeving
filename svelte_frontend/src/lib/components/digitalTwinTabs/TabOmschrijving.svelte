@@ -30,7 +30,7 @@
         name = digitalTwin.name ?? '';
         subtitle = digitalTwin.subtitle ?? '';
         owner = digitalTwin.owner ?? '';
-        isPrivate = digitalTwin.private ?? false;
+        isPrivate = digitalTwin.isPrivate ?? false;
         isReady = true;
       } else {
         console.error('DigitalTwin is null');
@@ -70,7 +70,7 @@
         name,
         subtitle,
         owner,
-        private: isPrivate
+        isPrivate: isPrivate
       });
       successBanner?.show();
     } catch (err: any) {
@@ -145,9 +145,9 @@
     </div>
 
     <div class="flex items-center space-x-2">
-      <input id="private" type="checkbox" class="checkbox checkbox-primary" bind:checked={isPrivate} />
-      <label for="private" class="font-semibold flex items-center gap-2">
-        Privé (niet zichtbaar in overzicht)
+      <input id="isPrivate" type="checkbox" class="checkbox checkbox-primary" bind:checked={isPrivate} />
+      <label for="isPrivate" class="font-semibold flex items-center gap-2">
+        Privé
         <HelpTooltip tip="Indien aangevinkt is deze digital twin alleen te bereiken via de URL en niet zichtbaar in het overzicht." />
       </label>
     </div>

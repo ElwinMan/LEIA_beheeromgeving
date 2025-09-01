@@ -8,6 +8,7 @@
   import type { Layer } from '$lib/types/layer';
   import AlertBanner from '$lib/components/AlertBanner.svelte';
   import MissingRequiredFields from '$lib/components/MissingRequiredFields.svelte';
+  import HelpTooltip from '$lib/components/HelpTooltip.svelte';
 
   const dispatch = createEventDispatcher<{ created: DigitalTwin }>();
   
@@ -156,7 +157,7 @@
         title,
         subtitle,
         owner,
-        private: isPrivate,
+        isPrivate: isPrivate,
         last_updated: new Date().toISOString()
       });
 
@@ -235,26 +236,41 @@
       <MissingRequiredFields {missingFields} />
     </div>
 
-    <div class="form-control mb-2">
-      <label for="name" class="label font-semibold">Naam <span class="text-error">*</span></label>
-      <input id="name" class="input input-bordered w-full" placeholder="Naam" bind:value={name} />
-    </div>
-    <div class="form-control mb-2">
-      <label for="title" class="label font-semibold">Titel <span class="text-error">*</span></label>
+        <div class="form-control mb-2">
+      <label for="title" class="label font-semibold flex items-center gap-2">
+        Titel<span class="text-error">*</span>
+        <HelpTooltip tip="De titel van de digital twin, zichtbaar in de applicatie en op de homepage." position="right" />
+      </label>
       <input id="title" class="input input-bordered w-full" placeholder="Titel" bind:value={title} />
     </div>
     <div class="form-control mb-2">
-      <label for="subtitle" class="label font-semibold">Subtitel</label>
+      <label for="name" class="label font-semibold flex items-center gap-2">
+        Naam (Bestandsnaam)<span class="text-error">*</span>
+        <HelpTooltip tip="Unieke bestandsnaam voor export (zonder .config.json). Deze naam wordt gebruikt in URLs en moet uniek zijn." />
+      </label>
+      <input id="name" class="input input-bordered w-full" placeholder="Naam" bind:value={name} />
+    </div>
+    <div class="form-control mb-2">
+      <label for="subtitle" class="label font-semibold flex items-center gap-2">
+        Subtitel
+        <HelpTooltip tip="Optionele ondertitel voor extra context of beschrijving van de digital twin." position="right" />
+      </label>
       <input id="subtitle" class="input input-bordered w-full" placeholder="Subtitel" bind:value={subtitle} />
     </div>
     <div class="form-control mb-2">
-      <label for="owner" class="label font-semibold">Eigenaar <span class="text-error">*</span></label>
+      <label for="owner" class="label font-semibold flex items-center gap-2">
+        Eigenaar <span class="text-error">*</span>
+        <HelpTooltip tip="Naam van de eigenaar of verantwoordelijke van deze digital twin." position="right" />
+      </label>
       <input id="owner" class="input input-bordered w-full" placeholder="Eigenaar" bind:value={owner} />
     </div>
     <div class="form-control mb-2">
       <label class="flex items-center gap-2">
-        <input type="checkbox" class="checkbox" bind:checked={isPrivate} />
-        Privé
+        <input type="checkbox" class="checkbox checkbox-primary" bind:checked={isPrivate} />
+        <span class="flex items-center gap-2">
+          Privé
+          <HelpTooltip tip="Indien aangevinkt is deze digital twin alleen te bereiken via de URL en niet zichtbaar in het overzicht." position="right" />
+        </span>
       </label>
     </div>
 

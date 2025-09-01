@@ -6,7 +6,7 @@ export interface DigitalTwin {
   title: string;
   subtitle: string;
   owner: string;
-  private: boolean;
+  isPrivate: boolean;
   last_updated: string;
   layer_associations: LayerAssociation[];
   tool_associations: Array<{ 
@@ -20,7 +20,7 @@ export interface CreateDigitalTwinInput {
   title: string;
   subtitle: string;
   owner: string;
-  private: boolean;
+  isPrivate: boolean;
   last_updated: string;
 }
 

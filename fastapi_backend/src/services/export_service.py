@@ -112,7 +112,7 @@ def build_viewer_export(digital_twin, viewer):
     viewer_export = {
         "title": digital_twin.title,
         "subtitle": digital_twin.subtitle,
-        "isPrivate": digital_twin.private
+        "isPrivate": digital_twin.isPrivate
     }
     
     if viewer and viewer.content:
