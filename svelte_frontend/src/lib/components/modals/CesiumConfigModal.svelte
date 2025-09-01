@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import type { CesiumConfiguration } from '$lib/types/digitalTwinAssociation';
+  import HelpTooltip from '$lib/components/HelpTooltip.svelte';
 
   interface Props {
     config?: CesiumConfiguration;
@@ -123,14 +124,6 @@
   }
 </script>
 
-{#snippet helpTooltip(tip: string)}
-  <div class="tooltip tooltip-top" data-tip={tip}>
-    <div class="flex items-center justify-center w-4 h-4 rounded-full bg-base-300 text-base-content text-xs cursor-help">
-      ?
-    </div>
-  </div>
-{/snippet}
-
 <dialog bind:this={modalElement} class="modal">
   <div class="modal-box w-11/12 max-w-6xl">
     <form method="dialog">
@@ -148,7 +141,7 @@
           <label class="label" for="date-time">
             <div class="flex items-center gap-2">
               <span class="label-text">Date and Time</span>
-              {@render helpTooltip("Date and time, determines the sun position and lighting in the scene")}
+              <HelpTooltip tip="Date and time, determines the sun position and lighting in the scene" />
             </div>
           </label>
           
@@ -213,7 +206,7 @@
             <label class="label cursor-pointer">
               <div class="flex items-center gap-2">
                 <span class="label-text">Shadows</span>
-                {@render helpTooltip("Shadows enabled/disabled")}
+                <HelpTooltip tip="Shadows enabled/disabled" position="right"/>
               </div>
               <input 
                 type="checkbox" 
@@ -227,7 +220,7 @@
             <label class="label cursor-pointer">
               <div class="flex items-center gap-2">
                 <span class="label-text">FXAA</span>
-                {@render helpTooltip("FXAA enabled")}
+                <HelpTooltip tip="FXAA enabled" />
               </div>
               <input 
                 type="checkbox" 
@@ -241,7 +234,7 @@
             <label class="label cursor-pointer">
               <div class="flex items-center gap-2">
                 <span class="label-text">Lighting</span>
-                {@render helpTooltip("Enable lighting the globe with the scene's light source")}
+                <HelpTooltip tip="Enable lighting the globe with the scene's light source" position="right" />
               </div>
               <input 
                 type="checkbox" 
@@ -255,7 +248,7 @@
             <label class="label cursor-pointer">
               <div class="flex items-center gap-2">
                 <span class="label-text">Animate</span>
-                {@render helpTooltip("Enable when displaying animated models else animations only update when the viewer refreshes it's view such as when panning/zooming")}
+                <HelpTooltip tip="Enable when displaying animated models else animations only update when the viewer refreshes it's view such as when panning/zooming" />
               </div>
               <input 
                 type="checkbox" 
@@ -271,7 +264,7 @@
             <label class="label" for="msaa">
               <div class="flex items-center gap-2">
                 <span class="label-text">MSAA Samples</span>
-                {@render helpTooltip("MSAA samples")}
+                <HelpTooltip tip="MSAA samples" position="right"/>
               </div>
             </label>
             <input 
@@ -289,7 +282,7 @@
             <label class="label" for="resolution-scale">
               <div class="flex items-center gap-2">
                 <span class="label-text">Resolution Scale</span>
-                {@render helpTooltip("Gets or sets a scaling factor for rendering resolution. Values less than 1.0 can improve performance on less powerful devices while values greater than 1.0 will render at a higher resolution and then scale down, resulting in improved visual fidelity")}
+                <HelpTooltip tip="Gets or sets a scaling factor for rendering resolution. Values less than 1.0 can improve performance on less powerful devices while values greater than 1.0 will render at a higher resolution and then scale down, resulting in improved visual fidelity" />
               </div>
             </label>
             <input 
@@ -309,7 +302,7 @@
           <label class="label" for="max-screen-space-error">
             <div class="flex items-center gap-2">
               <span class="label-text">Maximum Screen Space Error</span>
-              {@render helpTooltip("The maximum screen space error used to drive level of detail refinement for 3D tile layers")}
+              <HelpTooltip tip="The maximum screen space error used to drive level of detail refinement for 3D tile layers" position="right" />
             </div>
             <span class="label-text-alt">For 3D tile layers</span>
           </label>
@@ -335,7 +328,7 @@
             <label class="label cursor-pointer">
               <div class="flex items-center gap-2">
                 <span class="label-text">Ground Atmosphere</span>
-                {@render helpTooltip("Ground atmosphere enabled")}
+                <HelpTooltip tip="Ground atmosphere enabled" position="right" />
               </div>
               <input 
                 type="checkbox" 
@@ -349,7 +342,7 @@
             <label class="label cursor-pointer">
               <div class="flex items-center gap-2">
                 <span class="label-text">Fog</span>
-                {@render helpTooltip("Fog enabled")}
+                <HelpTooltip tip="Fog enabled" />
               </div>
               <input 
                 type="checkbox" 
@@ -363,7 +356,7 @@
             <label class="label cursor-pointer">
               <div class="flex items-center gap-2">
                 <span class="label-text">High Dynamic Range</span>
-                {@render helpTooltip("HDR enabled")}
+                <HelpTooltip tip="HDR enabled" />
               </div>
               <input 
                 type="checkbox" 
@@ -384,7 +377,7 @@
             <label class="label cursor-pointer">
               <div class="flex items-center gap-2">
                 <span class="label-text">Point Cloud Attenuation</span>
-                {@render helpTooltip("3D Tile Point Cloud Attenuation enabled, Perform point attenuation based on geometric error")}
+                <HelpTooltip tip="3D Tile Point Cloud Attenuation enabled, Perform point attenuation based on geometric error" position="right" />
               </div>
               <input 
                 type="checkbox" 
@@ -398,7 +391,7 @@
             <label class="label cursor-pointer">
               <div class="flex items-center gap-2">
                 <span class="label-text">Eye Dome Lighting (EDL)</span>
-                {@render helpTooltip("Eye Dome Lighting enabled, Use eye dome lighting when drawing with point attenuation Requires support for EXT_frag_depth, OES_texture_float, and WEBGL_draw_buffers extensions in WebGL 1.0, otherwise eye dome lighting is ignored")}
+                <HelpTooltip tip="Eye Dome Lighting enabled, Use eye dome lighting when drawing with point attenuation Requires support for EXT_frag_depth, OES_texture_float, and WEBGL_draw_buffers extensions in WebGL 1.0, otherwise eye dome lighting is ignored" />
               </div>
               <input 
                 type="checkbox" 
@@ -414,7 +407,7 @@
             <label class="label" for="pc-attenuation-max">
               <div class="flex items-center gap-2">
                 <span class="label-text">Attenuation Maximum (px)</span>
-                {@render helpTooltip("3D Tile Point Cloud Maximum point attenuation in pixels. If undefined, the Cesium3DTileset's maximumScreenSpaceError will be used")}
+                <HelpTooltip tip="3D Tile Point Cloud Maximum point attenuation in pixels. If undefined, the Cesium3DTileset's maximumScreenSpaceError will be used" position="right" />
               </div>
             </label>
             <input 
@@ -431,7 +424,7 @@
             <label class="label" for="pc-error-scale">
               <div class="flex items-center gap-2">
                 <span class="label-text">Error Scale</span>
-                {@render helpTooltip("Scale to be applied to the geometric error before computing attenuation")}
+                <HelpTooltip tip="Scale to be applied to the geometric error before computing attenuation" />
               </div>
             </label>
             <input 
@@ -449,7 +442,7 @@
             <label class="label" for="pc-base-resolution">
               <div class="flex items-center gap-2">
                 <span class="label-text">Base Resolution (m)</span>
-                {@render helpTooltip("Average base resolution for the dataset in meters. Used in place of geometric error when the geometric error is 0. If undefined, an approximation will be computed for each tile that has a geometric error of 0")}
+                <HelpTooltip tip="Average base resolution for the dataset in meters. Used in place of geometric error when the geometric error is 0. If undefined, an approximation will be computed for each tile that has a geometric error of 0" position="right" />
               </div>
             </label>
             <input 
@@ -466,7 +459,7 @@
             <label class="label" for="pc-edl-strength">
               <div class="flex items-center gap-2">
                 <span class="label-text">EDL Strength</span>
-                {@render helpTooltip("Eye dome lighting strength (apparent contrast)")}
+                <HelpTooltip tip="Eye dome lighting strength (apparent contrast)" />
               </div>
             </label>
             <input 
@@ -484,7 +477,7 @@
             <label class="label" for="pc-edl-radius">
               <div class="flex items-center gap-2">
                 <span class="label-text">EDL Radius</span>
-                {@render helpTooltip("Thickness of contours from eye dome lighting")}
+                <HelpTooltip tip="Thickness of contours from eye dome lighting" position="right" />
               </div>
             </label>
             <input 
@@ -507,9 +500,10 @@
         <div class="form-control">
           <label class="label" for="globe-opacity">
             <div class="flex items-center gap-2">
-              <span class="label-text">Globe Opacity (%)</span>
-              {@render helpTooltip("Opacity percentage of the globe")}
+              <span class="label-text">Globe Opacity</span>
+              <HelpTooltip tip="Opacity percentage of the globe" position="right" />
             </div>
+            <span class="label-text-alt">{localConfig.globeOpacity}%</span>
           </label>
           <input 
             id="globe-opacity"
@@ -520,7 +514,6 @@
             class="range range-primary" 
             bind:value={localConfig.globeOpacity}
           />
-          <div class="text-xs text-center mt-1">{localConfig.globeOpacity || 100}%</div>
         </div>
       </div>
 
@@ -533,7 +526,7 @@
             <label class="label cursor-pointer">
               <div class="flex items-center gap-2">
                 <span class="label-text">Show Mouse Coordinates</span>
-                {@render helpTooltip("Debug window in viewer to show coordinates for mouse position")}
+                <HelpTooltip tip="Debug window in viewer to show coordinates for mouse position" position="right" />
               </div>
               <input 
                 type="checkbox" 
@@ -547,7 +540,7 @@
             <label class="label cursor-pointer">
               <div class="flex items-center gap-2">
                 <span class="label-text">Show Camera Position</span>
-                {@render helpTooltip("Debug window to show the current camera position, updates on move")}
+                <HelpTooltip tip="Debug window to show the current camera position, updates on move" />
               </div>
               <input 
                 type="checkbox" 
@@ -561,7 +554,7 @@
             <label class="label cursor-pointer">
               <div class="flex items-center gap-2">
                 <span class="label-text">Show Loading Widget</span>
-                {@render helpTooltip("Show a small bar on the bottom of the viewer showing the loading progress of layers")}
+                <HelpTooltip tip="Show a small bar on the bottom of the viewer showing the loading progress of layers" />
               </div>
               <input 
                 type="checkbox" 

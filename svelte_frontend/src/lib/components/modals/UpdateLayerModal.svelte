@@ -4,6 +4,7 @@
   import { createEventDispatcher } from 'svelte';
   import PositionSelector from '$lib/components/PositionSelector.svelte';
   import MissingRequiredFields from '$lib/components/MissingRequiredFields.svelte';
+  import HelpTooltip from '$lib/components/HelpTooltip.svelte';
   let missingFields: string[] = [];
 
   export let layer: Layer | null = null;
@@ -31,20 +32,21 @@
   let metadata = '';
   let transparent = false;
   let opacity = 100;
+  let enableCameraPosition = false;
   let cameraX: number = 0;
   let cameraY: number = 0;
   let cameraZ: number = 0;
   let cameraHeading: number = 0;
   let cameraPitch: number = 0;
   let cameraDuration: number = 1.5;
-  $: cameraPosition = JSON.stringify({
+  $: cameraPosition = {
     x: cameraX,
     y: cameraY,
     z: cameraZ,
     heading: cameraHeading,
     pitch: cameraPitch,
     duration: cameraDuration
-  });
+  };
   let isBackground = false;
 
   // WMS tab fields
@@ -118,6 +120,7 @@
     isBackground = layer.isBackground || false;
 
     // Camera position
+    enableCameraPosition = !!layer.content?.cameraPosition;
     if (layer.content?.cameraPosition) {
       try {
         const cam = typeof layer.content.cameraPosition === 'string' ? JSON.parse(layer.content.cameraPosition) : layer.content.cameraPosition;
@@ -282,11 +285,19 @@
       defaultAddToManager,
       attribution,
       metadata,
-      transparent,
-      opacity,
-      cameraPosition,
       ...(tabContentMap[type] || {})
     };
+
+    // Only add transparent and opacity if transparent is true
+    if (transparent) {
+      content.transparent = true;
+      content.opacity = opacity;
+    }
+
+    // Only add cameraPosition if enabled
+    if (enableCameraPosition) {
+      content.cameraPosition = cameraPosition;
+    }
 
     // Set top-level featureName based on type
     let featureName = '';
@@ -378,10 +389,16 @@
     {#if activeTab === 0}
       <!-- Algemeen Tab -->
       <div class="grid grid-cols-4 gap-4 items-center">
-        <label for="title" class="pr-4 text-right font-semibold">Title:<span class="text-error">*</span></label>
+        <label for="title" class="pr-4 text-right font-semibold">
+          Title:<span class="text-error">*</span>
+          <HelpTooltip tip="De titel van de laag." />
+        </label>
         <input id="title" class="input input-bordered col-span-3 w-full" bind:value={title} />
 
-        <label for="type" class="pr-4 text-right font-semibold">Type:<span class="text-error">*</span></label>
+        <label for="type" class="pr-4 text-right font-semibold">
+          Type:<span class="text-error">*</span>
+          <HelpTooltip tip="Het type van de laag. Let op! Het type voegt een tabblad toe met specifieke instellingen." />
+        </label>
         <select id="type" class="select select-bordered col-span-3 w-full" bind:value={type} >
           <option value="" disabled selected>Kies een type...</option>
           {#each typeOptions as opt}
@@ -389,28 +406,52 @@
           {/each}
         </select>
 
-        <label for="mainUrl" class="pr-4 text-right font-semibold">URL:<span class="text-error">*</span></label>
+        <label for="mainUrl" class="pr-4 text-right font-semibold">
+          URL:<span class="text-error">*</span>
+          <HelpTooltip tip="De hoofd-URL van de laag." />
+        </label>
         <input id="mainUrl" class="input input-bordered col-span-3 w-full" bind:value={mainUrl} />
 
-        <label for="imageUrl" class="pr-4 text-right font-semibold">Image URL:</label>
+        <label for="imageUrl" class="pr-4 text-right font-semibold">
+          Image URL:
+          <HelpTooltip tip="De URL van een voorbeeldafbeelding van de laag, wordt weergegeven in de lagenbibliotheek." />
+        </label>
         <input id="imageUrl" class="input input-bordered col-span-3 w-full" bind:value={imageUrl} />
 
-        <label for="legendUrl" class="pr-4 text-right font-semibold">Legend URL:</label>
+        <label for="legendUrl" class="pr-4 text-right font-semibold">
+          Legend URL:
+          <HelpTooltip tip="De URL van de legenda voor de laag." />
+        </label>
         <input id="legendUrl" class="input input-bordered col-span-3 w-full" bind:value={legendUrl} />
 
-        <label for="defaultAddToManager" class="pr-4 text-right font-semibold">Default Add To Manager:</label>
+        <label for="defaultAddToManager" class="pr-4 text-right font-semibold">
+          Default Add To Manager:
+          <HelpTooltip tip="Standaard toevoegen aan manager." />
+        </label>
         <input id="defaultAddToManager" type="checkbox" class="checkbox checkbox-primary col-span-3" bind:checked={defaultAddToManager} />
 
-        <label for="attribution" class="pr-4 text-right font-semibold">Attribution:</label>
+        <label for="attribution" class="pr-4 text-right font-semibold">
+          Attribution:
+          <HelpTooltip tip="De attributie voor de laag." />
+        </label>
         <input id="attribution" class="input input-bordered col-span-3 w-full" bind:value={attribution} />
 
-        <label for="metadata" class="pr-4 text-right font-semibold">Metadata:</label>
+        <label for="metadata" class="pr-4 text-right font-semibold">
+          Metadata:
+          <HelpTooltip tip="De metadata voor de laag." />
+        </label>
         <input id="metadata" class="input input-bordered col-span-3 w-full" bind:value={metadata} />
 
-        <label for="transparent" class="pr-4 text-right font-semibold">Transparent:</label>
+        <label for="transparent" class="pr-4 text-right font-semibold">
+          Transparent:
+          <HelpTooltip tip="Maak de laag doorzichtig." />
+        </label>
         <input id="transparent" type="checkbox" class="checkbox checkbox-primary col-span-3" bind:checked={transparent} />
 
-        <label for="opacity" class="pr-4 text-right font-semibold">Opacity:</label>
+        <label for="opacity" class="pr-4 text-right font-semibold">
+          Opacity:
+          <HelpTooltip tip="De doorzichtigheid van de laag (0-100)." />
+        </label>
         <input
           id="opacity"
           type="number"
@@ -420,10 +461,20 @@
           class="input input-bordered col-span-3 w-full"
           bind:value={opacity}
           on:input={() => { if (opacity > 100) opacity = 100; if (opacity < 0) opacity = 0; }}
+          disabled={!transparent}
         />
 
+        <label for="enableCameraPosition" class="pr-4 text-right font-semibold">
+          Enable Camera Position:
+          <HelpTooltip tip="Schakel camerastandpunt in. Wanneer ingeschakeld, wordt er een zoom-naar-icoon weergegeven voor de laag in de lagenbeheerder." />
+        </label>
+        <input id="enableCameraPosition" type="checkbox" class="checkbox checkbox-primary col-span-3" bind:checked={enableCameraPosition} />
+
         <!-- Camera Position row: label left, button right, then xyz row below -->
-        <label for="cameraX" class="pr-4 text-right font-semibold">Camera Position:</label>
+        <label for="cameraX" class="pr-4 text-right font-semibold">
+          Camera Position:
+          <HelpTooltip tip="Gebruik de positie-selector om de camera positie in te stellen of voer het handmatig in, duration wordt niet door de position-selector gegenereerd." />
+        </label>
         <div class="col-span-3 mb-2">
           <PositionSelector
             title="Selecteer camera positie"
@@ -444,6 +495,7 @@
               cameraPitch = e.detail.pitch;
               cameraDuration = e.detail.duration;
             }}
+            disabled={!enableCameraPosition}
           />
         </div>
 
@@ -451,16 +503,25 @@
         <div></div>
         <div class="col-span-3 grid grid-cols-3 gap-2 mb-2">
           <div>
-            <label for="cameraX" class="block text-xs font-medium mb-1">X</label>
-            <input id="cameraX" type="number" step="any" class="input input-bordered w-full" bind:value={cameraX} />
+            <label for="cameraX" class="block text-xs font-medium mb-1">
+              X
+              <HelpTooltip tip="X-coördinaat van de camera positie." />
+            </label>
+            <input id="cameraX" type="number" step="any" class="input input-bordered w-full" bind:value={cameraX} disabled={!enableCameraPosition} />
           </div>
           <div>
-            <label for="cameraY" class="block text-xs font-medium mb-1">Y</label>
-            <input id="cameraY" type="number" step="any" class="input input-bordered w-full" bind:value={cameraY} />
+            <label for="cameraY" class="block text-xs font-medium mb-1">
+              Y
+              <HelpTooltip tip="Y-coördinaat van de camera positie." />
+            </label>
+            <input id="cameraY" type="number" step="any" class="input input-bordered w-full" bind:value={cameraY} disabled={!enableCameraPosition} />
           </div>
           <div>
-            <label for="cameraZ" class="block text-xs font-medium mb-1">Z</label>
-            <input id="cameraZ" type="number" step="any" class="input input-bordered w-full" bind:value={cameraZ} />
+            <label for="cameraZ" class="block text-xs font-medium mb-1">
+              Z
+              <HelpTooltip tip="Z-coördinaat (hoogte) van de camera positie." />
+            </label>
+            <input id="cameraZ" type="number" step="any" class="input input-bordered w-full" bind:value={cameraZ} disabled={!enableCameraPosition} />
           </div>
         </div>
 
@@ -468,20 +529,31 @@
         <div></div>
         <div class="col-span-3 grid grid-cols-3 gap-2">
           <div>
-            <label for="cameraHeading" class="block text-xs font-medium mb-1">Heading</label>
-            <input id="cameraHeading" type="number" step="any" class="input input-bordered w-full" bind:value={cameraHeading} />
+            <label for="cameraHeading" class="block text-xs font-medium mb-1">
+              Heading
+              <HelpTooltip tip="De richting waarin de camera kijkt (in graden)." />
+            </label>
+            <input id="cameraHeading" type="number" step="any" class="input input-bordered w-full" bind:value={cameraHeading} disabled={!enableCameraPosition} />
           </div>
           <div>
-            <label for="cameraPitch" class="block text-xs font-medium mb-1">Pitch</label>
-            <input id="cameraPitch" type="number" step="any" class="input input-bordered w-full" bind:value={cameraPitch} />
+            <label for="cameraPitch" class="block text-xs font-medium mb-1">
+              Pitch
+              <HelpTooltip tip="De kantelhoek van de camera (omhoog/omlaag in graden)." />
+            </label>
+            <input id="cameraPitch" type="number" step="any" class="input input-bordered w-full" bind:value={cameraPitch} disabled={!enableCameraPosition} />
           </div>
           <div>
-            <label for="cameraDuration" class="block text-xs font-medium mb-1">Duration</label>
-            <input id="cameraDuration" type="number" step="any" class="input input-bordered w-full" bind:value={cameraDuration} />
+            <label for="cameraDuration" class="block text-xs font-medium mb-1">
+              Duration
+              <HelpTooltip tip="De duur van de camera animatie in seconden." />
+            </label>
+            <input id="cameraDuration" type="number" step="any" class="input input-bordered w-full" bind:value={cameraDuration} disabled={!enableCameraPosition} />
           </div>
         </div>
 
-        <label for="isBackground" class="text-right font-semibold">Is Background:</label>
+        <label for="isBackground" class="text-right font-semibold">Is Background:
+          <HelpTooltip tip="Ondergrond laag, dit waarde wordt bepaalt door de locatie waarop dit formulier wordt geopend." />
+        </label>
         <input type="checkbox" class="checkbox col-span-3 checkbox-primary" bind:checked={isBackground} disabled />
       </div>
     {/if}

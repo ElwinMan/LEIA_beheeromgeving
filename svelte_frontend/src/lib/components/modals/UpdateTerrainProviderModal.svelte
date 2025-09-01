@@ -3,6 +3,7 @@
   import { createEventDispatcher } from 'svelte';
   import { updateTerrainProvider } from '$lib/api';
   import MissingRequiredFields from '$lib/components/MissingRequiredFields.svelte';
+  import HelpTooltip from '$lib/components/HelpTooltip.svelte';
 
   export let terrainProvider: TerrainProvider | null = null;
   let modalRef: HTMLDialogElement;
@@ -72,7 +73,10 @@
       <MissingRequiredFields {missingFields} />
     </div>
 
-    <label for="title" class="pr-4 text-right font-semibold">Title <span class="text-error">*</span>:</label>
+    <label for="title" class="pr-4 text-right font-semibold">
+      Title <span class="text-error">*</span>:
+      <HelpTooltip tip="De naam van de terrain provider." position="right" />
+    </label>
     <input
       id="title"
       type="text"
@@ -80,7 +84,10 @@
       bind:value={title}
     />
 
-    <label for="url" class="pr-4 text-right font-semibold">URL <span class="text-error">*</span>:</label>
+    <label for="url" class="pr-4 text-right font-semibold">
+      URL <span class="text-error">*</span>:
+      <HelpTooltip tip="De URL van de terrain provider service. Dit is het endpoint waar de terrein data wordt opgehaald." position="right" />
+    </label>
     <input
       id="url"
       type="text"
@@ -88,11 +95,14 @@
       bind:value={url}
     />
 
-    <label for="vertexNormals" class="pr-4 text-right font-semibold">Vertex Normals:</label>
+    <label for="vertexNormals" class="pr-4 text-right font-semibold">
+      Vertex Normals:
+      <HelpTooltip tip="Bepaalt of vertex normals worden gebruikt voor de terrain rendering." position="right" />
+    </label>
     <input
       id="vertexNormals"
       type="checkbox"
-      class="checkbox"
+      class="checkbox checkbox-primary"
       bind:checked={vertexNormals}
     />
 

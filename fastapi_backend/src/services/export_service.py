@@ -111,7 +111,8 @@ def build_viewer_export(digital_twin, viewer):
     """Build the viewer export structure with extracted fields"""
     viewer_export = {
         "title": digital_twin.title,
-        "subtitle": digital_twin.subtitle
+        "subtitle": digital_twin.subtitle,
+        "isPrivate": digital_twin.private
     }
     
     if viewer and viewer.content:

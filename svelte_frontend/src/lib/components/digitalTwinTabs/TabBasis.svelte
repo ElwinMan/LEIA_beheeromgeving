@@ -10,11 +10,12 @@
   import type { DigitalTwin, DigitalTwinViewerResponse } from '$lib/types/digitalTwin';
   import type { BulkToolOperation } from '$lib/types/digitalTwinAssociation';
   import type { Tool } from '$lib/types/tool';
+  import AlertBanner from '$lib/components/AlertBanner.svelte';
+  import PositionSelector from '$lib/components/PositionSelector.svelte';
+  import HelpTooltip from '$lib/components/HelpTooltip.svelte';
 
   export let digitalTwinId: string;
 
-  import AlertBanner from '$lib/components/AlertBanner.svelte';
-  import PositionSelector from '$lib/components/PositionSelector.svelte';
   let successBanner: InstanceType<typeof AlertBanner> | null = null;
   let errorBanner: InstanceType<typeof AlertBanner> | null = null;
 
@@ -40,6 +41,33 @@
 
   // FeatureInfo fields state (for the featureinfo tool)
   let featureInfoFields: { field: string; handler: string }[] = [];
+
+  // Tool setting tooltips lookup
+  const toolSettingTooltips: Record<string, string> = {
+    // LayerLibrary tool
+    'useTags': "Optioneel: Als dit is ingesteld op 'true', is het mogelijk om datasets in de Bibliotheek te filteren op basis van hun tags.",
+
+    // Info tool
+    "title": "Titel van de digital twin.",
+    "description": "Beschrijving van de digital twin.",
+
+    // Help tool
+    "showOnStart": "Toon het help tool bij het openen van de viewer.",
+    "intro": "Introductie tekst voor het help tool, waarbij gebruik van html elementen mogelijk is.",
+
+    // Geocoder tool
+    "name": "Geocoder-tool, geplaatst in de rechterhoek van de header in plaats van de werkbalk, hiermee kan de gebruiker locaties opzoeken en er naartoe inzoomen.",
+
+    // Flooding tool
+    "scenariosBaseUrl": "Basis URL voor het scenario.",
+    "breachUrl": "Basis URL voor de overstroming.",
+    "roadsUrl": "Basis URL voor de wegen.",
+    "floodedRoadsUrl": "Basis URL voor de overstroomde wegen.",
+
+    // Config switcher tool
+    "fullReload": "Of de volledige pagina opnieuw wordt geladen bij het wisselen van configuraties, wat de URL van de pagina zal veranderen. Indien false, worden alleen bepaalde componenten opnieuw geladen.",
+
+  };
 
   onMount(async () => {
     try {
@@ -302,13 +330,19 @@
       <div class="card-body space-y-4">
         <!-- Logo -->
         <div>
-          <label for="logo-url" class="block font-medium">Logo URL</label>
+          <label for="logo-url" class="font-medium flex items-center gap-2">
+            Logo URL
+            <HelpTooltip tip="URL van het logo dat wordt weergegeven in de viewer." />
+          </label>
           <input id="logo-url" type="text" bind:value={logo} class="input input-bordered w-full" />
         </div>
 
         <!-- Thumbnail -->
         <div>
-          <label for="thumbnail-url" class="block font-medium">Thumbnail URL</label>
+          <label for="thumbnail-url" class="font-medium flex items-center gap-2">
+            Thumbnail URL
+            <HelpTooltip tip="URL van de thumbnail-afbeelding voor deze digital twin." />
+          </label>
           <input
             id="thumbnail-url"
             type="text"
@@ -335,7 +369,10 @@
 
           <div class="grid grid-cols-3 gap-4">
             <div>
-              <label for="start-x" class="block font-medium">X</label>
+              <label for="start-x" class="font-medium flex items-center gap-2">
+                X
+                <HelpTooltip tip="X-coördinaat van de startpositie." />
+              </label>
               <input
                 id="start-x"
                 type="number"
@@ -346,7 +383,10 @@
             </div>
 
             <div>
-              <label for="start-y" class="block font-medium">Y</label>
+              <label for="start-y" class="font-medium flex items-center gap-2">
+                Y
+                <HelpTooltip tip="Y-coördinaat van de startpositie." />
+              </label>
               <input
                 id="start-y"
                 type="number"
@@ -357,7 +397,10 @@
             </div>
 
             <div>
-              <label for="start-z" class="block font-medium">Z</label>
+              <label for="start-z" class="font-medium flex items-center gap-2">
+                Z
+                <HelpTooltip tip="Z-coördinaat (hoogte) van de startpositie." />
+              </label>
               <input
                 id="start-z"
                 type="number"
@@ -368,7 +411,10 @@
             </div>
 
             <div>
-              <label for="start-heading" class="block font-medium">Heading</label>
+              <label for="start-heading" class="font-medium flex items-center gap-2">
+                Heading
+                <HelpTooltip tip="Kijkrichting (in graden) van de camera bij het starten." />
+              </label>
               <input
                 id="start-heading"
                 type="number"
@@ -379,7 +425,10 @@
             </div>
 
             <div>
-              <label for="start-pitch" class="block font-medium">Pitch</label>
+              <label for="start-pitch" class="font-medium flex items-center gap-2">
+                Pitch
+                <HelpTooltip tip="Kantelhoek van de camera bij het starten." />
+              </label>
               <input
                 id="start-pitch"
                 type="number"
@@ -390,7 +439,10 @@
             </div>
 
             <div>
-              <label for="start-duration" class="block font-medium">Duration</label>
+              <label for="start-duration" class="font-medium flex items-center gap-2">
+                Duration
+                <HelpTooltip tip="Duur van de overgang naar de startpositie (in seconden)." />
+              </label>
               <input
                 id="start-duration"
                 type="number"
@@ -404,7 +456,9 @@
 
         <!-- Tools checkboxes list in 3 column grid (defined by class grid-cols-3) -->
         <fieldset>
-          <legend class="mb-2 font-semibold">Tools</legend>
+          <legend class="mb-2 font-semibold">Tools
+            <HelpTooltip tip="Selecteer de tools die je wilt gebruiken voor deze digital twin." />
+          </legend>
           <div class="space-y-3">
             <div
               class="grid max-h-48 grid-cols-3 gap-2 overflow-auto rounded border border-gray-300 p-2"
@@ -425,7 +479,9 @@
             <!-- Tool Settings -->
             {#if toolsWithSettings.length > 0}
               <div class="bg-base-50 rounded-lg">
-                <h3 class="font-semibold text-base">Tool Settings</h3>
+                <h3 class="font-semibold text-base">Tool Settings
+                  <HelpTooltip tip="Tool instellingen voor de geselecteerde tool." />
+                </h3>
                 <!-- Tool Settings Tabs -->
                 <div class="tabs tabs-border">
                   {#each toolsWithSettings as tool, index (tool.id)}
@@ -457,7 +513,12 @@
                                     on:change={() => toggleToolSetting(tool.id, setting.key)}
                                     class="checkbox checkbox-sm checkbox-secondary"
                                   />
-                                  <span class="text-sm font-medium">{setting.label}</span>
+                                  <span class="text-sm font-medium flex items-center gap-2">
+                                    {setting.label}
+                                    <span class="normal-case">
+                                      <HelpTooltip tip={toolSettingTooltips[setting.key]} />
+                                    </span>
+                                  </span>
                                 </label>
                               {/each}
                             </div>
@@ -474,8 +535,11 @@
                             <div class="space-y-3 pl-3">
                               {#each configurableTextSettings as setting}
                                 <div class="form-control">
-                                  <label class="label" for="tool-{tool.id}-{setting.key}">
+                                  <label class="label flex items-center gap-2" for="tool-{tool.id}-{setting.key}">
                                     <span class="label-text text-sm font-medium">{setting.label}</span>
+                                    <span class="normal-case">
+                                      <HelpTooltip tip={toolSettingTooltips[setting.key]} />
+                                    </span>
                                   </label>
                                   {#if tool.name?.toLowerCase() === 'geocoder' && setting.key === 'name'}
                                     <select
@@ -518,7 +582,12 @@
                           <div class="space-y-3">
                             <div class="flex items-center space-x-2">
                               <div class="w-1 h-4 bg-accent rounded"></div>
-                              <h5 class="font-semibold text-sm text-base-content uppercase tracking-wide">FeatureInfo Fields</h5>
+                              <h5 class="font-semibold text-sm text-base-content uppercase tracking-wide flex items-center gap-2">
+                                FeatureInfo Fields
+                                <span class="normal-case">
+                                  <HelpTooltip tip="Configureer velden die worden gebruikt voor het tonen van feature-informatie. Specificeer het veldnaam en het bijbehorende handler type (image, PDF, of chart)." />
+                                </span>
+                              </h5>
                             </div>
                             <div class="space-y-2 pl-3">
                               {#if featureInfoFields.length === 0}
@@ -566,18 +635,63 @@
                         <!-- LayerLibrary Connectors UI -->
                         {#if tool.name?.toLowerCase() === 'layerlibrary'}
                           <div class="mb-4">
-                            <h5 class="font-semibold text-sm text-base-content uppercase tracking-wide">Connectors</h5>
+                            <h5 class="font-semibold text-sm text-base-content uppercase tracking-wide flex items-center gap-2">
+                              Connectors
+                              <span class="normal-case">
+                                <HelpTooltip tip="Configureer data connectors voor de LayerLibrary tool. Elke connector definieert een bron van datasets met bijbehorende organisaties, groepen en pakketten." />
+                              </span>
+                            </h5>
                             {#each getLayerLibraryConnectors(tool) as connector, idx (idx)}
                               <div class="border rounded p-3 mb-2 space-y-2">
                                 <div class="flex justify-between items-center">
-                                  <label class="block text-xs font-semibold mb-1" for={`connector-type-${idx}`}>Type</label>
-                                  <button type="button" class="btn btn-xs btn-error" title="Remove Connector" on:click={() => {
+                                  <div class="flex-1">
+                                    <label class="text-xs font-semibold mb-1 flex items-center gap-2" for={`connector-type-${idx}`}>
+                                      Type
+                                      <span class="normal-case">
+                                        <HelpTooltip tip="Type van connector. Momenteel wordt voornamelijk 'ckan' ondersteund voor CKAN data catalogi." />
+                                      </span>
+                                    </label>
+                                    <select 
+                                      id={`connector-type-${idx}`} 
+                                      class="select select-bordered select-sm w-full" 
+                                      bind:value={connector.type}
+                                      on:change={(e) => {
+                                        const connectors = [...getLayerLibraryConnectors(tool)];
+                                        connectors[idx].type = (e.target as HTMLSelectElement).value;
+                                        setLayerLibraryConnectors(tool, connectors);
+                                      }}
+                                    >
+                                      <option value="">Selecteer type</option>
+                                      <option value="ckan">CKAN</option>
+                                      <option value="geonetwork">geonetwork</option>
+                                      <option value="custom">Custom</option>
+                                    </select>
+                                    {#if connector.type === 'custom'}
+                                      <input
+                                        type="text"
+                                        class="input input-bordered input-sm w-full mt-2"
+                                        placeholder="Voer custom connector type in..."
+                                        value={connector.customType || ''}
+                                        on:input={(e) => {
+                                          const connectors = [...getLayerLibraryConnectors(tool)];
+                                          connectors[idx].customType = (e.target as HTMLInputElement).value;
+                                          setLayerLibraryConnectors(tool, connectors);
+                                        }}
+                                      />
+                                    {/if}
+                                  </div>
+                                  <button type="button" class="btn btn-xs btn-error ml-2" title="Remove Connector" on:click={() => {
                                     const connectors = getLayerLibraryConnectors(tool).filter((_, i) => i !== idx);
                                     setLayerLibraryConnectors(tool, connectors);
                                   }}>Remove</button>
                                 </div>
                                 <div>
-                                  <label class="block text-xs font-semibold mb-1" for={`connector-url-${idx}`}>URL</label>
+                                  <label class="text-xs font-semibold mb-1 flex items-center gap-2" for={`connector-url-${idx}`}>
+                                    URL
+                                    <span class="normal-case">
+                                      <HelpTooltip tip="De basis URL van de data connector service." />
+                                    </span>
+                                  </label>
                                   <input id={`connector-url-${idx}`} type="text" class="input input-bordered input-sm w-full" bind:value={connector.url}
                                     on:input={(e) => {
                                       const connectors = [...getLayerLibraryConnectors(tool)];
@@ -586,7 +700,12 @@
                                     }} />
                                 </div>
                                 <div>
-                                  <label class="block text-xs font-semibold mb-1" for={`connector-orgs-${idx}`}>Organizations (comma separated)</label>
+                                  <label class="text-xs font-semibold mb-1 flex items-center gap-2" for={`connector-orgs-${idx}`}>
+                                    Organizations (comma separated)
+                                    <span class="normal-case">
+                                      <HelpTooltip tip="Lijst van organisaties waarvan datasets beschikbaar zijn via deze connector. Gebruik komma's om meerdere organisaties te scheiden." />
+                                    </span>
+                                  </label>
                                   <input id={`connector-orgs-${idx}`} type="text" class="input input-bordered input-sm w-full" value={Array.isArray(connector.organizations) ? connector.organizations.join(', ') : connector.organizations}
                                     on:input={(e) => {
                                       const connectors = [...getLayerLibraryConnectors(tool)];
@@ -595,7 +714,12 @@
                                     }} />
                                 </div>
                                 <div>
-                                  <label class="block text-xs font-semibold mb-1" for={`connector-groups-${idx}`}>Groups (comma separated)</label>
+                                  <label class="text-xs font-semibold mb-1 flex items-center gap-2" for={`connector-groups-${idx}`}>
+                                    Groups (comma separated)
+                                    <span class="normal-case">
+                                      <HelpTooltip tip="Lijst van groepen waarvan datasets beschikbaar zijn via deze connector. Gebruik komma's om meerdere groepen te scheiden." />
+                                    </span>
+                                  </label>
                                   <input id={`connector-groups-${idx}`} type="text" class="input input-bordered input-sm w-full" value={Array.isArray(connector.groups) ? connector.groups.join(', ') : connector.groups}
                                     on:input={(e) => {
                                       const connectors = [...getLayerLibraryConnectors(tool)];
@@ -604,7 +728,12 @@
                                     }} />
                                 </div>
                                 <div>
-                                  <label class="block text-xs font-semibold mb-1" for={`connector-packages-${idx}`}>Packages (comma separated)</label>
+                                  <label class="text-xs font-semibold mb-1 flex items-center gap-2" for={`connector-packages-${idx}`}>
+                                    Packages (comma separated)
+                                    <span class="normal-case">
+                                      <HelpTooltip tip="Lijst van data-pakketten die beschikbaar zijn via deze connector. Gebruik komma's om meerdere pakketten te scheiden." />
+                                    </span>
+                                  </label>
                                   <input id={`connector-packages-${idx}`} type="text" class="input input-bordered input-sm w-full" value={Array.isArray(connector.packages) ? connector.packages.join(', ') : connector.packages}
                                     on:input={(e) => {
                                       const connectors = [...getLayerLibraryConnectors(tool)];
@@ -613,23 +742,43 @@
                                     }} />
                                 </div>
                                 <div>
-                                  <span class="block text-xs font-semibold mb-1">Special Resources</span>
+                                  <span class="text-xs font-semibold mb-1 flex items-center gap-2">
+                                    Special Resources
+                                    <span class="normal-case">
+                                      <HelpTooltip tip="Speciale resource configuraties voor achtergrond lagen en automatisch toe te voegen/verwijderen lagen." />
+                                    </span>
+                                  </span>
                                   <div class="space-y-1 ml-5">
-                                    <label class="block text-xs" for={`connector-bg-${idx}`}>Background Layers (comma separated)</label>
+                                    <label class="text-xs flex items-center gap-2" for={`connector-bg-${idx}`}>
+                                      Background Layers (comma separated)
+                                      <span class="normal-case">
+                                        <HelpTooltip tip="Lagen die automatisch als achtergrond worden geladen wanneer deze connector wordt gebruikt." />
+                                      </span>
+                                    </label>
                                     <input id={`connector-bg-${idx}`} type="text" class="input input-bordered input-sm w-full" value={Array.isArray(connector.specialResources?.backgroundLayers) ? connector.specialResources.backgroundLayers.join(', ') : connector.specialResources?.backgroundLayers}
                                       on:input={(e) => {
                                         const connectors = [...getLayerLibraryConnectors(tool)];
                                         connectors[idx].specialResources.backgroundLayers = (e.target as HTMLInputElement).value.split(',').map(s => s.trim());
                                         setLayerLibraryConnectors(tool, connectors);
                                       }} />
-                                    <label class="block text-xs" for={`connector-on-${idx}`}>Layers Added On (comma separated)</label>
+                                    <label class="text-xs flex items-center gap-2" for={`connector-on-${idx}`}>
+                                      Layers Added On (comma separated)
+                                      <span class="normal-case">
+                                        <HelpTooltip tip="Lagen die automatisch worden ingeschakeld wanneer deze connector wordt geactiveerd." />
+                                      </span>
+                                    </label>
                                     <input id={`connector-on-${idx}`} type="text" class="input input-bordered input-sm w-full" value={Array.isArray(connector.specialResources?.layersAddedOn) ? connector.specialResources.layersAddedOn.join(', ') : connector.specialResources?.layersAddedOn}
                                       on:input={(e) => {
                                         const connectors = [...getLayerLibraryConnectors(tool)];
                                         connectors[idx].specialResources.layersAddedOn = (e.target as HTMLInputElement).value.split(',').map(s => s.trim());
                                         setLayerLibraryConnectors(tool, connectors);
                                       }} />
-                                    <label class="block text-xs" for={`connector-off-${idx}`}>Layers Added Off (comma separated)</label>
+                                    <label class="text-xs flex items-center gap-2" for={`connector-off-${idx}`}>
+                                      Layers Added Off (comma separated)
+                                      <span class="normal-case">
+                                        <HelpTooltip tip="Lagen die automatisch worden uitgeschakeld wanneer deze connector wordt geactiveerd." />
+                                      </span>
+                                    </label>
                                     <input id={`connector-off-${idx}`} type="text" class="input input-bordered input-sm w-full" value={Array.isArray(connector.specialResources?.layersAddedOff) ? connector.specialResources.layersAddedOff.join(', ') : connector.specialResources?.layersAddedOff}
                                       on:input={(e) => {
                                         const connectors = [...getLayerLibraryConnectors(tool)];
@@ -642,7 +791,8 @@
                             {/each}
                             <button type="button" class="btn btn-xs btn-primary mt-2" on:click={() => {
                               const connectors = [...getLayerLibraryConnectors(tool), {
-                                type: '',
+                                type: 'ckan',
+                                customType: '',
                                 url: '',
                                 organizations: [],
                                 groups: [],
@@ -679,14 +829,18 @@
             {:else}
               <img src="/icons/chevron-right.svg" alt="Closed" class="h-5 w-5" />
             {/if}
-            <span>Colors</span>
+            <span>Colors
+              <HelpTooltip tip="Kleurinstellingen voor de digital twin." />
+            </span>
           </button>
 
           {#if colorsOpen}
             <div class="mt-2 grid grid-cols-5 gap-4">
               {#each Object.entries(colors) as [key, value]}
                 <div>
-                  <label for={'color-' + key} class="block truncate font-medium">{key}</label>
+                  <label for={'color-' + key} class="truncate font-medium flex items-center gap-2">
+                    {key}
+                  </label>
                   <input
                     id={'color-' + key}
                     type="color"

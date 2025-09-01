@@ -6,6 +6,7 @@
   export let digitalTwinId: string;
 
   import AlertBanner from '$lib/components/AlertBanner.svelte';
+  import HelpTooltip from '$lib/components/HelpTooltip.svelte';
   let successBanner: InstanceType<typeof AlertBanner> | null = null;
   let errorBanner: InstanceType<typeof AlertBanner> | null = null;
   let requiredBanner: InstanceType<typeof AlertBanner> | null = null;
@@ -102,7 +103,10 @@
 {#if isReady}
   <form onsubmit={handleSubmit} class="space-y-4">
     <div class="flex flex-col">
-      <label for="title" class="mb-1 font-semibold">Titel <span class="text-error">*</span>:</label>
+      <label for="title" class="mb-1 font-semibold flex items-center gap-2">
+        Titel <span class="text-error">*</span>
+        <HelpTooltip tip="De titel van de digital twin, zichtbaar in de applicatie en op de homepage." />
+      </label>
       <input
         id="title"
         class="input input-bordered { !title.trim() ? 'border-error' : '' }"
@@ -114,8 +118,9 @@
     </div>
 
     <div class="flex flex-col">
-      <label for="name" class="mb-1 font-semibold">
-        Naam <span class="opacity-50">(bestandsnaam)</span> <span class="text-error">*</span>:
+      <label for="name" class="mb-1 font-semibold flex items-center gap-2">
+        Naam <span class="opacity-50">(bestandsnaam)</span> <span class="text-error">*</span>
+        <HelpTooltip tip="Unieke bestandsnaam voor export (zonder .config.json)." />
       </label>
       <input id="name" class="input input-bordered { !name.trim() ? 'border-error' : '' }" bind:value={name} />
       {#if !name.trim()}
@@ -124,18 +129,27 @@
     </div>
 
     <div class="flex flex-col">
-      <label for="subtitle" class="mb-1 font-semibold">Subtitle:</label>
+      <label for="subtitle" class="mb-1 font-semibold flex items-center gap-2">
+        Subtitle
+        <HelpTooltip tip="Optionele ondertitel voor extra context of beschrijving." />
+      </label>
       <input id="subtitle" class="input input-bordered" bind:value={subtitle} />
     </div>
 
     <div class="flex flex-col">
-      <label for="owner" class="mb-1 font-semibold">Eigenaar:</label>
+      <label for="owner" class="mb-1 font-semibold flex items-center gap-2">
+        Eigenaar
+        <HelpTooltip tip="Naam van de eigenaar of verantwoordelijke van deze digital twin." />
+      </label>
       <input id="owner" class="input input-bordered" bind:value={owner} />
     </div>
 
     <div class="flex items-center space-x-2">
-      <input id="private" type="checkbox" bind:checked={isPrivate} />
-      <label for="private" class="font-semibold">Privé</label>
+      <input id="private" type="checkbox" class="checkbox checkbox-primary" bind:checked={isPrivate} />
+      <label for="private" class="font-semibold flex items-center gap-2">
+        Privé (niet zichtbaar in overzicht)
+        <HelpTooltip tip="Indien aangevinkt is deze digital twin alleen te bereiken via de URL en niet zichtbaar in het overzicht." />
+      </label>
     </div>
 
     <button type="submit" class="btn btn-primary">Opslaan</button>

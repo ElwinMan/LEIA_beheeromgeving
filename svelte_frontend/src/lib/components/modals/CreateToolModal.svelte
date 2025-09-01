@@ -4,6 +4,7 @@
   import type { Tool } from '$lib/types/tool';
   import AlertBanner from '$lib/components/AlertBanner.svelte';
   import MissingRequiredFields from '$lib/components/MissingRequiredFields.svelte';
+  import HelpTooltip from '$lib/components/HelpTooltip.svelte';
 
   let missingFields: string[] = [];
 
@@ -117,13 +118,18 @@
     </div>
 
     <div class="form-control">
-      <label for="name" class="label font-semibold">Naam <span class="text-error">*</span></label>
+      <label for="name" class="label font-semibold">
+        Naam <span class="text-error">*</span>
+        <HelpTooltip tip="De naam van de tool. Deze moet uniek zijn." position="right" />
+      </label>
       <input id="name" class="input input-bordered w-full" bind:value={name} />
     </div>
 
     <div class="form-control">
-      <label for="content" class="label font-semibold">Content:</label>
-      <span class="text-xs text-gray-500 ml-2">(Moet JSON formaat zijn)</span>
+      <label for="content" class="label font-semibold">
+        Content:
+        <HelpTooltip tip="De configuratie van de tool in JSON formaat. Dit veld is optioneel." position="right" />
+      </label>
       <textarea
         id="content"
         class="textarea textarea-bordered w-full min-h-[12rem]"

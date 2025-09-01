@@ -6,6 +6,7 @@
   import AlertBanner from '$lib/components/AlertBanner.svelte';
   import PositionSelector from '$lib/components/PositionSelector.svelte';
   import MissingRequiredFields from '$lib/components/MissingRequiredFields.svelte';
+  import HelpTooltip from '$lib/components/HelpTooltip.svelte';
 
   let modalRef: HTMLDialogElement;
   const dispatch = createEventDispatcher<{ created: Story }>();
@@ -267,24 +268,45 @@
 
     <!-- Basic Story Information (full width) -->
     <div class="col-span-12 grid grid-cols-4 gap-4 items-center">
-      <label for="name" class="text-right font-semibold">Naam <span class="text-error">*</span>:</label>
+      <label for="name" class="text-right font-semibold">
+        Naam <span class="text-error">*</span>:
+        <HelpTooltip tip="De naam van de story. Dit is verplicht." position="right" />
+      </label>
       <input id="name" class="input input-bordered col-span-3 w-full" bind:value={name} />
 
-      <label for="description" class="text-right font-semibold">Beschrijving:</label>
+      <label for="description" class="text-right font-semibold">
+        Beschrijving:
+        <HelpTooltip tip="Een optionele beschrijving van de story." position="right" />
+      </label>
       <input id="description" class="input input-bordered col-span-3 w-full" bind:value={description} />
 
-      <label for="width" class="text-right font-semibold">Breedte:</label>
+      <label for="width" class="text-right font-semibold">
+        Breedte:
+        <HelpTooltip tip="De breedte van de story viewer (bijv. 600px)." position="right" />
+      </label>
       <input id="width" class="input input-bordered col-span-3 w-full" bind:value={width} />
 
-      <label for="force-2d-mode" class="text-right font-semibold">Force 2D Mode:</label>
+      <label for="force-2d-mode" class="text-right font-semibold">
+        Force 2D Mode:
+        <HelpTooltip tip="Dwingt de viewer om in 2D modus te werken." position="right" />
+      </label>
       <input id="force-2d-mode" type="checkbox" class="checkbox checkbox-primary" bind:checked={force2DMode} />
 
-      <label for="request-polygon-area-enabled" class="text-right font-semibold">Request Polygon Area:</label>
+      <label for="request-polygon-area-enabled" class="text-right font-semibold">
+        Request Polygon Area:
+        <HelpTooltip tip="Voegt een polygoontekenhulpmiddel toe dat in elke stap van het verhaal gegevens opvraagt uit een WMS-laag, indien er een WCS-laag met dezelfde naam bestaat. Bepaal of het hulpmiddel is ingeschakeld en welke API moet worden gebruikt (indien ingeschakeld)." />
+      </label>
       <input id="request-polygon-area-enabled" type="checkbox" class="checkbox checkbox-primary" bind:checked={requestPolygonArea.enabled} />
-      <label for="request-polygon-area-api" class="text-right font-semibold">Statistics API:</label>
+      <label for="request-polygon-area-api" class="text-right font-semibold">
+        Statistics API:
+        <HelpTooltip tip="De URL van de API die wordt gebruikt voor polygoon statistieken." position="right" />
+      </label>
       <input id="request-polygon-area-api" class="input input-bordered col-span-3 w-full" bind:value={requestPolygonArea.statisticsApi} placeholder="https://..." />
 
-      <label for="base-layer" class="text-right font-semibold">Base Layer:</label>
+      <label for="base-layer" class="text-right font-semibold">
+        Base Layer:
+        <HelpTooltip tip="De basis laag die standaard wordt getoond in de story." position="right" />
+      </label>
       <select id="base-layer" class="select select-bordered col-span-3" bind:value={baseLayerId}>
         <option value="">-- Selecteer een laag --</option>
         {#each availableLayers as layer}
@@ -333,9 +355,15 @@
       <div class="mb-4">
         {#if chapters[activeChapterIndex]}
           <div class="grid grid-cols-4 gap-4 items-center">
-            <label for="chapter-title" class="text-right font-semibold">Hoofdstuk Titel:</label>
+            <label for="chapter-title" class="text-right font-semibold">
+              Hoofdstuk Titel:
+              <HelpTooltip tip="De titel van dit hoofdstuk in de story." position="right" />
+            </label>
             <input id="chapter-title" class="input input-bordered col-span-3 w-full" bind:value={chapters[activeChapterIndex].title} placeholder="Titel van hoofdstuk" />
-            <label for="chapter-buttontext" class="text-right font-semibold">Button Text:</label>
+            <label for="chapter-buttontext" class="text-right font-semibold">
+              Button Text:
+              <HelpTooltip tip="De tekst die wordt getoond op de knop voor dit hoofdstuk." position="right" />
+            </label>
             <input id="chapter-buttontext" class="input input-bordered col-span-3 w-full" bind:value={chapters[activeChapterIndex].buttonText} placeholder="Button tekst" />
           </div>
         {/if}
@@ -387,7 +415,10 @@
             {#if currentStep._activeTab === 0}
               <div class="grid grid-cols-4 gap-4 items-start">
                 <!-- Step Title -->
-                <label for="step-title" class="text-right font-semibold">Titel:</label>
+                <label for="step-title" class="text-right font-semibold">
+                  Titel:
+                  <HelpTooltip tip="De titel van deze stap in de story." position="right" />
+                </label>
                 <input 
                   id="step-title"
                   class="input input-bordered col-span-3" 
@@ -396,7 +427,10 @@
                 />
 
                 <!-- HTML Content -->
-                <label for="step-html" class="text-right font-semibold">HTML Content:</label>
+                <label for="step-html" class="text-right font-semibold">
+                  HTML Content:
+                  <HelpTooltip tip="De tekstinhoud die wordt weergegeven in deze stap. Kan HTML elementen bevatten." position="right" />
+                </label>
                 <textarea 
                   id="step-html"
                   class="textarea textarea-bordered col-span-3 h-32" 
@@ -405,7 +439,10 @@
                 ></textarea>
 
                 <!-- Globe Opacity -->
-                <label for="step-opacity" class="text-right font-semibold">Globe Opacity:</label>
+                <label for="step-opacity" class="text-right font-semibold">
+                  Globe Opacity:
+                  <HelpTooltip tip="De transparantie van de globe (0-100). Lagere waarden maken de globe transparanter." position="right" />
+                </label>
                 <input 
                   id="step-opacity"
                   type="number" 
@@ -416,7 +453,10 @@
                 />
 
                 <!-- Terrain -->
-                <label for="step-terrain" class="text-right font-semibold">Terrain:</label>
+                <label for="step-terrain" class="text-right font-semibold">
+                  Terrain:
+                  <HelpTooltip tip="De terrain provider die wordt gebruikt voor deze stap." position="right" />
+                </label>
                 <select id="step-terrain" class="select select-bordered col-span-3" bind:value={currentStep.terrain}>
                   {#each availableTerrainProviders as provider}
                     <option value={provider.title}>{provider.title}</option>
@@ -424,7 +464,10 @@
                 </select>
 
                 <!-- Camera Position -->
-                <label for="step-position-btn" class="text-right font-semibold">Stap positie</label>
+                <label for="step-position-btn" class="text-right font-semibold">
+                  Stap positie:
+                  <HelpTooltip tip="Selecteer de camera positie voor deze stap. Dit bepaalt waar de gebruiker naar kijkt." position="right" />
+                </label>
                 <div class="col-span-3 mb-2">
                   <PositionSelector
                     title="Selecteer stap positie"
@@ -449,15 +492,24 @@
                 <div></div>
                 <div class="col-span-3 grid grid-cols-3 gap-2 mb-2">
                   <div>
-                    <label for="step-x" class="block text-sm font-medium mb-1">X</label>
+                    <label for="step-x" class="block text-sm font-medium mb-1">
+                      X
+                      <HelpTooltip tip="X-coördinaat (longitude) van de camera positie." />
+                    </label>
                     <input id="step-x" type="number" step="any" class="input input-bordered w-full" bind:value={currentStep.camera.x} />
                   </div>
                   <div>
-                    <label for="step-y" class="block text-sm font-medium mb-1">Y</label>
+                    <label for="step-y" class="block text-sm font-medium mb-1">
+                      Y
+                      <HelpTooltip tip="Y-coördinaat (latitude) van de camera positie." />
+                    </label>
                     <input id="step-y" type="number" step="any" class="input input-bordered w-full" bind:value={currentStep.camera.y} />
                   </div>
                   <div>
-                    <label for="step-z" class="block text-sm font-medium mb-1">Z</label>
+                    <label for="step-z" class="block text-sm font-medium mb-1">
+                      Z
+                      <HelpTooltip tip="Z-coördinaat (hoogte) van de camera positie." />
+                    </label>
                     <input id="step-z" type="number" step="any" class="input input-bordered w-full" bind:value={currentStep.camera.z} />
                   </div>
                 </div>
@@ -466,15 +518,24 @@
                 <div></div>
                 <div class="col-span-3 grid grid-cols-3 gap-2">
                   <div>
-                    <label for="step-heading" class="block text-sm font-medium mb-1">Heading</label>
+                    <label for="step-heading" class="block text-sm font-medium mb-1">
+                      Heading
+                      <HelpTooltip tip="De richting waarin de camera kijkt (in graden)." />
+                    </label>
                     <input id="step-heading" type="number" step="any" class="input input-bordered w-full" bind:value={currentStep.camera.heading} />
                   </div>
                   <div>
-                    <label for="step-pitch" class="block text-sm font-medium mb-1">Pitch</label>
+                    <label for="step-pitch" class="block text-sm font-medium mb-1">
+                      Pitch
+                      <HelpTooltip tip="De kantelhoek van de camera (omhoog/omlaag in graden)." />
+                    </label>
                     <input id="step-pitch" type="number" step="any" class="input input-bordered w-full" bind:value={currentStep.camera.pitch} />
                   </div>
                   <div>
-                    <label for="step-duration" class="block text-sm font-medium mb-1">Duration</label>
+                    <label for="step-duration" class="block text-sm font-medium mb-1">
+                      Duration
+                      <HelpTooltip tip="De duur van de camera animatie in seconden." />
+                    </label>
                     <input id="step-duration" type="number" step="any" class="input input-bordered w-full" bind:value={currentStep.camera.duration} />
                   </div>
                 </div>

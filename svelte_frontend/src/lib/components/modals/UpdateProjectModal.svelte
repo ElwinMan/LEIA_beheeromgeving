@@ -7,6 +7,7 @@
   import AlertBanner from '$lib/components/AlertBanner.svelte';
   import PositionSelector from '$lib/components/PositionSelector.svelte';
   import PolygonDrawing from '$lib/components/PolygonDrawing.svelte';
+  import HelpTooltip from '$lib/components/HelpTooltip.svelte';
   import { onMount } from 'svelte';
 
   export let project: Project | null = null;
@@ -222,51 +223,26 @@
       <MissingRequiredFields {missingFields} />
     </div>
 
-    <label for="name" class="pr-4 text-right font-semibold">Naam <span class="text-error">*</span>:</label>
+    <label for="name" class="pr-4 text-right font-semibold">
+      Naam <span class="text-error">*</span>:
+      <HelpTooltip tip="De naam van het project. Deze moet uniek zijn." position="right" />
+    </label>
     <input id="name" type="text" class="input input-bordered col-span-3 w-full" bind:value={name} />
 
-    <label for="description" class="pr-4 text-right font-semibold">Beschrijving:</label>
+    <label for="description" class="pr-4 text-right font-semibold">
+      Beschrijving:
+      <HelpTooltip tip="Een optionele beschrijving van het project." position="right" />
+    </label>
     <input id="description" type="text" class="input input-bordered col-span-3 w-full" bind:value={description} />
 
     <!-- Camera Position fields -->
     <h4 class="col-span-4 mt-4 font-semibold">Camera Positie</h4>
 
-    <!-- X, Y, Z coordinates row with labels above each input -->
-    <span class="pr-4 text-right font-semibold block mb-1">Coördinaten <span class="text-error">*</span>:</span>
-    <div class="col-span-3 flex gap-2">
-      <div class="flex flex-col w-full">
-        <label for="x" class="block text-xs font-medium mb-1">X</label>
-        <input id="x" type="number" step="any" class="input input-bordered w-full" bind:value={startPosition.x} placeholder="X-coördinaat" />
-      </div>
-      <div class="flex flex-col w-full">
-        <label for="y" class="block text-xs font-medium mb-1">Y</label>
-        <input id="y" type="number" step="any" class="input input-bordered w-full" bind:value={startPosition.y} placeholder="Y-coördinaat" />
-      </div>
-      <div class="flex flex-col w-full">
-        <label for="z" class="block text-xs font-medium mb-1">Z</label>
-        <input id="z" type="number" step="any" class="input input-bordered w-full" bind:value={startPosition.z} placeholder="Z-coördinaat" />
-      </div>
-    </div>
-
-    <!-- Heading, Pitch, Duration row with labels above each input -->
-    <span class="pr-4 text-right font-semibold">Oriëntatie & Duur <span class="text-error">*</span>:</span>
-    <div class="col-span-3 flex gap-2">
-      <div class="flex flex-col w-full">
-        <label for="heading" class="block text-xs font-medium mb-1">Heading</label>
-        <input id="heading" type="number" step="any" class="input input-bordered w-full" bind:value={startPosition.heading} placeholder="Heading (graden)" />
-      </div>
-      <div class="flex flex-col w-full">
-        <label for="pitch" class="block text-xs font-medium mb-1">Pitch</label>
-        <input id="pitch" type="number" step="any" class="input input-bordered w-full" bind:value={startPosition.pitch} placeholder="Pitch (graden)" />
-      </div>
-      <div class="flex flex-col w-full">
-        <label for="duration" class="block text-xs font-medium mb-1">Duur</label>
-        <input id="duration" type="number" step="any" class="input input-bordered w-full" bind:value={startPosition.duration} placeholder="Duur (seconden)" />
-      </div>
-    </div>
-
     <!-- Camera Position Selection -->
-    <span class="pr-4 text-right font-semibold block mb-1 col-span-1 self-start" id="camera-position-selector-label">Camera Positie Selecteren:</span>
+    <span class="pr-4 text-right font-semibold">
+      Camera Positie Selecteren:
+      <HelpTooltip tip="Gebruik de kaart om een camera positie te selecteren. Dit vult automatisch de coördinaten in." position="right" />
+    </span>
     <div class="col-span-3">
       <PositionSelector 
         title="Camera Positie Selecteren"
@@ -276,7 +252,62 @@
       />
     </div>
 
-    <div class="pr-4 text-right font-semibold">Project Gebied:</div>
+    <!-- X, Y, Z coordinates row with labels above each input -->
+    <div></div>
+    <div class="col-span-3 flex gap-2">
+      <div class="flex flex-col w-full">
+        <label for="x" class="block text-xs font-medium mb-1">
+          X
+          <HelpTooltip tip="X-coördinaat (longitude) van de camera positie." />
+        </label>
+        <input id="x" type="number" step="any" class="input input-bordered w-full" bind:value={startPosition.x} placeholder="X-coördinaat" />
+      </div>
+      <div class="flex flex-col w-full">
+        <label for="y" class="block text-xs font-medium mb-1">
+          Y
+          <HelpTooltip tip="Y-coördinaat (latitude) van de camera positie." />
+        </label>
+        <input id="y" type="number" step="any" class="input input-bordered w-full" bind:value={startPosition.y} placeholder="Y-coördinaat" />
+      </div>
+      <div class="flex flex-col w-full">
+        <label for="z" class="block text-xs font-medium mb-1">
+          Z
+          <HelpTooltip tip="Z-coördinaat (hoogte) van de camera positie." />
+        </label>
+        <input id="z" type="number" step="any" class="input input-bordered w-full" bind:value={startPosition.z} placeholder="Z-coördinaat" />
+      </div>
+    </div>
+
+    <!-- Heading, Pitch, Duration row with labels above each input -->
+    <div></div>
+    <div class="col-span-3 flex gap-2">
+      <div class="flex flex-col w-full">
+        <label for="heading" class="block text-xs font-medium mb-1">
+          Heading
+          <HelpTooltip tip="De richting waarin de camera kijkt (in graden)." />
+        </label>
+        <input id="heading" type="number" step="any" class="input input-bordered w-full" bind:value={startPosition.heading} placeholder="Heading (graden)" />
+      </div>
+      <div class="flex flex-col w-full">
+        <label for="pitch" class="block text-xs font-medium mb-1">
+          Pitch
+          <HelpTooltip tip="De kantelhoek van de camera (omhoog/omlaag in graden)." />
+        </label>
+        <input id="pitch" type="number" step="any" class="input input-bordered w-full" bind:value={startPosition.pitch} placeholder="Pitch (graden)" />
+      </div>
+      <div class="flex flex-col w-full">
+        <label for="duration" class="block text-xs font-medium mb-1">
+          Duur
+          <HelpTooltip tip="De duur van de camera animatie in seconden." />
+        </label>
+        <input id="duration" type="number" step="any" class="input input-bordered w-full" bind:value={startPosition.duration} placeholder="Duur (seconden)" />
+      </div>
+    </div>
+
+    <div class="pr-4 text-right font-semibold">
+      Project Gebied:
+      <HelpTooltip tip="Het geografische gebied van het project, gedefinieerd als een polygon." position="right" />
+    </div>
     <div class="col-span-3">
       {#if polygonData.length > 0}
         <div class="mb-2 p-2 bg-green-50 border border-green-200 rounded">
@@ -287,33 +318,13 @@
           <span class="text-sm text-gray-600">Geen polygon getekend - gebruik de kaart hieronder</span>
         </div>
       {/if}
-      
-    <!-- JSON input field for manual polygon editing -->
-      <div class="mt-2">
-        <label for="polygonJson" class="block text-sm font-medium text-gray-700 mb-1">
-          Polygon coördinaten (JSON):
-        </label>
-        <textarea 
-          id="polygonJson"
-          class="textarea textarea-bordered w-full h-20 text-xs font-mono"
-          placeholder="[[longitude, latitude], [longitude, latitude], ...]"
-          value={JSON.stringify(polygonData)}
-          oninput={(e) => {
-            try {
-              const parsed = JSON.parse(e.currentTarget.value);
-              if (Array.isArray(parsed)) {
-                polygonData = [...parsed];
-              }
-            } catch (error) {
-              // Invalid JSON, ignore
-            }
-          }}
-        ></textarea>
-      </div>
     </div>
-    
+
     <!-- Polygon Drawing -->
-    <span class="pr-4 text-right font-semibold block mb-1 col-span-1 self-start" id="polygon-drawing-label">Project Gebied Tekenen:</span>
+    <span class="pr-4 text-right font-semibold">
+      Project Gebied Tekenen:
+      <HelpTooltip tip="Gebruik de kaart om een polygon te tekenen die het projectgebied definieert." position="right" />
+    </span>
     <div class="col-span-3">
       <PolygonDrawing 
         title="Project Gebied Tekenen"
@@ -324,8 +335,35 @@
       />
     </div>
 
+    <!-- JSON input field for manual polygon editing -->
+    <span class="pr-4 text-right font-semibold">
+      Polygon coördinaten (JSON-array):
+      <HelpTooltip tip="Handmatig bewerken van de polygon coördinaten in JSON formaat." position="right" />
+    </span>
+    <div class="col-span-3">
+      <textarea 
+        id="polygonJson"
+        class="textarea textarea-bordered w-full h-20 text-xs font-mono"
+        placeholder="[[longitude, latitude], [longitude, latitude], ...]"
+        value={JSON.stringify(polygonData)}
+        oninput={(e) => {
+          try {
+            const parsed = JSON.parse(e.currentTarget.value);
+            if (Array.isArray(parsed)) {
+              polygonData = [...parsed];
+            }
+          } catch (error) {
+            // Invalid JSON, ignore
+          }
+        }}
+      ></textarea>
+    </div>
+
     <div class="col-span-4">
-      <label for="layerCatalogSearch" class="block text-left font-semibold mb-2">Lagen:</label>
+      <label for="layerCatalogSearch" class="block text-left font-semibold mb-2">
+        Lagen:
+        <HelpTooltip tip="Selecteer de lagen die deel uitmaken van dit project." position="right" />
+      </label>
       <div class="grid grid-cols-5 gap-4" style="min-height: 200px;">
         <!-- Catalogus (left, 2/5) -->
         <div class="col-span-2 border border-base-300 rounded-lg p-2 h-full max-h-64 overflow-y-auto flex flex-col">

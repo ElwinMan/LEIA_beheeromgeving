@@ -10,6 +10,7 @@
 
   export let title = 'Selecteer Positie';
   export let buttonText = 'Selecteer positie op kaart';
+  export let disabled = false;
   export let initialPosition: {
     x?: number;
     y?: number;
@@ -83,8 +84,9 @@
 <!-- Button to open position selector -->
 <button 
   type="button"
-  class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm font-medium transition-colors shadow-sm"
+  class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm font-medium transition-colors shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-gray-400"
   on:click={handleOpen}
+  {disabled}
 >
   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
