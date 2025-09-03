@@ -5,6 +5,7 @@ export interface LayerAssociation {
   is_default: boolean;
   sort_order: number;
   group_id: number | null;
+  content?: any;
 }
 
 export interface LayerWithAssociation extends LayerAssociation {
@@ -12,6 +13,7 @@ export interface LayerWithAssociation extends LayerAssociation {
   beschrijving: string;
   featureName: string;
   isNew: boolean;
+  layerContent?: any;
 }
 
 export interface GroupWithLayers extends Group {

@@ -13,7 +13,8 @@ def handle_bulk_layer_operations(digital_twin_id: int, operations: List[DigitalT
             layer_id=op.layer_id,
             group_id=op.group_id,
             sort_order=op.sort_order or 0,
-            is_default=op.is_default or False
+            is_default=op.is_default or False,
+            content=op.content
         )
         repo.bulk_create_layer_association(db, assoc)
         result_counter["created"] += 1
@@ -21,11 +22,18 @@ def handle_bulk_layer_operations(digital_twin_id: int, operations: List[DigitalT
     def handle_update(op: DigitalTwinLayerBulkItem):
         assoc = repo.get_layer_association(db, digital_twin_id, op.layer_id)
         if assoc:
-            updates = {
-                "sort_order": op.sort_order,
-                "group_id": op.group_id,
-                "is_default": op.is_default,
-            }
+            updates = {}
+            
+            # Only update fields that are provided (not None)
+            if op.sort_order is not None:
+                updates["sort_order"] = op.sort_order
+            if op.group_id is not None:
+                updates["group_id"] = op.group_id
+            if op.is_default is not None:
+                updates["is_default"] = op.is_default
+            if op.content is not None:
+                updates["content"] = op.content
+                
             repo.bulk_update_layer_fields(assoc, updates)
             result_counter["updated"] += 1
 

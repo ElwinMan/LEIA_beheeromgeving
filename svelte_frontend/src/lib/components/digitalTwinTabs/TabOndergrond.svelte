@@ -3,11 +3,12 @@
   import { fetchLayers, fetchDigitalTwin, bulkUpdateDigitalTwinAssociations } from '$lib/api';
   import type { DigitalTwin } from '$lib/types/digitalTwin';
   import type { Layer } from '$lib/types/layer';
-  import type { BulkAssociationsPayload, LayerBulkOperation } from '$lib/types/digitalTwinAssociation';
+  import type { BulkAssociationsPayload, LayerBulkOperation, LayerWithAssociation } from '$lib/types/digitalTwinAssociation';
   import { dragStartAction } from '$lib/utils/dragStartAction';
   import { getDropZone } from '$lib/utils/dropZoneUtils';
   import AlertBanner from '$lib/components/AlertBanner.svelte';
   import CreateLayerModal from '$lib/components/modals/CreateLayerModal.svelte';
+  import EditLayerPropertiesModal from '$lib/components/modals/EditLayerPropertiesModal.svelte';
 
   interface Props {
     digitalTwin: DigitalTwin | null;
@@ -17,19 +18,20 @@
   let { digitalTwin, digitalTwinId }: Props = $props();
 
   let backgroundLayers = $state<Layer[]>([]);
-  let selectedBackgroundLayers = $state<Layer[]>([]);
+  let selectedBackgroundLayers = $state<LayerWithAssociation[]>([]);
   let defaultLayerId = $state<number | null>(null);
   let loading = $state(true);
   let error = $state<string | null>(null);
   let isSaving = $state(false);
   let associatedLayerIds = $state<Set<number>>(new Set());
   let hasChanges = $state(false);
-  let originalData: Layer[] = [];
+  let originalData: LayerWithAssociation[] = [];
 
   // Alert banner refs
   let successBanner: InstanceType<typeof AlertBanner> | null = null;
   let errorBanner: InstanceType<typeof AlertBanner> | null = null;
   let createLayerModalRef: InstanceType<typeof CreateLayerModal>;
+  let editLayerPropertiesModalRef: InstanceType<typeof EditLayerPropertiesModal>;
 
   // Simple drag state
   let draggedLayer = $state<Layer | null>(null);
@@ -41,7 +43,7 @@
   // Derived computed arrays for selected and unselected layers
   let selectedLayers = $derived(selectedBackgroundLayers);
   let unselectedLayers = $derived(
-    backgroundLayers.filter(layer => !selectedBackgroundLayers.find(sl => sl.id === layer.id))
+    backgroundLayers.filter(layer => !selectedBackgroundLayers.find(sl => sl.layer_id === layer.id))
   );
 
   onMount(async () => {
@@ -71,8 +73,22 @@
         })
         .sort((a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order); // Sort by sort_order
       
-      selectedBackgroundLayers = layerAssociations.map((assoc: { layer_id: number }) => {
-        return backgroundLayers.find(layer => layer.id === assoc.layer_id);
+      selectedBackgroundLayers = layerAssociations.map((assoc: any) => {
+        const layer = backgroundLayers.find(layer => layer.id === assoc.layer_id);
+        if (!layer) return null;
+        
+        return {
+          layer_id: layer.id,
+          is_default: assoc.is_default,
+          sort_order: assoc.sort_order,
+          group_id: null,
+          title: layer.title,
+          beschrijving: layer.type || '',
+          featureName: layer.featureName || '',
+          isNew: false,
+          content: assoc.content,
+          layerContent: layer.content
+        } as LayerWithAssociation;
       }).filter(Boolean); // Remove any undefined layers
       
       defaultLayerId =
@@ -157,8 +173,20 @@
         // Insert at specific position
         const layerToAdd = backgroundLayers.find(layer => layer.id === draggedLayer!.id);
         if (layerToAdd) {
+          const newAssociation: LayerWithAssociation = {
+            layer_id: layerToAdd.id,
+            is_default: false,
+            sort_order: insertIndex,
+            group_id: null,
+            title: layerToAdd.title,
+            beschrijving: layerToAdd.type || '',
+            featureName: layerToAdd.featureName || '',
+            isNew: true,
+            content: {},
+            layerContent: layerToAdd.content
+          };
           const newArray = [...selectedBackgroundLayers];
-          newArray.splice(insertIndex, 0, layerToAdd);
+          newArray.splice(insertIndex, 0, newAssociation);
           selectedBackgroundLayers = newArray;
           hasChanges = true;
         }
@@ -171,7 +199,7 @@
       toggleLayer(draggedLayer.id);
     } else if (draggedFrom === 'selected' && section === 'selected' && index !== undefined) {
       // Reorder within selected
-      const currentIndex = selectedBackgroundLayers.findIndex(l => l.id === draggedLayer!.id);
+      const currentIndex = selectedBackgroundLayers.findIndex(l => l.layer_id === draggedLayer!.id);
       if (currentIndex !== -1) {
         let targetIndex = index;
         if (dragOverZone === 'bottom') {
@@ -208,18 +236,30 @@
   }
 
   function toggleLayer(layerId: number) {
-    const existingIndex = selectedBackgroundLayers.findIndex(layer => layer.id === layerId);
+    const existingIndex = selectedBackgroundLayers.findIndex(layer => layer.layer_id === layerId);
     
     if (existingIndex !== -1) {
       // Remove from selected - using immutable filter
-      selectedBackgroundLayers = selectedBackgroundLayers.filter(layer => layer.id !== layerId);
+      selectedBackgroundLayers = selectedBackgroundLayers.filter(layer => layer.layer_id !== layerId);
       // Remove from associated set when removing from selection
       associatedLayerIds.delete(layerId);
     } else {
       // Add to selected - using immutable spread
       const layerToAdd = backgroundLayers.find(layer => layer.id === layerId);
       if (layerToAdd) {
-        selectedBackgroundLayers = [...selectedBackgroundLayers, layerToAdd];
+        const newAssociation: LayerWithAssociation = {
+          layer_id: layerToAdd.id,
+          is_default: false,
+          sort_order: selectedBackgroundLayers.length,
+          group_id: null,
+          title: layerToAdd.title,
+          beschrijving: layerToAdd.type || '',
+          featureName: layerToAdd.featureName || '',
+          isNew: true,
+          content: {},
+          layerContent: layerToAdd.content
+        };
+        selectedBackgroundLayers = [...selectedBackgroundLayers, newAssociation];
         // Add to associated set when adding to selection
         associatedLayerIds.add(layerId);
       }
@@ -232,11 +272,23 @@
     defaultLayerId = layerId;
     
     // Ensure the layer is selected
-    const existingIndex = selectedBackgroundLayers.findIndex(layer => layer.id === layerId);
+    const existingIndex = selectedBackgroundLayers.findIndex(layer => layer.layer_id === layerId);
     if (existingIndex === -1) {
       const layerToAdd = backgroundLayers.find(layer => layer.id === layerId);
       if (layerToAdd) {
-        selectedBackgroundLayers = [...selectedBackgroundLayers, layerToAdd]; // Trigger reactivity
+        const newAssociation: LayerWithAssociation = {
+          layer_id: layerToAdd.id,
+          is_default: true,
+          sort_order: selectedBackgroundLayers.length,
+          group_id: null,
+          title: layerToAdd.title,
+          beschrijving: layerToAdd.type || '',
+          featureName: layerToAdd.featureName || '',
+          isNew: true,
+          content: {},
+          layerContent: layerToAdd.content
+        };
+        selectedBackgroundLayers = [...selectedBackgroundLayers, newAssociation]; // Trigger reactivity
         // Add to associated set when adding to selection
         associatedLayerIds.add(layerId);
       }
@@ -254,30 +306,31 @@
       const operations: LayerBulkOperation[] = [];
 
       // Track which layers are currently selected
-      const currentSelectedIds = new Set(selectedBackgroundLayers.map(l => l.id));
+      const currentSelectedIds = new Set(selectedBackgroundLayers.map(l => l.layer_id));
       
       // Handle selected layers (create/update) with proper sort order
       for (let i = 0; i < selectedBackgroundLayers.length; i++) {
         const layer = selectedBackgroundLayers[i];
         // A layer should be updated if it was already associated in the original data
-        const wasOriginallyAssociated = originalData.some((origLayer: Layer) => origLayer.id === layer.id);
+        const wasOriginallyAssociated = originalData.some((origLayer: LayerWithAssociation) => origLayer.layer_id === layer.layer_id);
         const action = wasOriginallyAssociated ? 'update' : 'create';
         
         operations.push({
           action,
-          layer_id: layer.id,
-          is_default: layer.id === defaultLayerId,
+          layer_id: layer.layer_id,
+          is_default: layer.layer_id === defaultLayerId,
           sort_order: i, // Use the array index as sort order
           group_id: null,
+          content: layer.content
         });
       }
 
       // Handle deleted layers (layers that were in originalData but not in current selection)
       for (const originalLayer of originalData) {
-        if (!currentSelectedIds.has(originalLayer.id)) {
+        if (!currentSelectedIds.has(originalLayer.layer_id)) {
           operations.push({
             action: 'delete',
-            layer_id: originalLayer.id,
+            layer_id: originalLayer.layer_id,
             is_default: false,
             sort_order: 0,
             group_id: null,
@@ -294,7 +347,7 @@
       
       // Update originalData and associatedLayerIds after successful save
       originalData = JSON.parse(JSON.stringify(selectedBackgroundLayers));
-      associatedLayerIds = new Set(selectedBackgroundLayers.map(l => l.id));
+      associatedLayerIds = new Set(selectedBackgroundLayers.map(l => l.layer_id));
       hasChanges = false;
       
       // Show success banner
@@ -319,12 +372,43 @@
     // Add the new background layer to the available layers
     backgroundLayers = [...backgroundLayers, newLayer];
   }
+
+  function handleEditLayerProperties(layer: LayerWithAssociation) {
+    editLayerPropertiesModalRef.show(layer);
+  }
+
+  function handleLayerPropertiesSaved(event: CustomEvent<{ layer: LayerWithAssociation; properties: { transparent?: boolean; opacity?: number } }>) {
+    const { layer, properties } = event.detail;
+    
+    // Update the layer's content with the custom properties
+    const updatedContent = {
+      ...layer.content,
+      transparent: properties.transparent,
+      opacity: properties.opacity
+    };
+    
+    layer.content = updatedContent;
+    
+    // Mark as changed to trigger save
+    hasChanges = true;
+  }
+
+  // Helper function to check if a layer has custom transparency/opacity settings
+  function hasCustomSettings(layer: LayerWithAssociation): boolean {
+    const content = layer.content || {};
+    return content.transparent !== undefined || content.opacity !== undefined;
+  }
 </script>
 
 <CreateLayerModal
   bind:this={createLayerModalRef}
   on:created={handleLayerCreated}
   isBackgroundPage={true}
+/>
+
+<EditLayerPropertiesModal
+  bind:this={editLayerPropertiesModalRef}
+  on:saved={handleLayerPropertiesSaved}
 />
 
 <AlertBanner
@@ -425,14 +509,17 @@
                 }
               }}
             >
-              {#each selectedLayers as layer, index (layer.id)}
+              {#each selectedLayers as layer, index (layer.layer_id)}
                 <div 
-                  class="flex items-center justify-between p-3 border rounded-lg hover:bg-base-50 transition-colors cursor-move drag-item {draggedLayer?.id === layer.id ? 'opacity-50 scale-98' : ''} {dragOverSection === 'selected' && dragOverIndex === index ? dragOverZone === 'top' ? 'border-t-4 border-t-success' : dragOverZone === 'bottom' ? 'border-b-4 border-b-success' : 'border-success bg-success/10' : ''}"
+                  class="flex items-center justify-between p-3 border rounded-lg hover:bg-base-50 transition-colors cursor-move drag-item {draggedLayer?.id === layer.layer_id ? 'opacity-50 scale-98' : ''} {dragOverSection === 'selected' && dragOverIndex === index ? dragOverZone === 'top' ? 'border-t-4 border-t-success' : dragOverZone === 'bottom' ? 'border-b-4 border-b-success' : 'border-success bg-success/10' : ''}"
                   role="button"
                   tabindex="0"
                   aria-label="Verplaatsbare ondergrondlaag: {layer.title}"
                   draggable="true"
-                  ondragstart={(e) => handleDragStart(e, layer, 'selected')}
+                  ondragstart={(e) => {
+                    const backgroundLayer = backgroundLayers.find(l => l.id === layer.layer_id);
+                    if (backgroundLayer) handleDragStart(e, backgroundLayer, 'selected');
+                  }}
                   ondragend={handleDragEnd}
                   ondragover={(e) => handleDragOver(e, 'selected', index)}
                   ondragleave={handleDragLeave}
@@ -443,24 +530,33 @@
                     <input
                       type="checkbox"
                       checked={true}
-                      onchange={() => toggleLayer(layer.id)}
+                      onchange={() => toggleLayer(layer.layer_id)}
                       class="checkbox checkbox-success"
                     />
                     <span class="font-medium">{layer.title}</span>
                   </div>
 
                   <div class="flex items-center gap-2">
-                    <label class="label cursor-pointer flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="default-layer"
-                        value={layer.id}
-                        checked={defaultLayerId === layer.id}
-                        onchange={() => setDefaultLayer(layer.id)}
-                        class="radio radio-secondary"
-                      />
-                      <span class="text-sm">Standaard</span>
-                    </label>
+                    <button
+                      class="btn btn-xs"
+                      class:btn-primary={hasCustomSettings(layer)}
+                      class:btn-ghost={!hasCustomSettings(layer)}
+                      onclick={() => handleEditLayerProperties(layer)}
+                      title="Bewerk laageigenschappen"
+                      aria-label="Bewerk laageigenschappen"
+                    >
+                      <img src="/icons/square-pen.svg" alt="Edit" class="w-4 h-4" />
+                    </button>
+                    <button
+                      class="btn btn-sm btn-circle"
+                      class:btn-secondary={defaultLayerId === layer.layer_id}
+                      class:btn-outline={defaultLayerId !== layer.layer_id}
+                      onclick={() => setDefaultLayer(layer.layer_id)}
+                      title={defaultLayerId === layer.layer_id ? 'Standaard laag' : 'Instellen als standaard'}
+                      aria-label={defaultLayerId === layer.layer_id ? 'Standaard laag' : 'Instellen als standaard'}
+                    >
+                      <img src="/icons/eye.svg" alt="Eye" class="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               {/each}

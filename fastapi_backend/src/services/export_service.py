@@ -22,6 +22,10 @@ from sqlalchemy.orm import Session
 
 def transform_layer(layer, assoc=None):
     content = layer.content if isinstance(layer.content, dict) else {}
+    
+    # Get association content for per-digital-twin overrides
+    assoc_content = assoc.content if assoc and isinstance(assoc.content, dict) else {}
+    
     # Settings always include these keys if relevant for the layer type
     settings_always_include = {"url", "featureName", "contenttype"}
     settings = {}
@@ -71,6 +75,7 @@ def transform_layer(layer, assoc=None):
     # Always include these keys, even if empty
     always_include = {"imageUrl", "legendUrl", "groupId", "isBackground", "defaultAddToManager", "defaultOn"}
     # Prepare all possible keys and their values
+    # For transparent and opacity, prioritize association content over layer content
     all_keys = {
         "id": str(layer.id),
         "type": layer.type,
@@ -83,8 +88,8 @@ def transform_layer(layer, assoc=None):
         "defaultOn": assoc.is_default if assoc else True,
         "attribution": content.get("attribution", ""),
         "metadata": content.get("metadata", ""),
-        "transparent": content.get("transparent", False),
-        "opacity": content.get("opacity", 100),
+        "transparent": assoc_content.get("transparent", content.get("transparent", False)),
+        "opacity": assoc_content.get("opacity", content.get("opacity", 100)),
         "cameraPosition": content.get("cameraPosition", "")
     }
     # Build the export dict

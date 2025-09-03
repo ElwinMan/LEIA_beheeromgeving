@@ -20,6 +20,7 @@
   import AlertBanner from '$lib/components/AlertBanner.svelte';
   import GroupModal from '$lib/components/modals/CreateGroupModal.svelte';
   import CreateLayerModal from '$lib/components/modals/CreateLayerModal.svelte';
+  import EditLayerPropertiesModal from '$lib/components/modals/EditLayerPropertiesModal.svelte';
   import DeleteModal from '$lib/components/modals/DeleteModal.svelte';
   import DeleteGroupModal from '$lib/components/modals/DeleteGroupModal.svelte';
   import { isDescendant } from '$lib/utils/isDescendantPrevention';
@@ -38,6 +39,7 @@
   let { digitalTwin, digitalTwinId }: Props = $props();
   let groupModalRef: InstanceType<typeof GroupModal>;
   let createLayerModalRef: InstanceType<typeof CreateLayerModal>;
+  let editLayerPropertiesModalRef: InstanceType<typeof EditLayerPropertiesModal>;
   let deleteLayerModalShow = $state(false);
   let layerToDelete: LayerWithAssociation | null = null;
   let skipDeleteLayerConfirm = false;
@@ -147,7 +149,9 @@
               title: layerDetails?.title || `Layer ${association.layer_id}`,
               beschrijving: layerDetails?.type || '',
               featureName: layerDetails?.featureName || '',
-              isNew: false
+              isNew: false,
+              // Add layer content for the modal
+              layerContent: layerDetails?.content
             };
           })
           .filter((layer) => {
@@ -368,7 +372,9 @@
       title: layer.title,
       beschrijving: layer.type || '',
       featureName: layer.featureName || '',
-      isNew: true // Mark as new layer
+      isNew: true, // Mark as new layer
+      // Add layer content for the modal
+      layerContent: layer.content
     };
 
     if (groupId === null) {
@@ -537,7 +543,9 @@
         title: layer.title,
         beschrijving: layer.type || '',
         featureName: layer.featureName || '',
-        isNew: true // Mark as new layer
+        isNew: true, // Mark as new layer
+        // Add layer content for the modal
+        layerContent: layer.content
       };
 
       if (targetGroupId === null) {
@@ -808,7 +816,8 @@
           layer_id: layer.layer_id,
           is_default: layer.is_default,
           sort_order: layer.sort_order,
-          group_id: null
+          group_id: null,
+          content: layer.content
         });
       });
 
@@ -821,7 +830,8 @@
               layer_id: layer.layer_id,
               is_default: layer.is_default,
               sort_order: layer.sort_order,
-              group_id: group.id
+              group_id: group.id,
+              content: layer.content
             });
           });
           collectGroupLayers(group.subgroups);
@@ -1001,6 +1011,32 @@
     layerToDelete = null;
   }
 
+  function handleEditLayerProperties(layer: LayerWithAssociation) {
+    editLayerPropertiesModalRef.show(layer);
+  }
+
+  function handleLayerPropertiesSaved(event: CustomEvent<{ layer: LayerWithAssociation; properties: { transparent?: boolean; opacity?: number } }>) {
+    const { layer, properties } = event.detail;
+    
+    // Debug logging
+    console.log('TabFeatureLagen received properties:', properties);
+    console.log('Current layer content before update:', layer.content);
+    
+    // Update the layer's content with the custom properties
+    const updatedContent = {
+      ...layer.content,
+      transparent: properties.transparent,
+      opacity: properties.opacity
+    };
+    
+    console.log('Updated content:', updatedContent);
+    
+    layer.content = updatedContent;
+    
+    // Mark as changed to trigger save
+    hasChanges = true;
+  }
+
   function confirmDeleteGroup(group: GroupWithLayers) {
     groupToDelete = group;
     deleteGroupOption = 'delete';
@@ -1124,6 +1160,12 @@
     allLayers = [...allLayers, newLayer];
     catalogLayers = [...catalogLayers, newLayer];
   }
+
+  // Helper function to check if a layer has custom transparency/opacity settings
+  function hasCustomSettings(layer: LayerWithAssociation): boolean {
+    const content = layer.content || {};
+    return content.transparent !== undefined || content.opacity !== undefined;
+  }
 </script>
 
 <GroupModal
@@ -1137,6 +1179,11 @@
   bind:this={createLayerModalRef}
   on:created={handleLayerCreated}
   isBackgroundPage={false}
+/>
+
+<EditLayerPropertiesModal
+  bind:this={editLayerPropertiesModalRef}
+  on:saved={handleLayerPropertiesSaved}
 />
 
 <DeleteModal
@@ -1367,10 +1414,17 @@
                         title={layer.is_default ? 'Standaard laag' : 'Instellen als standaard'}
                         aria-label={layer.is_default ? 'Standaard laag' : 'Instellen als standaard'}
                       >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
+                        <img src="/icons/eye.svg" alt="Eye" class="w-4 h-4" />
+                      </button>
+                      <button
+                        class="btn btn-xs"
+                        class:btn-primary={hasCustomSettings(layer)}
+                        class:btn-ghost={!hasCustomSettings(layer)}
+                        onclick={() => handleEditLayerProperties(layer)}
+                        title="Bewerk laageigenschappen"
+                        aria-label="Bewerk laageigenschappen"
+                      >
+                        <img src="/icons/square-pen.svg" alt="Edit" class="w-4 h-4" />
                       </button>
                       <button
                         class="btn btn-ghost btn-xs"
@@ -1632,10 +1686,17 @@
                   title={layer.is_default ? 'Standaard laag' : 'Instellen als standaard'}
                   aria-label={layer.is_default ? 'Standaard laag' : 'Instellen als standaard'}
                 >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
+                  <img src="/icons/eye.svg" alt="Eye" class="w-4 h-4" />
+                </button>
+                <button
+                  class="btn btn-xs"
+                  class:btn-primary={hasCustomSettings(layer)}
+                  class:btn-ghost={!hasCustomSettings(layer)}
+                  onclick={() => handleEditLayerProperties(layer)}
+                  title="Bewerk laageigenschappen"
+                  aria-label="Bewerk laageigenschappen"
+                >
+                  <img src="/icons/square-pen.svg" alt="Edit" class="w-4 h-4" />
                 </button>
                 <button
                   class="btn btn-ghost btn-xs"

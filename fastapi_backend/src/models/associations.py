@@ -9,6 +9,7 @@ class DigitalTwinLayerAssociation(Base):
     group_id = Column(Integer, ForeignKey("group.id"), nullable=True, default=None)
     is_default = Column(Boolean, default=False, nullable=False)
     sort_order = Column(Integer, nullable=False)
+    content = Column(JSON, nullable=True)
 
     digital_twin = relationship("DigitalTwin", back_populates="layer_associations")
     layer = relationship("Layer")
