@@ -56,14 +56,20 @@ def seed(db: Session):
             else:
                 group_id_to_use = None
 
-            assoc = DigitalTwinLayerAssociation(
+            # Check if association already exists
+            existing = db.query(DigitalTwinLayerAssociation).filter_by(
                 digital_twin_id=digital_twin.id,
-                layer_id=layer.id,
-                group_id=group_id_to_use,
-                sort_order=sort_order,
-                is_default=is_default
-            )
-            db.merge(assoc)
+                layer_id=layer.id
+            ).first()
+            if not existing:
+                assoc = DigitalTwinLayerAssociation(
+                    digital_twin_id=digital_twin.id,
+                    layer_id=layer.id,
+                    group_id=group_id_to_use,
+                    sort_order=sort_order,
+                    is_default=is_default
+                )
+                db.merge(assoc)
 
     db.commit()
     print("Digital Twin-Layer associations seeded.")

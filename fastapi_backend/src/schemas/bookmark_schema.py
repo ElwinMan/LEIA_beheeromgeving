@@ -34,7 +34,7 @@ class BookmarkResponse(BookmarkBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # New schema for bookmark tool associations (with reference to actual bookmark)
 class BookmarkToolAssociationCreate(BaseModel):
@@ -51,7 +51,7 @@ class BookmarkToolAssociationResponse(BaseModel):
     bookmark: Optional[BookmarkResponse] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class PaginatedBookmarksResponse(BaseModel):
     results: List[BookmarkResponse]

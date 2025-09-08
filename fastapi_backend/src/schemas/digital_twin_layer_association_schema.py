@@ -9,7 +9,7 @@ class DigitalTwinLayerAssociationSchema(BaseModel):
     content: Optional[dict] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class DigitalTwinLayerBulkItem(BaseModel):
     layer_id: int

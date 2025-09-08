@@ -26,7 +26,7 @@ services:
     profiles: ["migrate"]
 
   # Migration + minimal seeding (content types and tools)
-  seed:
+  seed-minimal:
     build: 
       context: ./fastapi_backend
       dockerfile: Dockerfile
@@ -37,7 +37,7 @@ services:
     depends_on:
       - db
     command: ["/migrate.sh", "minimal"]
-    profiles: ["seed"]
+    profiles: ["seed-minimal"]
 
   # Migration + full seeding (all data)
   seed-full:

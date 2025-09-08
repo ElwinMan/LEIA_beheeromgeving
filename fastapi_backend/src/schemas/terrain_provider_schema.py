@@ -24,7 +24,7 @@ class TerrainProviderResponse(TerrainProviderBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # New schema for terrain provider tool associations (with reference to actual terrain provider)
 class TerrainProviderToolAssociationCreate(BaseModel):
@@ -41,7 +41,7 @@ class TerrainProviderToolAssociationResponse(BaseModel):
     terrain_provider: Optional[TerrainProviderResponse] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class PaginatedTerrainProvidersResponse(BaseModel):
     results: List[TerrainProviderResponse]

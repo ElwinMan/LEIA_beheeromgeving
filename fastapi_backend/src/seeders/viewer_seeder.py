@@ -1,12 +1,12 @@
 from db.database import SessionLocal, engine
 from models.viewer import Viewer
+from models.digital_twin import DigitalTwin
 from sqlalchemy.orm import Session
 
 def seed(db: Session):
-    viewers = [
-        Viewer(
-            digital_twin_id=1,
-            content={
+    # Map of digital twin names to their viewer configurations
+    viewer_data = {
+        "bodem": {
             "logo": "https://virtueel.zeeland.nl/global_assets/img/logo.svg",
             "thumbnail": "/assets/previews/preview-klimaat-bodem.png",
             "startPosition": {
@@ -72,10 +72,8 @@ def seed(db: Session):
                 "disabled-02": "#bebebe",
                 "disabled-03": "#8c8c8c"
             }
-        }),
-        Viewer(
-            digital_twin_id=2,
-            content={
+        },
+        "fier": {
             "logo": "images/leia_logo.png",
             "thumbnail": "/assets/previews/preview-klimaat-overstroming.png",
             "startPosition": {
@@ -141,11 +139,23 @@ def seed(db: Session):
                 "disabled-02": "#bebebe",
                 "disabled-03": "#8c8c8c"
             }
-        }),
-    ]
+        }
+    }
 
-    for viewer in viewers:
-        db.add(viewer)
+    for twin_name, content in viewer_data.items():
+        digital_twin = db.query(DigitalTwin).filter_by(name=twin_name).first()
+        if not digital_twin:
+            print(f"Digital twin '{twin_name}' not found!")
+            continue
+
+        # Check if viewer already exists
+        existing = db.query(Viewer).filter_by(digital_twin_id=digital_twin.id).first()
+        if not existing:
+            viewer = Viewer(
+                digital_twin_id=digital_twin.id,
+                content=content
+            )
+            db.add(viewer)
     db.commit()
 
 def run():

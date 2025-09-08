@@ -1,6 +1,6 @@
 # LEIA beheeromgeving Web App - Svelte + FastAPI + PostgreSQL
 
-Gebruikt om de JSON configuratie files van LEIA digital twins te beheren.
+The application is used to manage JSON config files for LEIA digital twins.
 
 ## Clone
 ```sh
@@ -10,6 +10,9 @@ cd LEIA_beheeromgeving
 ## Build
 
 ### With docker
+Copy the .env.example as .env in svelte_frontend and .env.docker.example in fastAPI_backend as .env.docker
+
+Open docker desktop and use one of the following command line. (If you don't have administrative permissions on your work device, the solution might be switching to the guest wifi and disable the VPN connection)
 
 Use the following command line to migrate the database schema on the initial build
 Just for the database tables/schema:
@@ -18,7 +21,7 @@ docker compose --profile migrate up --build
 ```
 For the database tables/schema and minimal seeding of tools and tool_content_types
 ```sh
-docker compose --profile seed up --build
+docker compose --profile seed-minimal up --build
 ```
 For the database tables/schema and full seeding of everything. (Is not up to date to existing digital twins because it depends on the hardcoded seeders.)
 ```sh
@@ -40,6 +43,8 @@ API docs: http://localhost:8000/docs
 PostgreSQL: http://localhost:5432/
 
 ### Run local
+Copy the .env.example as .env in svelte_frontend and .env.example in fastAPI_backend as .env
+
 ```sh
 python -m venv venv
 venv\Scripts\activate
@@ -47,6 +52,13 @@ pip install -r requirements.txt
 cd src
 python -m src.scripts.manage fresh
 uvicorn main:app --reload
+```
+
+Run the frontend svelte with the following command line and open the application on http://localhost:5173/ (It can take a minute for the app to work properly)
+```sh
+cd frontend_svelte
+npm install
+npm run dev
 ```
 
 ## Backend local manage tool

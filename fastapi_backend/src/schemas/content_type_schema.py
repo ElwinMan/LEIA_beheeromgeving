@@ -16,7 +16,7 @@ class ContentTypeResponse(ContentTypeBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class PaginatedContentTypesResponse(BaseModel):
     results: List[ContentTypeResponse]

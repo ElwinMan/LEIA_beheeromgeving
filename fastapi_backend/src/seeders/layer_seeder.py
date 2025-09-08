@@ -345,7 +345,11 @@ def seed(db: Session):
         ),
     ]
 
-    db.add_all(layers)
+    for layer in layers:
+        # Check if layer already exists
+        existing = db.query(Layer).filter_by(title=layer.title).first()
+        if not existing:
+            db.add(layer)
     db.commit()
 
 def run():

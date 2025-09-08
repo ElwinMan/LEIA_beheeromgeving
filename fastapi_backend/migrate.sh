@@ -44,42 +44,10 @@ elif [ "$SEED_TYPE" = "minimal" ]; then
     python -m scripts.manage seed-minimal
     echo "Minimal seeding completed!"
 elif [ "$SEED_TYPE" = "full" ]; then
-    echo "Checking if database needs full seeding..."
+    echo "Running full seeding..."
     cd /app
-
-    # Check if database is empty before seeding
-    if python -c "
-from db.database import get_db
-from models.digital_twin import DigitalTwin
-import sys
-
-db_gen = get_db()
-db = next(db_gen)
-
-try:
-    count = db.query(DigitalTwin).count()
-    print(f'DigitalTwin count: {count}')
-    
-    if count == 0:
-        print('Database is empty, should run seeders.')
-        sys.exit(0)  # Success - should run seeders
-    else:
-        print(f'Database has {count} digital twins, skipping seeders.')
-        sys.exit(1)  # Skip seeders
-        
-except Exception as e:
-    print(f'Error checking database: {e}')
-    print('Running seeders due to error.')
-    sys.exit(0)  # Run seeders on error
-finally:
-    db.close()
-"; then
-        echo "Running full seeders..."
-        python -m scripts.manage seed
-        echo "Full seeders completed!"
-    else
-        echo "Skipping full seeders - database already has data."
-    fi
+    python -m scripts.manage seed
+    echo "Full seeding completed!"
 else
     echo "Unknown seed type: $SEED_TYPE. Use 'none', 'minimal', or 'full'"
     exit 1

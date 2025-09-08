@@ -3,46 +3,44 @@ from models.tool_associations import Story
 from sqlalchemy.orm import Session
 
 def seed(db: Session):
-    try:
-        story = [
-            {
-                "name": "My story",
-                "description": "Description of my story",
-                "content": {
-                    "width": "600px",
-                    "force2DMode": False,
-                    "requestPolygonArea": False,
-                    "baseLayerId": "",
-                    "steps": [
-                        {
-                            "title": "Title of step",
-                            "html": "<div>Content of the step.</div>",
-                            "globeOpacity": 100,
-                            "terrain": "Uit",
-                            "camera": {
-                                "x": 5.23907,
-                                "y": 52.20004,
-                                "z": 13130.05823,
-                                "heading": 335.10694,
-                                "pitch": -30.69127,
-                                "duration": 1.5
-                            },
-                            "layers": [
-                                {"id": "8352260480948"},
-                                {"id": "19747667-ddb2-4162-99f6-a37d5aaa15ea", "style": "Bouwjaar"}
-                            ]
-                        }
-                    ]
-                }
+    story = [
+        {
+            "name": "My story",
+            "description": "Description of my story",
+            "content": {
+                "width": "600px",
+                "force2DMode": False,
+                "requestPolygonArea": False,
+                "baseLayerId": "",
+                "steps": [
+                    {
+                        "title": "Title of step",
+                        "html": "<div>Content of the step.</div>",
+                        "globeOpacity": 100,
+                        "terrain": "Uit",
+                        "camera": {
+                            "x": 5.23907,
+                            "y": 52.20004,
+                            "z": 13130.05823,
+                            "heading": 335.10694,
+                            "pitch": -30.69127,
+                            "duration": 1.5
+                        },
+                        "layers": [
+                            {"id": "8352260480948"},
+                            {"id": "19747667-ddb2-4162-99f6-a37d5aaa15ea", "style": "Bouwjaar"}
+                        ]
+                    }
+                ]
             }
-        ]
-        for s in story:
-            if not db.query(Story).filter_by(name=s["name"]).first():
-                db.add(Story(**s))
-        db.commit()
-        print("Stories seeded.")
-    finally:
-        db.close()
+        }
+    ]
+    for s in story:
+        existing = db.query(Story).filter_by(name=s["name"]).first()
+        if not existing:
+            db.add(Story(**s))
+    db.commit()
+    print("Stories seeded.")
 
 def run():
     db = SessionLocal()

@@ -28,11 +28,17 @@ def seed(db: Session):
                 print(f"Tool '{tool_name}' not found!")
                 continue
 
-            assoc = DigitalTwinToolAssociation(
+            # Check if association already exists
+            existing = db.query(DigitalTwinToolAssociation).filter_by(
                 digital_twin_id=digital_twin.id,
-                tool_id=tool.id,
-            )
-            db.add(assoc)
+                tool_id=tool.id
+            ).first()
+            if not existing:
+                assoc = DigitalTwinToolAssociation(
+                    digital_twin_id=digital_twin.id,
+                    tool_id=tool.id,
+                )
+                db.add(assoc)
 
     db.commit()
     print("Digital Twin-Tool associations seeded.")

@@ -9,7 +9,10 @@ def seed(db: Session):
     ]
 
     for user in users:
-        db.add(user)
+        # Check if user already exists
+        existing = db.query(User).filter_by(email=user.email).first()
+        if not existing:
+            db.add(user)
     db.commit()
 
 def run():

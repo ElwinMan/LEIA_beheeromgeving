@@ -9,7 +9,10 @@ def seed(db: Session):
     ]
 
     for digital_twin in digital_twins:
-        db.add(digital_twin)
+        # Check if digital twin already exists
+        existing = db.query(DigitalTwin).filter_by(name=digital_twin.name).first()
+        if not existing:
+            db.add(digital_twin)
     db.commit()
 
 def run():

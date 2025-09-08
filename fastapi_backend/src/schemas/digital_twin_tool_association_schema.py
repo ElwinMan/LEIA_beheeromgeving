@@ -11,7 +11,7 @@ class DigitalTwinToolAssociationSchema(BaseModel):
     content: Optional[dict] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class DigitalTwinToolBulkItem(BaseModel):
     tool_id: int

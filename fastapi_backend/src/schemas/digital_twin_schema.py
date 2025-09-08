@@ -31,7 +31,7 @@ class DigitalTwinListResponse(DigitalTwinBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class DigitalTwinResponse(DigitalTwinBase):
     id: int
@@ -39,7 +39,7 @@ class DigitalTwinResponse(DigitalTwinBase):
     tool_associations: Optional[List[DigitalTwinToolAssociationSchema]] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class BulkAssociationsPayload(BaseModel):
@@ -52,7 +52,7 @@ class DigitalTwinSummary(BaseModel):
     title: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class PaginatedDigitalTwinResponse(BaseModel):
     results: List[DigitalTwinListResponse]
