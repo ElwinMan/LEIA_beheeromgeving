@@ -11,11 +11,28 @@ cd LEIA_beheeromgeving
 
 ### With docker
 
+Use the following command line to migrate the database schema on the initial build
+Just for the database tables/schema:
+```sh
+docker compose --profile migrate up --build
+```
+For the database tables/schema and minimal seeding of tools and tool_content_types
+```sh
+docker compose --profile seed up --build
+```
+For the database tables/schema and full seeding of everything. (Is not up to date to existing digital twins because it depends on the hardcoded seeders.)
+```sh
+docker compose --profile seed-full up --build
+```
+
+Use the following command if you have to rebuild and already have the database tables/schema:
 ```sh
 docker compose up --build
 ```
 
-Svelte frontend: http://localhost:8080/
+Links to the containers:
+
+Svelte frontend: http://localhost:3000/
 
 FastAPI backend: http://localhost:8000/
 API docs: http://localhost:8000/docs
@@ -32,7 +49,7 @@ python -m src.scripts.manage fresh
 uvicorn main:app --reload
 ```
 
-## Backend manage tool
+## Backend local manage tool
 This manage.py script provides a simple command-line interface to manage your database. It supports dropping tables, creating tables, running migrations, seeding data, and running a full reset (fresh) combining all steps.
 
 ### Usage
@@ -53,8 +70,14 @@ Runs Alembic migrations to update the database schema to the latest version.
 - seed  
 Runs the seeding scripts to populate the database with initial or sample data.
 
+- seed-minimal
+Runs the seeding script to populate the database with the minimal data (tool and tool content_type data).
+
 - fresh  
 Drops all tables, runs migrations, and seeds the database. Use this for a full reset of the database.
+
+- fresh-minimal
+Drops all tables, runs migrations, and seeds the database with minimal data. Use this for a full reset of the database with minimal data.
 
 ## Alembic
 

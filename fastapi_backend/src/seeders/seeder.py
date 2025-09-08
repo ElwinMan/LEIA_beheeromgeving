@@ -64,8 +64,11 @@ def main():
 
         print("Database seeding completed!")
 
+    except Exception as e:
+        print(f"Error during seeding: {e}")
+        raise
     finally:
-        db_gen.close()
+        db.close()
 
 if __name__ == "__main__":
     main()

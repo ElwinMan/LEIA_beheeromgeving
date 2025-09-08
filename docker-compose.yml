@@ -1,13 +1,57 @@
 services:
-  frontend:
-    build:
-      context: ./svelte_frontend
-      dockerfile: Dockerfile
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: mydb
+    volumes:
+      - pgdata:/var/lib/postgresql/data
     ports:
-      - "3000:3000"
-    env_file:
-      - ./svelte_frontend/.env.docker
-    restart: unless-stopped
+      - "5432:5432"
+
+  # Migration service - only runs migrations
+  migrate:
+    build: 
+      context: ./fastapi_backend
+      dockerfile: Dockerfile
+    env_file: 
+      - ./fastapi_backend/.env.docker
+    environment:
+      - RUNNING_IN_DOCKER=true
+    depends_on:
+      - db
+    command: ["/migrate.sh", "none"]
+    profiles: ["migrate"]
+
+  # Migration + minimal seeding (content types and tools)
+  seed:
+    build: 
+      context: ./fastapi_backend
+      dockerfile: Dockerfile
+    env_file: 
+      - ./fastapi_backend/.env.docker
+    environment:
+      - RUNNING_IN_DOCKER=true
+    depends_on:
+      - db
+    command: ["/migrate.sh", "minimal"]
+    profiles: ["seed"]
+
+  # Migration + full seeding (all data)
+  seed-full:
+    build: 
+      context: ./fastapi_backend
+      dockerfile: Dockerfile
+    env_file: 
+      - ./fastapi_backend/.env.docker
+    environment:
+      - RUNNING_IN_DOCKER=true
+    depends_on:
+      - db
+    command: ["/migrate.sh", "full"]
+    profiles: ["seed-full"]
 
   backend:
     build:
@@ -21,19 +65,18 @@ services:
     env_file:
       - ./fastapi_backend/.env.docker
     environment:
-    - RUNNING_IN_DOCKER=true
+      - RUNNING_IN_DOCKER=true
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 
-  db:
-    image: postgres
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: mysecretpassword
-      POSTGRES_DB: mydb
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+  frontend:
+    build:
+      context: ./svelte_frontend
+      dockerfile: Dockerfile
     ports:
-      - "5432:5432"
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
 
 volumes:
   pgdata:

@@ -9,7 +9,7 @@ COPY . .
 RUN npm install
 RUN npm run build
 
-FROM node:lts-slim as run
+FROM node:lts-slim AS run
 
 WORKDIR /app
 COPY --from=build /app/package.json ./package.json

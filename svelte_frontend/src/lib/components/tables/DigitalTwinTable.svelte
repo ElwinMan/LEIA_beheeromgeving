@@ -214,6 +214,14 @@
           {/each}
         </tbody>
       </table>
+      
+      {#if digitalTwins.length === 0}
+        <div class="py-12 text-center">
+          <img src="/icons/database.svg" alt="Geen digital twins" class="mx-auto h-12 w-12 opacity-50" />
+          <h3 class="mt-2 text-lg font-medium">Geen digital twins</h3>
+          <p class="mt-1 opacity-70">Er zijn nog geen digital twins beschikbaar.</p>
+        </div>
+      {/if}
 
       <!-- Pagination controls -->
       <div class="flex justify-between items-center mt-4 p-6 bg-base-200 shadow">
@@ -265,14 +273,6 @@
           </select>
         </div>
       </div>
-
-      {#if digitalTwins.length === 0}
-        <div class="py-12 text-center">
-          <img src="/icons/database.svg" alt="Geen digital twins" class="mx-auto h-12 w-12 opacity-50" />
-          <h3 class="mt-2 text-lg font-medium">Geen digital twins</h3>
-          <p class="mt-1 opacity-70">Er zijn nog geen digital twins beschikbaar.</p>
-        </div>
-      {/if}
     </div>
   </div>
 </div>

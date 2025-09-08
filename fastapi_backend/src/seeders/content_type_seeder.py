@@ -4,7 +4,6 @@ from db.database import SessionLocal
 from models.content_type import ContentType
 
 def seed(db: Session):
-    """Seed initial content types"""
     content_types = [
         ContentType(name="bookmark", table_name="bookmarks"),
         ContentType(name="project", table_name="projects"),

@@ -152,8 +152,13 @@ def seed(db: Session):
     ]
 
     for tool in tools:
-        db.add(tool)
+        # Check if tool already exists
+        existing = db.query(Tool).filter_by(name=tool.name).first()
+        if not existing:
+            db.add(tool)
+    
     db.commit()
+    print("Tools seeded successfully")
 
 def run():
     db = SessionLocal()
