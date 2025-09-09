@@ -13,6 +13,7 @@
   import AlertBanner from '$lib/components/AlertBanner.svelte';
   import PositionSelector from '$lib/components/PositionSelector.svelte';
   import HelpTooltip from '$lib/components/HelpTooltip.svelte';
+  import ToolSettings from '$lib/components/ToolSettings.svelte';
 
   export let digitalTwinId: string;
 
@@ -39,8 +40,31 @@
   let allTools: (Tool & { enabled: boolean; settings?: Record<string, any> })[] = [];
   let activeToolSettingsTab: number | null = null;
 
-  // FeatureInfo fields state (for the featureinfo tool)
-  let featureInfoFields: { field: string; handler: string }[] = [];
+  // Calculate tools with settings
+  $: toolsWithSettings = allTools.filter(tool => {
+    if (!tool.enabled) return false;
+    
+    // Check if tool has configurable settings
+    if (!tool.content?.settings) {
+      // Special case for featureinfo tool
+      return tool.name?.toLowerCase() === 'featureinfo';
+    }
+    
+    const hasConfigurableSettings = Object.values(tool.content.settings).some(value => 
+      typeof value === 'boolean' || typeof value === 'string'
+    );
+    
+    return hasConfigurableSettings || tool.name?.toLowerCase() === 'featureinfo';
+  });
+
+  // Set active tab when tools with settings change
+  $: if (toolsWithSettings.length > 0) {
+    if (activeToolSettingsTab === null || !toolsWithSettings.some(tool => tool.id === activeToolSettingsTab)) {
+      activeToolSettingsTab = toolsWithSettings[0].id;
+    }
+  } else {
+    activeToolSettingsTab = null;
+  }
 
   // Tool setting tooltips lookup
   const toolSettingTooltips: Record<string, string> = {
@@ -112,64 +136,10 @@
           } : undefined
         };
       });
-
-      // Sync featureInfoFields after allTools is initialized
-      syncFeatureInfoFieldsFromTools();
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e);
     }
   });
-
-  // Helper to sync featureInfoFields from allTools (call on mount and when active tab changes)
-  function syncFeatureInfoFieldsFromTools() {
-    const featureInfoTool = allTools.find(t => t.name?.toLowerCase() === 'featureinfo');
-    if (featureInfoTool && featureInfoTool.enabled) {
-      if (Array.isArray(featureInfoTool.settings?.fields)) {
-        featureInfoFields = featureInfoTool.settings.fields.map((f: any) => ({ field: f.field || '', handler: f.handler || 'image' }));
-      } else {
-        featureInfoFields = [];
-      }
-    } else {
-      featureInfoFields = [];
-    }
-  }
-
-  // Also call sync when activeToolSettingsTab changes (in case user switches tabs)
-  $: if (activeToolSettingsTab !== null) {
-    syncFeatureInfoFieldsFromTools();
-  }
-
-  // Helper to update allTools when user changes featureInfoFields
-  function updateFeatureInfoFields(newFields: { field: string; handler: string }[]) {
-    featureInfoFields = newFields;
-    const featureInfoTool = allTools.find(t => t.name?.toLowerCase() === 'featureinfo');
-    if (featureInfoTool && featureInfoTool.enabled) {
-      featureInfoTool.settings = featureInfoTool.settings || {};
-      featureInfoTool.settings.fields = featureInfoFields.map(f => ({ field: f.field, handler: f.handler }));
-      allTools = allTools;
-    }
-  }
-
-  // Reactive statement to calculate tools with settings
-  $: toolsWithSettings = allTools.filter(tool => {
-    if (!tool.enabled) return false;
-    const booleanSettings = getConfigurableBooleanSettings(tool);
-    const textSettings = getConfigurableTextSettings(tool);
-    if (tool.name?.toLowerCase() === 'featureinfo') return true;
-    return booleanSettings.length > 0 || textSettings.length > 0;
-  });
-
-  // Reactive statement to initialize active tab
-  $: {
-    if (activeToolSettingsTab === null && toolsWithSettings.length > 0) {
-      activeToolSettingsTab = toolsWithSettings[0].id;
-    }
-    
-    // Reset if current active tab is no longer available
-    if (activeToolSettingsTab !== null && !toolsWithSettings.some(tool => tool.id === activeToolSettingsTab)) {
-      activeToolSettingsTab = toolsWithSettings.length > 0 ? toolsWithSettings[0].id : null;
-    }
-  }
 
   function toggleTool(toolId: number) {
     const tool = allTools.find((t) => t.id === toolId);
@@ -185,64 +155,44 @@
       }
       
       // Trigger reactivity
-      allTools = allTools;
+      allTools = [...allTools];
     }
   }
 
-  function toggleToolSetting(toolId: number, settingKey: string) {
+  // Event handlers for ToolSettings component
+  function handleToggleSetting(event: CustomEvent) {
+    const { toolId, settingKey } = event.detail;
     const tool = allTools.find((t) => t.id === toolId);
     if (tool && tool.settings) {
       tool.settings[settingKey] = !tool.settings[settingKey];
-      // Trigger reactivity
-      allTools = allTools;
+      allTools = [...allTools];
     }
   }
 
-  function updateToolTextSetting(toolId: number, settingKey: string, value: string) {
+  function handleUpdateTextSetting(event: CustomEvent) {
+    const { toolId, settingKey, value } = event.detail;
     const tool = allTools.find((t) => t.id === toolId);
     if (tool && tool.settings) {
       tool.settings[settingKey] = value;
-      // Trigger reactivity
-      allTools = allTools;
+      allTools = [...allTools];
     }
   }
 
-  // Helper function to get configurable boolean settings for a tool
-  function getConfigurableBooleanSettings(tool: Tool) {
-    if (!tool.content?.settings) return [];
-    const currentTool = allTools.find(t => t.id === tool.id);
-    return Object.entries(tool.content.settings)
-      .filter(([_, value]) => typeof value === 'boolean')
-      .map(([key, value]) => ({
-        key,
-        value: currentTool?.settings?.[key] ?? value,
-        label: key // You may want to map key to a user-friendly label
-      }));
+  function handleUpdateFeatureInfoFields(event: CustomEvent) {
+    const { fields } = event.detail;
+    const featureInfoTool = allTools.find(t => t.name?.toLowerCase() === 'featureinfo');
+    if (featureInfoTool && featureInfoTool.enabled) {
+      featureInfoTool.settings = featureInfoTool.settings || {};
+      featureInfoTool.settings.fields = fields.map((f: any) => ({ field: f.field, handler: f.handler }));
+      allTools = [...allTools];
+    }
   }
 
-  // Helper function to get configurable text settings for a tool
-  function getConfigurableTextSettings(tool: Tool) {
-    if (!tool.content?.settings) return [];
-    const currentTool = allTools.find(t => t.id === tool.id);
-    return Object.entries(tool.content.settings)
-      .filter(([_, value]) => typeof value === 'string')
-      .map(([key, value]) => ({
-        key,
-        value: currentTool?.settings?.[key] ?? value,
-        label: key, // Map to user-friendly label if needed
-        multiline: key === 'description' // Or use a config for which fields are multiline
-      }));
-  }
-
-  // Computed property for LayerLibrary connectors (getter/setter)
-  function getLayerLibraryConnectors(tool: Tool & { enabled: boolean; settings?: Record<string, any> }): any[] {
-    // Defensive: always return array
-    return tool.settings?.connectors ?? [];
-  }
-  function setLayerLibraryConnectors(tool: Tool & { enabled: boolean; settings?: Record<string, any> }, newConnectors: any[]): void {
-    if (tool.settings) {
-      // Deep clone to ensure Svelte reactivity
-      tool.settings.connectors = JSON.parse(JSON.stringify(newConnectors));
+  function handleUpdateConnectors(event: CustomEvent) {
+    const { toolId, connectors } = event.detail;
+    const tool = allTools.find((t) => t.id === toolId);
+    if (tool && tool.settings) {
+      tool.settings.connectors = JSON.parse(JSON.stringify(connectors));
       allTools = [...allTools];
     }
   }
@@ -476,338 +426,33 @@
               {/each}
             </div>
             
-            <!-- Tool Settings -->
+            <!-- Tool Settings with Tabs -->
             {#if toolsWithSettings.length > 0}
-              <div class="bg-base-50 rounded-lg">
-                <h3 class="font-semibold text-base">Tool Settings
+              <div class="bg-base-50 rounded-lg p-4">
+                <h3 class="font-semibold text-base mb-4">Tool Settings
                   <HelpTooltip tip="Tool instellingen voor de geselecteerde tool." />
                 </h3>
+
                 <!-- Tool Settings Tabs -->
                 <div class="tabs tabs-border">
                   {#each toolsWithSettings as tool, index (tool.id)}
-                    {@const configurableBooleanSettings = getConfigurableBooleanSettings(tool)}
-                    {@const configurableTextSettings = getConfigurableTextSettings(tool)}
                     <input 
                       type="radio" 
                       name="tool_settings_tabs" 
                       class="tab" 
                       aria-label={tool.name}
                       checked={activeToolSettingsTab === tool.id}
-                      on:change={() => activeToolSettingsTab = tool.id}
+                      on:change={() => {activeToolSettingsTab = tool.id}}
                     />
                     <div class="tab-content border-base-300 bg-base-100 p-6">
-                      <div class="space-y-4">
-                        <!-- Boolean Settings -->
-                        {#if configurableBooleanSettings.length > 0}
-                          <div class="space-y-3">
-                            <div class="flex items-center space-x-2">
-                              <div class="w-1 h-4 bg-secondary rounded"></div>
-                              <h5 class="font-semibold text-sm text-base-content uppercase tracking-wide">Opties</h5>
-                            </div>
-                            <div class="space-y-2 pl-3">
-                              {#each configurableBooleanSettings as setting}
-                                <label class="flex cursor-pointer items-center space-x-3 p-2 rounded-md hover:bg-base-50 transition-colors select-none">
-                                  <input
-                                    type="checkbox"
-                                    checked={setting.value}
-                                    on:change={() => toggleToolSetting(tool.id, setting.key)}
-                                    class="checkbox checkbox-sm checkbox-secondary"
-                                  />
-                                  <span class="text-sm font-medium flex items-center gap-2">
-                                    {setting.label}
-                                    <span class="normal-case">
-                                      <HelpTooltip tip={toolSettingTooltips[setting.key]} />
-                                    </span>
-                                  </span>
-                                </label>
-                              {/each}
-                            </div>
-                          </div>
-                        {/if}
-                        
-                        <!-- Text Settings -->
-                        {#if configurableTextSettings.length > 0}
-                          <div class="space-y-3">
-                            <div class="flex items-center space-x-2">
-                              <div class="w-1 h-4 bg-primary rounded"></div>
-                              <h5 class="font-semibold text-sm text-base-content uppercase tracking-wide">Tekst instellingen</h5>
-                            </div>
-                            <div class="space-y-3 pl-3">
-                              {#each configurableTextSettings as setting}
-                                <div class="form-control">
-                                  <label class="label flex items-center gap-2" for="tool-{tool.id}-{setting.key}">
-                                    <span class="label-text text-sm font-medium">{setting.label}</span>
-                                    <span class="normal-case">
-                                      <HelpTooltip tip={toolSettingTooltips[setting.key]} />
-                                    </span>
-                                  </label>
-                                  {#if tool.name?.toLowerCase() === 'geocoder' && setting.key === 'name'}
-                                    <select
-                                      id="tool-{tool.id}-{setting.key}"
-                                      class="select select-bordered select-s w-full focus:border-primary"
-                                      value={setting.value}
-                                      on:change={(e) => updateToolTextSetting(tool.id, setting.key, (e.target as HTMLSelectElement)?.value || '')}
-                                    >
-                                      <option value="locatieserver">locatieserver (Nederland)</option>
-                                      <option value="geolocation">geolocation (België)</option>
-                                      <option value="nominatim">nominatim (Wereldwijd)</option>
-                                    </select>
-                                  {:else if setting.multiline}
-                                    <textarea
-                                      id="tool-{tool.id}-{setting.key}"
-                                      class="textarea textarea-bordered textarea-sm w-full focus:border-primary"
-                                      rows="3"
-                                      value={setting.value}
-                                      on:input={(e) => updateToolTextSetting(tool.id, setting.key, (e.target as HTMLTextAreaElement)?.value || '')}
-                                      placeholder={setting.label}
-                                    ></textarea>
-                                  {:else}
-                                    <input
-                                      id="tool-{tool.id}-{setting.key}"
-                                      type="text"
-                                      class="input input-bordered input-sm w-full focus:border-primary"
-                                      value={setting.value}
-                                      on:input={(e) => updateToolTextSetting(tool.id, setting.key, (e.target as HTMLInputElement)?.value || '')}
-                                      placeholder={setting.label}
-                                    />
-                                  {/if}
-                                </div>
-                              {/each}
-                            </div>
-                          </div>
-                        {/if}
-
-                        <!-- FeatureInfo Fields UI -->
-                        {#if tool.name?.toLowerCase() === 'featureinfo'}
-                          <div class="space-y-3">
-                            <div class="flex items-center space-x-2">
-                              <div class="w-1 h-4 bg-accent rounded"></div>
-                              <h5 class="font-semibold text-sm text-base-content uppercase tracking-wide flex items-center gap-2">
-                                FeatureInfo Fields
-                                <span class="normal-case">
-                                  <HelpTooltip tip="Configureer velden die worden gebruikt voor het tonen van feature-informatie. Specificeer het veldnaam en het bijbehorende handler type (image, PDF, of chart)." />
-                                </span>
-                              </h5>
-                            </div>
-                            <div class="space-y-2 pl-3">
-                              {#if featureInfoFields.length === 0}
-                                <div class="text-sm text-gray-500">No fields added yet.</div>
-                              {/if}
-                              {#each featureInfoFields as fieldObj, idx}
-                                <div class="flex gap-2 mb-1 items-center">
-                                  <input
-                                    class="input input-bordered w-1/2"
-                                    placeholder="Field name (e.g. image)"
-                                    value={fieldObj.field}
-                                    on:input={(e) => {
-                                      const newFields = [...featureInfoFields];
-                                      newFields[idx].field = (e.target as HTMLInputElement).value;
-                                      updateFeatureInfoFields(newFields);
-                                    }}
-                                  />
-                                  <select
-                                    class="select select-bordered w-1/3"
-                                    value={fieldObj.handler}
-                                    on:change={(e) => {
-                                      const newFields = [...featureInfoFields];
-                                      newFields[idx].handler = (e.target as HTMLSelectElement).value;
-                                      updateFeatureInfoFields(newFields);
-                                    }}
-                                  >
-                                    <option value="image">Image</option>
-                                    <option value="pdf">PDF</option>
-                                    <option value="chart">Chart</option>
-                                  </select>
-                                  <button type="button" class="btn btn-xs btn-error" on:click={() => {
-                                    const newFields = featureInfoFields.filter((_, i) => i !== idx);
-                                    updateFeatureInfoFields(newFields);
-                                  }}>Remove</button>
-                                </div>
-                              {/each}
-                              <button type="button" class="btn btn-xs btn-primary mt-1" on:click={() => {
-                                const newFields = [...featureInfoFields, { field: '', handler: 'image' }];
-                                updateFeatureInfoFields(newFields);
-                              }}>+ Add Field</button>
-                            </div>
-                          </div>
-                        {/if}
-
-                        <!-- LayerLibrary Connectors UI -->
-                        {#if tool.name?.toLowerCase() === 'layerlibrary'}
-                          <div class="mb-4">
-                            <h5 class="font-semibold text-sm text-base-content uppercase tracking-wide flex items-center gap-2">
-                              Connectors
-                              <span class="normal-case">
-                                <HelpTooltip tip="Configureer data connectors voor de LayerLibrary tool. Elke connector definieert een bron van datasets met bijbehorende organisaties, groepen en pakketten." />
-                              </span>
-                            </h5>
-                            {#each getLayerLibraryConnectors(tool) as connector, idx (idx)}
-                              <div class="border rounded p-3 mb-2 space-y-2">
-                                <div class="flex justify-between items-center">
-                                  <div class="flex-1">
-                                    <label class="text-xs font-semibold mb-1 flex items-center gap-2" for={`connector-type-${idx}`}>
-                                      Type
-                                      <span class="normal-case">
-                                        <HelpTooltip tip="Type van connector. Momenteel wordt voornamelijk 'ckan' ondersteund voor CKAN data catalogi." />
-                                      </span>
-                                    </label>
-                                    <select 
-                                      id={`connector-type-${idx}`} 
-                                      class="select select-bordered select-sm w-full" 
-                                      bind:value={connector.type}
-                                      on:change={(e) => {
-                                        const connectors = [...getLayerLibraryConnectors(tool)];
-                                        connectors[idx].type = (e.target as HTMLSelectElement).value;
-                                        setLayerLibraryConnectors(tool, connectors);
-                                      }}
-                                    >
-                                      <option value="">Selecteer type</option>
-                                      <option value="ckan">CKAN</option>
-                                      <option value="geonetwork">geonetwork</option>
-                                      <option value="custom">Custom</option>
-                                    </select>
-                                    {#if connector.type === 'custom'}
-                                      <input
-                                        type="text"
-                                        class="input input-bordered input-sm w-full mt-2"
-                                        placeholder="Voer custom connector type in..."
-                                        value={connector.customType || ''}
-                                        on:input={(e) => {
-                                          const connectors = [...getLayerLibraryConnectors(tool)];
-                                          connectors[idx].customType = (e.target as HTMLInputElement).value;
-                                          setLayerLibraryConnectors(tool, connectors);
-                                        }}
-                                      />
-                                    {/if}
-                                  </div>
-                                  <button type="button" class="btn btn-xs btn-error ml-2" title="Remove Connector" on:click={() => {
-                                    const connectors = getLayerLibraryConnectors(tool).filter((_, i) => i !== idx);
-                                    setLayerLibraryConnectors(tool, connectors);
-                                  }}>Remove</button>
-                                </div>
-                                <div>
-                                  <label class="text-xs font-semibold mb-1 flex items-center gap-2" for={`connector-url-${idx}`}>
-                                    URL
-                                    <span class="normal-case">
-                                      <HelpTooltip tip="De basis URL van de data connector service." />
-                                    </span>
-                                  </label>
-                                  <input id={`connector-url-${idx}`} type="text" class="input input-bordered input-sm w-full" bind:value={connector.url}
-                                    on:input={(e) => {
-                                      const connectors = [...getLayerLibraryConnectors(tool)];
-                                      connectors[idx].url = (e.target as HTMLInputElement).value;
-                                      setLayerLibraryConnectors(tool, connectors);
-                                    }} />
-                                </div>
-                                <div>
-                                  <label class="text-xs font-semibold mb-1 flex items-center gap-2" for={`connector-orgs-${idx}`}>
-                                    Organizations (comma separated)
-                                    <span class="normal-case">
-                                      <HelpTooltip tip="Lijst van organisaties waarvan datasets beschikbaar zijn via deze connector. Gebruik komma's om meerdere organisaties te scheiden." />
-                                    </span>
-                                  </label>
-                                  <input id={`connector-orgs-${idx}`} type="text" class="input input-bordered input-sm w-full" value={Array.isArray(connector.organizations) ? connector.organizations.join(', ') : connector.organizations}
-                                    on:input={(e) => {
-                                      const connectors = [...getLayerLibraryConnectors(tool)];
-                                      connectors[idx].organizations = (e.target as HTMLInputElement).value.split(',').map(s => s.trim());
-                                      setLayerLibraryConnectors(tool, connectors);
-                                    }} />
-                                </div>
-                                <div>
-                                  <label class="text-xs font-semibold mb-1 flex items-center gap-2" for={`connector-groups-${idx}`}>
-                                    Groups (comma separated)
-                                    <span class="normal-case">
-                                      <HelpTooltip tip="Lijst van groepen waarvan datasets beschikbaar zijn via deze connector. Gebruik komma's om meerdere groepen te scheiden." />
-                                    </span>
-                                  </label>
-                                  <input id={`connector-groups-${idx}`} type="text" class="input input-bordered input-sm w-full" value={Array.isArray(connector.groups) ? connector.groups.join(', ') : connector.groups}
-                                    on:input={(e) => {
-                                      const connectors = [...getLayerLibraryConnectors(tool)];
-                                      connectors[idx].groups = (e.target as HTMLInputElement).value.split(',').map(s => s.trim());
-                                      setLayerLibraryConnectors(tool, connectors);
-                                    }} />
-                                </div>
-                                <div>
-                                  <label class="text-xs font-semibold mb-1 flex items-center gap-2" for={`connector-packages-${idx}`}>
-                                    Packages (comma separated)
-                                    <span class="normal-case">
-                                      <HelpTooltip tip="Lijst van data-pakketten die beschikbaar zijn via deze connector. Gebruik komma's om meerdere pakketten te scheiden." />
-                                    </span>
-                                  </label>
-                                  <input id={`connector-packages-${idx}`} type="text" class="input input-bordered input-sm w-full" value={Array.isArray(connector.packages) ? connector.packages.join(', ') : connector.packages}
-                                    on:input={(e) => {
-                                      const connectors = [...getLayerLibraryConnectors(tool)];
-                                      connectors[idx].packages = (e.target as HTMLInputElement).value.split(',').map(s => s.trim());
-                                      setLayerLibraryConnectors(tool, connectors);
-                                    }} />
-                                </div>
-                                <div>
-                                  <span class="text-xs font-semibold mb-1 flex items-center gap-2">
-                                    Special Resources
-                                    <span class="normal-case">
-                                      <HelpTooltip tip="Speciale resource configuraties voor achtergrond lagen en automatisch toe te voegen/verwijderen lagen." />
-                                    </span>
-                                  </span>
-                                  <div class="space-y-1 ml-5">
-                                    <label class="text-xs flex items-center gap-2" for={`connector-bg-${idx}`}>
-                                      Background Layers (comma separated)
-                                      <span class="normal-case">
-                                        <HelpTooltip tip="Lagen die automatisch als achtergrond worden geladen wanneer deze connector wordt gebruikt." />
-                                      </span>
-                                    </label>
-                                    <input id={`connector-bg-${idx}`} type="text" class="input input-bordered input-sm w-full" value={Array.isArray(connector.specialResources?.backgroundLayers) ? connector.specialResources.backgroundLayers.join(', ') : connector.specialResources?.backgroundLayers}
-                                      on:input={(e) => {
-                                        const connectors = [...getLayerLibraryConnectors(tool)];
-                                        connectors[idx].specialResources.backgroundLayers = (e.target as HTMLInputElement).value.split(',').map(s => s.trim());
-                                        setLayerLibraryConnectors(tool, connectors);
-                                      }} />
-                                    <label class="text-xs flex items-center gap-2" for={`connector-on-${idx}`}>
-                                      Layers Added On (comma separated)
-                                      <span class="normal-case">
-                                        <HelpTooltip tip="Lagen die automatisch worden ingeschakeld wanneer deze connector wordt geactiveerd." />
-                                      </span>
-                                    </label>
-                                    <input id={`connector-on-${idx}`} type="text" class="input input-bordered input-sm w-full" value={Array.isArray(connector.specialResources?.layersAddedOn) ? connector.specialResources.layersAddedOn.join(', ') : connector.specialResources?.layersAddedOn}
-                                      on:input={(e) => {
-                                        const connectors = [...getLayerLibraryConnectors(tool)];
-                                        connectors[idx].specialResources.layersAddedOn = (e.target as HTMLInputElement).value.split(',').map(s => s.trim());
-                                        setLayerLibraryConnectors(tool, connectors);
-                                      }} />
-                                    <label class="text-xs flex items-center gap-2" for={`connector-off-${idx}`}>
-                                      Layers Added Off (comma separated)
-                                      <span class="normal-case">
-                                        <HelpTooltip tip="Lagen die automatisch worden uitgeschakeld wanneer deze connector wordt geactiveerd." />
-                                      </span>
-                                    </label>
-                                    <input id={`connector-off-${idx}`} type="text" class="input input-bordered input-sm w-full" value={Array.isArray(connector.specialResources?.layersAddedOff) ? connector.specialResources.layersAddedOff.join(', ') : connector.specialResources?.layersAddedOff}
-                                      on:input={(e) => {
-                                        const connectors = [...getLayerLibraryConnectors(tool)];
-                                        connectors[idx].specialResources.layersAddedOff = (e.target as HTMLInputElement).value.split(',').map(s => s.trim());
-                                        setLayerLibraryConnectors(tool, connectors);
-                                      }} />
-                                  </div>
-                                </div>
-                              </div>
-                            {/each}
-                            <button type="button" class="btn btn-xs btn-primary mt-2" on:click={() => {
-                              const connectors = [...getLayerLibraryConnectors(tool), {
-                                type: 'ckan',
-                                customType: '',
-                                url: '',
-                                organizations: [],
-                                groups: [],
-                                packages: [],
-                                specialResources: {
-                                  backgroundLayers: [],
-                                  layersAddedOn: [],
-                                  layersAddedOff: []
-                                }
-                              }];
-                              setLayerLibraryConnectors(tool, connectors);
-                            }}>+ Add Connector</button>
-                          </div>
-                        {/if}
-                      </div>
+                      <ToolSettings 
+                        {tool}
+                        {toolSettingTooltips}
+                        on:toggleSetting={handleToggleSetting}
+                        on:updateTextSetting={handleUpdateTextSetting}
+                        on:updateFeatureInfoFields={handleUpdateFeatureInfoFields}
+                        on:updateConnectors={handleUpdateConnectors}
+                      />
                     </div>
                   {/each}
                 </div>
