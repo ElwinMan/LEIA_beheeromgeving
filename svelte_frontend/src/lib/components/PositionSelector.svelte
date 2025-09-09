@@ -49,27 +49,21 @@
       const position = camera.position;
       
       const cartographic = Cartographic.fromCartesian(position, Ellipsoid.WGS84);
-      const longitude = CesiumMath.toDegrees(cartographic.longitude);
-      const latitude = CesiumMath.toDegrees(cartographic.latitude);
-      const height = cartographic.height;
+      const x = CesiumMath.toDegrees(cartographic.longitude);
+      const y = CesiumMath.toDegrees(cartographic.latitude);
+      const z = cartographic.height;
 
       const heading = CesiumMath.toDegrees(camera.heading);
       const pitch = CesiumMath.toDegrees(camera.pitch);
-      const roll = CesiumMath.toDegrees(camera.roll);
-
       const currentDuration = initialPosition?.duration ?? 0;
       const duration = currentDuration === 0 ? 2.0 : currentDuration;
 
       const result = {
-        longitude,
-        latitude,
-        height,
+        x,
+        y,
+        z,
         heading,
         pitch,
-        roll,
-        x: longitude,
-        y: latitude,
-        z: height,
         duration
       };
 
