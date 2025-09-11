@@ -56,7 +56,6 @@
   // WMTS tab fields
   let wmtsFeatureName = '';
   let wmtsContentType = '';
-  let wmtsRequestEncoding = '';
   let wmtsMatrixIds = '';
   let wmtsTileMatrixSetID = '';
   let wmtsTileWidth = '';
@@ -141,13 +140,12 @@
     }
 
     // WMS
-    wmsFeatureName = layer.content?.wms?.featureName || '';
-    wmsContentType = layer.content?.wms?.contenttype || '';
+    wmsFeatureName = layer.featureName || '';
+    wmsContentType = layer.content?.wms?.contentType || '';
 
     // WMTS
-    wmtsFeatureName = layer.content?.wmts?.featureName || '';
-    wmtsContentType = layer.content?.wmts?.contenttype || '';
-    wmtsRequestEncoding = layer.content?.wmts?.requestencoding || '';
+    wmtsFeatureName = layer.featureName || '';
+    wmtsContentType = layer.content?.wmts?.contentType || '';
     wmtsMatrixIds = layer.content?.wmts?.matrixids || '';
     wmtsTileMatrixSetID = layer.content?.wmts?.tileMatrixSetID || '';
     wmtsTileWidth = layer.content?.wmts?.tileWidth || '';
@@ -235,15 +233,12 @@
     const tabContentMap: Record<string, any> = {
       wms: {
         wms: {
-          featureName: wmsFeatureName,
-          contenttype: wmsContentType
+          contentType: wmsContentType
         }
       },
       wmts: {
         wmts: {
-          featureName: wmtsFeatureName,
-          contenttype: wmtsContentType,
-          requestencoding: wmtsRequestEncoding,
+          contentType: wmtsContentType,
           matrixids: wmtsMatrixIds,
           tileMatrixSetID: wmtsTileMatrixSetID,
           tileWidth: wmtsTileWidth,
@@ -577,9 +572,6 @@
 
         <label for="wmtsContentType" class="pr-4 text-right font-semibold">Content Type:</label>
         <input id="wmtsContentType" class="input input-bordered col-span-3 w-full" bind:value={wmtsContentType} />
-
-        <label for="wmtsRequestEncoding" class="pr-4 text-right font-semibold">Request Encoding:</label>
-        <input id="wmtsRequestEncoding" class="input input-bordered col-span-3 w-full" bind:value={wmtsRequestEncoding} />
 
         <label for="wmtsMatrixIds" class="pr-4 text-right font-semibold">Matrix IDs:</label>
         <input id="wmtsMatrixIds" class="input input-bordered col-span-3 w-full" bind:value={wmtsMatrixIds} />

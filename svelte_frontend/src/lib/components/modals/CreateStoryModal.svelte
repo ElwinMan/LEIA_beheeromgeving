@@ -15,10 +15,11 @@
   let name = '';
   let description = '';
   let width = '600px';
-  let force2DMode = false;
+  let force2DMode = true;
+  let staticCamera = true;
   let requestPolygonArea = {
-    enabled: false,
-    statisticsApi: ''
+    enabled: true,
+    statisticsApi: 'https://virtueel.dev.zeeland.nl/ko_api/analyze'
   };
   let baseLayerId = '';
 
@@ -50,6 +51,8 @@
     name = '';
     description = '';
     width = '600px';
+    force2DMode = true;
+    staticCamera = true;
     chapters = [createNewChapter(0)];
     activeChapterIndex = 0;
     activeStepIndex = 0;
@@ -183,6 +186,7 @@
     const content = {
       width,
       force2DMode,
+      staticCamera,
       requestPolygonArea,
       baseLayerId,
       chapters: chapters.map(chapter => ({
@@ -286,17 +290,28 @@
       </label>
       <input id="width" class="input input-bordered col-span-3 w-full" bind:value={width} />
 
+      <!-- Checkbox rows -->
       <label for="force-2d-mode" class="text-right font-semibold">
         Force 2D Mode:
         <HelpTooltip tip="Dwingt de viewer om in 2D modus te werken." position="right" />
       </label>
       <input id="force-2d-mode" type="checkbox" class="checkbox checkbox-primary" bind:checked={force2DMode} />
+      <div class="col-span-2"></div>
+
+      <label for="static-camera" class="text-right font-semibold">
+        Static Camera:
+        <HelpTooltip tip="Houdt de cameralocatie hetzelfde na het tekenen en tussen stappen" position="right" />
+      </label>
+      <input id="static-camera" type="checkbox" class="checkbox checkbox-primary" bind:checked={staticCamera} />
+      <div class="col-span-2"></div>
 
       <label for="request-polygon-area-enabled" class="text-right font-semibold">
         Request Polygon Area:
         <HelpTooltip tip="Voegt een polygoontekenhulpmiddel toe dat in elke stap van het verhaal gegevens opvraagt uit een WMS-laag, indien er een WCS-laag met dezelfde naam bestaat. Bepaal of het hulpmiddel is ingeschakeld en welke API moet worden gebruikt (indien ingeschakeld)." />
       </label>
       <input id="request-polygon-area-enabled" type="checkbox" class="checkbox checkbox-primary" bind:checked={requestPolygonArea.enabled} />
+      <div class="col-span-2"></div>
+
       <label for="request-polygon-area-api" class="text-right font-semibold">
         Statistics API:
         <HelpTooltip tip="De URL van de API die wordt gebruikt voor polygoon statistieken." position="right" />

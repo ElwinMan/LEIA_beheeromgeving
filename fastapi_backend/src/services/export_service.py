@@ -27,13 +27,14 @@ def transform_layer(layer, assoc=None):
     assoc_content = assoc.content if assoc and isinstance(assoc.content, dict) else {}
     
     # Settings always include these keys if relevant for the layer type
-    settings_always_include = {"url", "featureName", "contenttype"}
+    settings_always_include = {"url", "featureName", "contentType"}
     settings = {}
     settings["url"] = layer.url
+    settings["featureName"] = layer.featureName or ""
 
     if layer.type == "wms":
         wms_content = content.get("wms", {})
-        for k in ["featureName", "contenttype"]:
+        for k in ["contentType"]:
             settings[k] = wms_content.get(k, "")
         # Add other wms keys only if non-empty
         for k, v in wms_content.items():
@@ -42,14 +43,14 @@ def transform_layer(layer, assoc=None):
 
     elif layer.type == "wmts":
         wmts_content = content.get("wmts", {})
-        for k in ["featureName", "contenttype"]:
+        for k in ["contentType"]:
             settings[k] = wmts_content.get(k, "")
         # Add other wmts keys only if non-empty
         for k, v in wmts_content.items():
             if k not in settings_always_include and v not in (None, ""):
                 settings[k] = v
         # Add extra wmts keys if non-empty
-        for k in ["requestencoding", "matrixids", "tileMatrixSetID", "tileWidth", "tileHeight", "maximumLevel"]:
+        for k in ["matrixids", "tileMatrixSetID", "tileWidth", "tileHeight", "maximumLevel"]:
             v = wmts_content.get(k, None)
             if k not in settings and v not in (None, ""):
                 settings[k] = v
@@ -434,11 +435,14 @@ def export_digital_twin(db: Session, digital_twin_id: int):
             # Get cesium configuration
             cesium_config = cesium_config_service.get_cesium_configuration(digital_twin_id, db) or {}
             
-            # Get terrain providers associated with cesium tool
+            # Check cesium settings mode setting
+            cesium_settings_mode = cesium_config.get("cesiumSettingsMode", "default")
+            
+            # Always get terrain providers (regardless of mode)
+            terrain_providers_data = []
             terrain_provider_associations = terrain_provider_service.get_digital_twin_terrain_providers(digital_twin_id, db)
             
             # Get terrain provider details
-            terrain_providers_data = []
             if terrain_provider_associations:
                 terrain_provider_ids = [assoc.content_id for assoc in terrain_provider_associations if assoc.content_id]
                 if terrain_provider_ids:
@@ -448,36 +452,45 @@ def export_digital_twin(db: Session, digital_twin_id: int):
                     for assoc in terrain_provider_associations:
                         if assoc.content_id and assoc.content_id in terrain_providers_by_id:
                             tp = terrain_providers_by_id[assoc.content_id]
-                            terrain_provider_data = {
-                                "title": tp.title,
-                                "url": tp.url
-                            }
                             
-                            # Add vertexNormals if it exists and is not None
-                            if tp.vertexNormals is not None:
-                                terrain_provider_data["vertexNormals"] = tp.vertexNormals
+                            # Special handling for "uit" terrain provider - only export title
+                            if tp.title.lower() == "uit":
+                                terrain_provider_data = {
+                                    "title": tp.title
+                                }
+                            else:
+                                terrain_provider_data = {
+                                    "title": tp.title,
+                                    "url": tp.url
+                                }
+                                
+                                # Add vertexNormals if it exists and is not None
+                                if tp.vertexNormals is not None:
+                                    terrain_provider_data["vertexNormals"] = tp.vertexNormals
                             
                             terrain_providers_data.append(terrain_provider_data)
             
-            # Create the cesium tool with proper structure
-            cesium_tool = {
-                "id": "cesium",
-                "enabled": True,
-                "settings": {}
-            }
-            
-            # Add cesium configuration settings
-            if cesium_config:
-                # Add configuration values to settings, excluding terrainProviders which we handle separately
-                for key, value in cesium_config.items():
-                    if key != "terrainProviders":  # We build this from associations
-                        cesium_tool["settings"][key] = value
-            
-            # Add terrain providers
-            if terrain_providers_data:
-                cesium_tool["settings"]["terrainProviders"] = terrain_providers_data
-            
-            tools_with_content.append(cesium_tool)
+            # Always export cesium tool if there are terrain providers OR if custom mode with other settings
+            if terrain_providers_data or cesium_settings_mode == "custom":
+                # Create the cesium tool with proper structure
+                cesium_tool = {
+                    "id": "cesium",
+                    "enabled": True,
+                    "settings": {}
+                }
+                
+                # Add terrain providers if we have any
+                if terrain_providers_data:
+                    cesium_tool["settings"]["terrainProviders"] = terrain_providers_data
+                
+                # Add other cesium configuration settings only if in custom mode
+                if cesium_settings_mode == "custom" and cesium_config:
+                    # Add configuration values to settings, excluding terrainProviders and cesiumSettingsMode
+                    for key, value in cesium_config.items():
+                        if key not in ["terrainProviders", "cesiumSettingsMode"]:  # We build terrainProviders from associations and exclude mode setting
+                            cesium_tool["settings"][key] = value
+                
+                tools_with_content.append(cesium_tool)
         else:
             # Transform tool data to use name as id and add enabled: true
             transformed_tool = {

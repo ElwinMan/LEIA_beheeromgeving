@@ -97,7 +97,6 @@
       // Dispatch viewer ready event
       dispatch('viewerReady', { viewer });
 
-      console.log('Cesium viewer initialized successfully');
     } catch (error) {
       console.error('Error initializing Cesium:', error);
       dispatch('error', { error });

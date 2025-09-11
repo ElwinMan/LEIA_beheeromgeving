@@ -56,7 +56,6 @@
   // WMTS tab fields
   let wmtsFeatureName: string = '';
   let wmtsContentType: string = '';
-  let wmtsRequestEncoding: string = '';
   let wmtsMatrixIds: string[] = [];
   let wmtsMatrixIdsText: string = '';
   let wmtsTileMatrixSetID: string = '';
@@ -147,7 +146,6 @@
 
     wmtsFeatureName = '';
     wmtsContentType = '';
-    wmtsRequestEncoding = '';
     wmtsMatrixIds = [];
     wmtsMatrixIdsText = '';
     wmtsTileMatrixSetID = '';
@@ -227,13 +225,12 @@
     const tabContentMap: Record<string, any> = {
       wms: {
         wms: {
-          contenttype: wmsContentType
+          contentType: wmsContentType
         }
       },
       wmts: {
         wmts: {
-          contenttype: wmtsContentType,
-          requestencoding: wmtsRequestEncoding,
+          contentType: wmtsContentType,
           matrixids: wmtsMatrixIds,
           tileMatrixSetID: wmtsTileMatrixSetID,
           tileWidth: wmtsTileWidth,
@@ -599,9 +596,6 @@
 
         <label for="wmtsContentType" class="pr-4 text-right font-semibold">Content Type:</label>
         <input id="wmtsContentType" class="input input-bordered col-span-3 w-full" bind:value={wmtsContentType} />
-
-        <label for="wmtsRequestEncoding" class="pr-4 text-right font-semibold">Request Encoding:</label>
-        <input id="wmtsRequestEncoding" class="input input-bordered col-span-3 w-full" bind:value={wmtsRequestEncoding} />
 
         <label for="wmtsMatrixIds" class="pr-4 text-right font-semibold">Matrix IDs:</label>
         <textarea

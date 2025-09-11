@@ -213,6 +213,9 @@ export interface GroupBulkOperation extends Group {
 
 // Cesium tool configuration for digital twin based on viewer documentation
 export interface CesiumConfiguration {
+  // Cesium settings mode
+  cesiumSettingsMode?: 'default' | 'custom'; // controls whether cesium settings are exported, default: 'default'
+  
   // Date and time settings
   dateTime?: number; // unix timestamp - determines sun position, default: 1657450800 (10-07-2022 11:00:00)
   

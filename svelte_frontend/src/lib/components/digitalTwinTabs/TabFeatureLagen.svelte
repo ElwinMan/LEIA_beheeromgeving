@@ -1018,18 +1018,12 @@
   function handleLayerPropertiesSaved(event: CustomEvent<{ layer: LayerWithAssociation; properties: { transparent?: boolean; opacity?: number } }>) {
     const { layer, properties } = event.detail;
     
-    // Debug logging
-    console.log('TabFeatureLagen received properties:', properties);
-    console.log('Current layer content before update:', layer.content);
-    
     // Update the layer's content with the custom properties
     const updatedContent = {
       ...layer.content,
       transparent: properties.transparent,
       opacity: properties.opacity
     };
-    
-    console.log('Updated content:', updatedContent);
     
     layer.content = updatedContent;
     

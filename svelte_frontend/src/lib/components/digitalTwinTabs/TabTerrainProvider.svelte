@@ -77,6 +77,19 @@
   let cesiumConfig = $state<CesiumConfiguration | null>(null);
   let isLoadingConfig = $state(false);
 
+  // Check if cesium settings mode is set to default
+  let isDefaultMode = $derived(cesiumConfig?.cesiumSettingsMode === 'default');
+  
+  // Local state for the toggle - starts with the current mode
+  let useCustomCesiumSettings = $state(false);
+  
+  // Update local toggle when cesium config loads
+  $effect(() => {
+    if (cesiumConfig) {
+      useCustomCesiumSettings = cesiumConfig.cesiumSettingsMode !== 'default';
+    }
+  });
+
   // Catalog state
   let catalogTerrainProviders = $state<TerrainProvider[]>([]);
   let catalogSearchTerm = $state('');
@@ -408,8 +421,15 @@
 
   async function handleCesiumConfigSave(event: CustomEvent<CesiumConfiguration>) {
     try {
-      await updateCesiumConfiguration(digitalTwinId, event.detail);
-      cesiumConfig = event.detail;
+      // Preserve the current cesium settings mode when saving other config changes
+      const cesiumSettingsMode: 'custom' | 'default' = useCustomCesiumSettings ? 'custom' : 'default';
+      const configWithMode: CesiumConfiguration = {
+        ...event.detail,
+        cesiumSettingsMode
+      };
+      
+      await updateCesiumConfiguration(digitalTwinId, configWithMode);
+      cesiumConfig = configWithMode;
       successBanner?.show();
     } catch (error) {
       console.error('Failed to save cesium configuration:', error);
@@ -419,6 +439,24 @@
 
   function handleCesiumConfigCancel() {
     // Modal will close automatically
+  }
+
+  // Handle cesium settings toggle change
+  async function handleTerrainProviderToggle() {
+    try {
+      const newMode: 'custom' | 'default' = useCustomCesiumSettings ? 'custom' : 'default';
+      const updatedConfig: CesiumConfiguration = { ...cesiumConfig, cesiumSettingsMode: newMode };
+      
+      await updateCesiumConfiguration(digitalTwinId, updatedConfig);
+      cesiumConfig = updatedConfig;
+      
+      successBanner?.show();
+    } catch (error) {
+      console.error('Failed to update cesium settings mode:', error);
+      // Revert the toggle on error
+      useCustomCesiumSettings = !useCustomCesiumSettings;
+      errorBanner?.show();
+    }
   }
 </script>
 
@@ -469,45 +507,59 @@
         </p>
       </div>
 
-      <!-- Actions: Cesium Config + Save/Reset -->
-      <div class="flex gap-2">
-        <button 
-          class="btn btn-secondary" 
-          onclick={openCesiumConfig}
-          disabled={isLoadingConfig}
-          title="Configureer Cesium terrain instellingen"
-        >
-          {#if isLoadingConfig}
-            <span class="loading loading-spinner loading-xs"></span>
-          {:else}
-            <img src="/icons/settings-white.svg" alt="Configureer" class="h-5 w-5" />
-          {/if}
-          Cesium Instellingen
-          {#if cesiumConfig}
-            <div class="badge badge-primary badge-xs ml-1"></div>
-          {/if}
-        </button>
+      <!-- Actions: Toggle + Cesium Config + Save/Reset -->
+      <div class="flex items-center gap-4">
+        <!-- Cesium Settings Toggle -->
+        <div class="flex items-center gap-3">
+          <span class="text-sm font-medium">Custom Cesium Settings</span>
+          <input 
+            type="checkbox" 
+            class="toggle toggle-primary" 
+            bind:checked={useCustomCesiumSettings}
+            onchange={handleTerrainProviderToggle}
+            disabled={isLoadingConfig}
+          />
+        </div>
         
-        {#if hasChanges}
-          <button class="btn btn-ghost" onclick={resetChanges} disabled={isSaving}>
-            <img src="/icons/rotate-ccw.svg" alt="Reset" class="h-4 w-4" />
-            Reset
+        <div class="flex gap-2">
+          <button 
+            class="btn btn-secondary" 
+            onclick={openCesiumConfig}
+            disabled={isLoadingConfig || !useCustomCesiumSettings}
+            title={useCustomCesiumSettings ? "Configureer Cesium terrain instellingen" : "Schakel custom cesium settings in om instellingen te configureren"}
+          >
+            {#if isLoadingConfig}
+              <span class="loading loading-spinner loading-xs"></span>
+            {:else}
+              <img src="/icons/settings-white.svg" alt="Configureer" class="h-5 w-5" />
+            {/if}
+            Cesium Instellingen
+            {#if cesiumConfig && useCustomCesiumSettings}
+              <div class="badge badge-primary badge-xs ml-1"></div>
+            {/if}
           </button>
-        {:else}
-          <div class="btn btn-ghost invisible">
-            <img src="/icons/rotate-ccw.svg" alt="Reset" class="h-4 w-4" />
-            Reset
-          </div>
-        {/if}
-        
-        <button class="btn btn-primary" onclick={saveChanges} disabled={isSaving || !hasChanges}>
-          {#if isSaving}
-            <span class="loading loading-spinner loading-xs"></span>
+          
+          {#if hasChanges}
+            <button class="btn btn-ghost" onclick={resetChanges} disabled={isSaving}>
+              <img src="/icons/rotate-ccw.svg" alt="Reset" class="h-4 w-4" />
+              Reset
+            </button>
           {:else}
-            <img src="/icons/save.svg" alt="Opslaan" class="h-4 w-4" />
+            <div class="btn btn-ghost invisible">
+              <img src="/icons/rotate-ccw.svg" alt="Reset" class="h-4 w-4" />
+              Reset
+            </div>
           {/if}
-          Opslaan
-        </button>
+          
+          <button class="btn btn-primary" onclick={saveChanges} disabled={isSaving || !hasChanges}>
+            {#if isSaving}
+              <span class="loading loading-spinner loading-xs"></span>
+            {:else}
+              <img src="/icons/save.svg" alt="Opslaan" class="h-4 w-4" />
+            {/if}
+            Opslaan
+          </button>
+        </div>
       </div>
     </div>
 
@@ -672,7 +724,7 @@
                     draggedItem = item;
                   }
                 }}
-                draggable="true"
+                draggable={true}
                 role="listitem"
               >
                 <img src="/icons/globe.svg" alt="Terrain Provider" class="h-5 w-5 flex-shrink-0 text-primary" />

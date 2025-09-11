@@ -74,10 +74,6 @@
         properties.opacity = Number(opacity); // Ensure it's a number
       }
 
-      // Debug logging
-      console.log('Modal save - transparent:', transparent, 'opacity:', opacity, 'useCustomSettings:', useCustomSettings);
-      console.log('Properties being dispatched:', properties);
-
       dispatch('saved', {
         layer: currentLayer,
         properties

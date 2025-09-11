@@ -157,12 +157,10 @@
   }
 
   function handlePolygonSelected(event: CustomEvent) {
-    console.log('handlePolygonSelected called with:', event.detail);
     const data = event.detail;
     
     // Update polygon data only
     if (data.polygon) {
-      console.log('Updating polygon data with', data.polygon.length, 'points');
       polygonData = [...data.polygon];
     } else {
       console.warn('No polygon data in event');

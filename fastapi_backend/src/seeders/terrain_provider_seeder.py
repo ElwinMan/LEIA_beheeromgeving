@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 def seed(db: Session):
     terrainProviders = [
         {
-            "title": "uit",
+            "title": "Uit",
             "url": "uit",
             "vertexNormals": False
         },
