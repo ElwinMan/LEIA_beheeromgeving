@@ -11,6 +11,11 @@ instance/
 !.env.example
 !.env.docker.example
 
+# Seeders (ignore all except specific ones)
+*seeder.py
+!content_type_seeder.py
+!tool_seeder.py
+
 # ----------------------
 # Node.js / Svelte
 # ----------------------

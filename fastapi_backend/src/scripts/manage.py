@@ -26,7 +26,7 @@ def migrate():
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
     subprocess.run(["alembic", "upgrade", "head"], cwd=project_root, check=True)
 
-def seed():
+def seed_full():
     print("Running full seeders...")
     run_seeders()
 
@@ -45,10 +45,10 @@ def seed_minimal():
     finally:
         db.close()
 
-def fresh():
+def fresh_full():
     drop_all_tables()
     migrate()
-    seed()
+    seed_full()
 
 def fresh_minimal():
     drop_all_tables()
@@ -68,12 +68,12 @@ if __name__ == "__main__":
         create_all_tables()
     elif command == "migrate":
         migrate()
-    elif command == "seed":
-        seed()
+    elif command == "seed-full":
+        seed_full()
     elif command == "seed-minimal":
         seed_minimal()
-    elif command == "fresh":
-        fresh()
+    elif command == "fresh-full":
+        fresh_full()
     elif command == "fresh-minimal":
         fresh_minimal()
     else:

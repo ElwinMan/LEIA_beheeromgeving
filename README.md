@@ -23,7 +23,7 @@ For the database tables/schema and minimal seeding of tools and tool_content_typ
 ```sh
 docker compose --profile seed-minimal up --build
 ```
-For the database tables/schema and full seeding of everything. (Is not up to date to existing digital twins because it depends on the hardcoded seeders.)
+For the database tables/schema and full seeding of everything. (only use if you added external seeders to fastAPI-backend/src/seeders e.g. internal Provincie Zeeland seeders for digital twins / layers. May not be up-to-date to existing digital twins because it depends on the hardcoded seeders.)
 ```sh
 docker compose --profile seed-full up --build
 ```
@@ -79,13 +79,13 @@ Creates all tables based on your SQLAlchemy models (without migrations).
 - migrate  
 Runs Alembic migrations to update the database schema to the latest version.
 
-- seed  
+- seed-full
 Runs the seeding scripts to populate the database with initial or sample data.
 
 - seed-minimal
 Runs the seeding script to populate the database with the minimal data (tool and tool content_type data).
 
-- fresh  
+- fresh-full
 Drops all tables, runs migrations, and seeds the database. Use this for a full reset of the database.
 
 - fresh-minimal
