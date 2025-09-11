@@ -25,8 +25,6 @@
 
   let selectedIndex = $state(0);
 
-  const SvelteComponent = $derived(tabs[selectedIndex].component);
-
   const downloadUrl = digitalTwinExport(data.id);
 </script>
 
@@ -68,7 +66,9 @@
         onchange={() => selectedIndex = i}
       />
       <div class="tab-content border-base-300 bg-base-100 p-6 shadow-xl">
-        <SvelteComponent digitalTwin={data.digitalTwin} digitalTwinId={data.id} />
+        {#if selectedIndex === i}
+          <tab.component digitalTwin={data.digitalTwin} digitalTwinId={data.id} />
+        {/if}
       </div>
     {/each}
   </div>
