@@ -12,23 +12,25 @@ cd LEIA_beheeromgeving
 ### With docker
 Copy the .env.example as .env in svelte_frontend and .env.docker.example in fastAPI_backend as .env.docker
 
+Fill in the required database connection if you are using a external database.
+Else keep the localhost database connection and edit the RUN_MIGRATIONS and SEED_MODE dependent on how you want to run the build.
+
+| RUN_MIGRATIONS | Description |
+|----------------|-------------|
+| `true` | Run Alembic migrations (required for initial build and schema updates) |
+| `false` | Skip migrations (safer for production to prevent accidental schema changes) |
+
+| SEED_MODE | Description |
+|-----------|-------------|
+| `none` | No seeding - just migrations and start server |
+| `minimal` | Clean version with only the required data of tools and tool_content_types |
+| `full` | Seeding of everything (only use this if you added external seeders to fastAPI_backend/src/seeders e.g. internal Provincie Zeeland seeders for digital twins and layers. May not be up-to-date to existing digital twins because it depends on the hardcoded seeders.) |
+
+**Production Safety Note**: For production environments, it's recommended to set `RUN_MIGRATIONS=false` after the initial setup to prevent accidental database schema changes during container restarts. Migrations should be run manually or through a controlled deployment process in production.
+
 Open docker desktop and use one of the following command line. (If you don't have administrative permissions on your work device, the solution might be switching to the guest wifi and disable the VPN connection)
 
-Use the following command line to migrate the database schema on the initial build
-Just for the database tables/schema:
-```sh
-docker compose --profile migrate up --build
-```
-For the database tables/schema and minimal seeding of tools and tool_content_types
-```sh
-docker compose --profile seed-minimal up --build
-```
-For the database tables/schema and full seeding of everything. (only use if you added external seeders to fastAPI-backend/src/seeders e.g. internal Provincie Zeeland seeders for digital twins / layers. May not be up-to-date to existing digital twins because it depends on the hardcoded seeders.)
-```sh
-docker compose --profile seed-full up --build
-```
-
-Use the following command if you have to rebuild and already have the database tables/schema:
+Use the following command line to migrate and seed the database schema on the initial build (Make sure to turn the RUN_MIGRATIONS to "false" and SEED_MODE back to "none" after initial setup to prevent unnecessary migrations and seeding on subsequent builds).
 ```sh
 docker compose up --build
 ```

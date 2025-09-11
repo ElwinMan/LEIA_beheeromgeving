@@ -31,9 +31,17 @@ except psycopg2.OperationalError as e:
     sleep 2
 done
 
-echo "Database is ready! Running migrations..."
-cd /
-alembic upgrade head
+echo "Database is ready!"
+
+# Handle migrations based on RUN_MIGRATIONS environment variable
+if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
+    echo "Running migrations..."
+    cd /
+    alembic upgrade head
+    echo "Migrations completed!"
+else
+    echo "Skipping migrations (RUN_MIGRATIONS=false)"
+fi
 
 # Handle seeding based on argument
 if [ "$SEED_TYPE" = "none" ]; then
@@ -46,7 +54,7 @@ elif [ "$SEED_TYPE" = "minimal" ]; then
 elif [ "$SEED_TYPE" = "full" ]; then
     echo "Running full seeding..."
     cd /app
-    python -m scripts.manage seed
+    python -m scripts.manage seed-full
     echo "Full seeding completed!"
 else
     echo "Unknown seed type: $SEED_TYPE. Use 'none', 'minimal', or 'full'"
