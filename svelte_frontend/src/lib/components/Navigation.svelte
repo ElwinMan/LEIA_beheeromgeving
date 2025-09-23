@@ -59,8 +59,8 @@
 
   <div class="drawer-side">
     <label for="drawer-toggle" aria-label="close sidebar" class="drawer-overlay"></label>
-    <aside class="bg-base-200 min-h-full w-80">
-      <div class="p-4">
+    <aside class="bg-base-200 min-h-full w-80 flex flex-col">
+      <div class="p-4 flex-1">
         <h1 class="mb-8 hidden text-xl font-bold lg:block">LEIA Beheeromgeving</h1>
 
         <ul class="menu space-y-2 p-0">
@@ -90,6 +90,22 @@
             </li>
           {/each}
         </ul>
+      </div>
+      
+      <!-- GitHub info section at bottom -->
+      <div class="p-4 border-t border-base-300">
+        <a
+          href="https://github.com/ElwinMan/LEIA_beheeromgeving"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-300 transition-colors text-sm text-base-content/70 hover:text-base-content"
+        >
+          <img src="/icons/github.svg" alt="GitHub" class="h-5 w-5" />
+          <div class="flex flex-col">
+            <span class="font-medium">GitHub Repository</span>
+            <span class="text-xs opacity-75">View source code</span>
+          </div>
+        </a>
       </div>
     </aside>
   </div>

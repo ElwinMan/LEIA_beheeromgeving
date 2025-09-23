@@ -5,20 +5,32 @@ The application is used to manage JSON config files for LEIA digital twins.
 ## Clone
 ```sh
 git clone https://github.com/ElwinMan/LEIA_beheeromgeving.git
+```
+```sh
 cd LEIA_beheeromgeving
 ```
+
 ## Build
 
 ### With docker
-Copy the .env.example as .env in svelte_frontend and .env.docker.example in fastAPI_backend as .env.docker
+Copy the **.env.example** file as **.env** in the file **LEIA_beheeromgeving/svelte_frontend**
+Copy the **.env.docker.example** file in **LEIA_beheeromgeving/fastAPI_backend** as **.env.docker**
 
-Fill in the required database connection if you are using a external database.
-Else keep the localhost database connection and edit the RUN_MIGRATIONS and SEED_MODE dependent on how you want to run the build.
+in the **.env.docker**:
+Fill in the required database connection if you are using a **external database**.
+Else **keep** the localhost database connection, if you want to change the database variables, make sure to also change it in the docker-compose.yml in the root.
+
+Edit the **RUN_MIGRATIONS** and **SEED_MODE** dependent on how you want to run the build with the following options:
+
+Migration means creating the tables in the database, so only use this on the inital build when you use a local database or if its neccesary for a database schema update.
 
 | RUN_MIGRATIONS | Description |
 |----------------|-------------|
-| `true` | Run Alembic migrations (required for initial build and schema updates) |
+| `true` | Run Alembic migrations (**required for initial build** and schema updates) |
 | `false` | Skip migrations (safer for production to prevent accidental schema changes) |
+
+Seeder means adding records in your database, minimal is for the initial neccesary tools, and full is for everything so digital twins and layers, if its available for you.
+Provincie Zeeland has its own private seeders.
 
 | SEED_MODE | Description |
 |-----------|-------------|
@@ -26,7 +38,7 @@ Else keep the localhost database connection and edit the RUN_MIGRATIONS and SEED
 | `minimal` | Clean version with only the required data of tools and tool_content_types |
 | `full` | Seeding of everything (only use this if you added external seeders to fastAPI_backend/src/seeders e.g. internal Provincie Zeeland seeders for digital twins and layers. May not be up-to-date to existing digital twins because it depends on the hardcoded seeders.) |
 
-**Production Safety Note**: For production environments, it's recommended to set `RUN_MIGRATIONS=false` after the initial setup to prevent accidental database schema changes during container restarts. Migrations should be run manually or through a controlled deployment process in production.
+**Production Safety Note**: For production environments, it's recommended to set `RUN_MIGRATIONS=false` **after** the initial setup to prevent accidental database schema changes during container restarts. Migrations should be run manually or through a controlled deployment process in production.
 
 Open docker desktop and use one of the following command line. (If you don't have administrative permissions on your work device, the solution might be switching to the guest wifi and disable the VPN connection)
 
@@ -81,16 +93,16 @@ Creates all tables based on your SQLAlchemy models (without migrations).
 - migrate  
 Runs Alembic migrations to update the database schema to the latest version.
 
-- seed-full
+- seed-full  
 Runs the seeding scripts to populate the database with initial or sample data.
 
-- seed-minimal
+- seed-minimal  
 Runs the seeding script to populate the database with the minimal data (tool and tool content_type data).
 
-- fresh-full
+- fresh-full  
 Drops all tables, runs migrations, and seeds the database. Use this for a full reset of the database.
 
-- fresh-minimal
+- fresh-minimal  
 Drops all tables, runs migrations, and seeds the database with minimal data. Use this for a full reset of the database with minimal data.
 
 ## Alembic

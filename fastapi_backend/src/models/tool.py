@@ -8,6 +8,7 @@ class Tool(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, nullable=False)
+    description = Column(String, nullable=True)
     content = Column(JSON, nullable=True)
     last_updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
 

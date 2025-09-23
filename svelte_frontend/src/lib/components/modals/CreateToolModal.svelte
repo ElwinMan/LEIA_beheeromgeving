@@ -12,6 +12,7 @@
   const dispatch = createEventDispatcher<{ created: Tool }>();
 
   let name: string = '';
+  let description: string = '';
   let content: string | null = null;
 
 
@@ -30,6 +31,7 @@
 
   function resetModal() {
     name = '';
+    description = '';
     content = null;
     missingFields = [];
     errorBanner?.hide?.();
@@ -56,6 +58,7 @@
 
     let payload: any = {
       name,
+      description,
       last_updated: new Date().toISOString()
     };
 
@@ -123,6 +126,14 @@
         <HelpTooltip tip="De naam van de tool. Deze moet uniek zijn." position="right" />
       </label>
       <input id="name" class="input input-bordered w-full" bind:value={name} />
+    </div>
+
+    <div class="form-control">
+      <label for="description" class="label font-semibold">
+        Beschrijving
+        <HelpTooltip tip="Een korte beschrijving van wat deze tool doet." position="right" />
+      </label>
+      <input id="description" class="input input-bordered w-full" bind:value={description} placeholder="Beschrijf wat deze tool doet..." />
     </div>
 
     <div class="form-control">

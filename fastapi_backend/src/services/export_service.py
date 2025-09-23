@@ -269,7 +269,21 @@ def export_digital_twin(db: Session, digital_twin_id: int):
                         if "polygon" in project.content:
                             project_data["polygon"] = project.content["polygon"]
                         if "layers" in project.content:
-                            project_data["layers"] = project.content["layers"]
+                            # Convert layer IDs to titles for export
+                            layer_ids = project.content["layers"]
+                            if isinstance(layer_ids, list):
+                                layer_titles = []
+                                for layer_id in layer_ids:
+                                    # Find the layer by ID and get its title
+                                    layer = next((l for l in layers if l.id == int(layer_id)), None)
+                                    if layer:
+                                        layer_titles.append(layer.title)
+                                    else:
+                                        # Fallback to ID if layer not found
+                                        layer_titles.append(str(layer_id))
+                                project_data["layers"] = layer_titles
+                            else:
+                                project_data["layers"] = project.content["layers"]
                         if "cameraPosition" in project.content:
                             project_data["cameraPosition"] = project.content["cameraPosition"]
                     

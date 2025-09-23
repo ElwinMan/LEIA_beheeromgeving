@@ -10,6 +10,7 @@
   let modalRef: HTMLDialogElement;
 
   let name: string = '';
+  let description: string = '';
   let content: string | null = null;
   let missingFields: string[] = [];
   let errorBanner: InstanceType<typeof AlertBanner> | null = null;
@@ -34,6 +35,7 @@
   export function showModal(t: Tool) {
     tool = t;
     name = t.name || '';
+    description = t.description || '';
     content = t.content ? JSON.stringify(t.content, null, 2) : null;
     errorMessage = "Content moet geldig JSON zijn!";
     resetModal();
@@ -56,6 +58,7 @@
     if (!tool) return;
     let payload: any = {
       name,
+      description,
       last_updated: new Date().toISOString()
     };
     if (typeof content === 'string' && content.trim() !== '') {
@@ -111,6 +114,14 @@
         <HelpTooltip tip="De naam van de tool. Deze moet uniek zijn." position="right" />
       </label>
       <input id="name" class="input input-bordered w-full" bind:value={name} />
+    </div>
+
+    <div class="form-control">
+      <label for="description" class="label font-semibold">
+        Beschrijving
+        <HelpTooltip tip="Een korte beschrijving van wat deze tool doet." position="right" />
+      </label>
+      <input id="description" class="input input-bordered w-full" bind:value={description} placeholder="Beschrijf wat deze tool doet..." />
     </div>
 
     <div class="form-control">

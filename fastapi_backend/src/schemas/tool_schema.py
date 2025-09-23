@@ -4,6 +4,7 @@ from datetime import datetime
 
 class ToolBase(BaseModel):
     name: str
+    description: Optional[str] = None
     content: Optional[Dict[str, Any]] = None
     last_updated: datetime
 
@@ -17,6 +18,7 @@ class ToolCreate(ToolBase):
 
 class ToolUpdate(BaseModel):
     name: Optional[str] = None
+    description: Optional[str] = None
     content: Optional[Dict[str, Any]] = None
 
 class ToolResponse(ToolBase):

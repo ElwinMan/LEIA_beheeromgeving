@@ -74,15 +74,6 @@
   // Get used project IDs for filtering catalog
   let usedProjectIds = $derived(projectsWithDetails.map((p) => p.content_id));
 
-  // Get digital twin layer titles for validation
-  let digitalTwinLayerTitles = $derived(
-    digitalTwin?.layer_associations.map(assoc => {
-      // Find the layer details from allLayers if we have them loaded
-      // For now we'll need to track this separately or load layers
-      return null; // We'll implement this after loading layers
-    }).filter(Boolean) || []
-  );
-
   // Layer validation state
   let allLayers = $state<Layer[]>([]);
   let digitalTwinLayers = $derived(
@@ -90,7 +81,7 @@
       allLayers.find(layer => layer.id === assoc.layer_id)
     ).filter(Boolean) || []
   );
-  let digitalTwinLayerTitles_computed = $derived(
+  let digitalTwinLayerTitles = $derived(
     digitalTwinLayers.map(layer => layer?.title).filter(Boolean) || []
   );
 
@@ -100,15 +91,31 @@
       return { canAdd: true, missingLayers: [] }; // No layer requirements
     }
 
-    const requiredLayers = project.content.layers as string[];
-    const missingLayers = requiredLayers.filter(
-      layerTitle => !digitalTwinLayerTitles_computed.includes(layerTitle)
+    const requiredLayerIds = project.content.layers as string[];
+    const digitalTwinLayerIds = localDigitalTwin?.layer_associations.map(assoc => assoc.layer_id.toString()) || [];
+    
+    const missingLayerIds = requiredLayerIds.filter(
+      layerId => !digitalTwinLayerIds.includes(layerId)
     );
 
+    // Convert missing layer IDs to layer titles for display
+    const missingLayers = missingLayerIds.map(layerId => {
+      const layer = allLayers.find(l => l.id.toString() === layerId);
+      return layer ? layer.title : `Layer ID: ${layerId}`;
+    });
+
     return {
-      canAdd: missingLayers.length === 0,
+      canAdd: missingLayerIds.length === 0,
       missingLayers
     };
+  }
+
+  // Helper function to convert layer IDs to display titles
+  function getLayerDisplayTitles(layerIds: string[]): string[] {
+    return layerIds.map(layerId => {
+      const layer = allLayers.find(l => l.id.toString() === layerId);
+      return layer ? layer.title : `Layer ID: ${layerId}`;
+    });
   }
 
   onMount(async () => {
@@ -741,11 +748,12 @@
                     <!-- Show required layers if project has layer requirements -->
                     {#if fullProject.content?.layers && Array.isArray(fullProject.content.layers)}
                       {@const requiredLayers = fullProject.content.layers}
+                      {@const displayTitles = getLayerDisplayTitles(requiredLayers)}
                       {#if requiredLayers.length > 0}
                         <div class="mt-2 p-2 bg-success/10 border border-success/30 rounded text-xs">
                           <div class="font-medium text-success mb-1">Vereiste lagen aanwezig:</div>
                           <div class="text-success">
-                            {requiredLayers.join(', ')}
+                            {displayTitles.join(', ')}
                           </div>
                         </div>
                       {:else}
@@ -868,10 +876,11 @@
                       </div>
                     </div>
                   {:else if project.content?.layers && project.content.layers.length > 0}
+                    {@const displayTitles = getLayerDisplayTitles(project.content.layers)}
                     <div class="mt-2 p-2 bg-success/10 border border-success/30 rounded text-xs">
                       <div class="font-medium text-success mb-1">Vereiste lagen aanwezig:</div>
                       <div class="text-success font-medium">
-                        {project.content.layers.join(', ')}
+                        {displayTitles.join(', ')}
                       </div>
                     </div>
                   {/if}

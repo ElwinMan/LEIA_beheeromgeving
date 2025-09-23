@@ -43,6 +43,12 @@
   // Available options
   let availableTerrainProviders: TerrainProvider[] = [];
   let availableLayers: Layer[] = [];
+  let stepPositionOpen = false;
+
+  // Base layer selection
+  let baseLayerType: 'background' | 'feature' = 'background';
+  let baseLayerSearchTerm = '';
+  let showBaseLayerSelector = false;
 
   let chapters: StoryChapter[] = [];
   let activeChapterIndex = 0;
@@ -194,6 +200,37 @@
       chapters = [...chapters];
     }
   }
+
+  // Base layer selection functions
+  function selectBaseLayer(layer: Layer, type: 'background' | 'feature') {
+    baseLayerId = layer.id.toString();
+    baseLayerType = type;
+    showBaseLayerSelector = false;
+    baseLayerSearchTerm = '';
+  }
+
+  // Reactive variable for selected base layer name
+  $: selectedBaseLayerName = (() => {
+    if (!baseLayerId) {
+      return 'Geen laag geselecteerd';
+    }
+    
+    const layer = availableLayers.find(l => l.id.toString() === baseLayerId || l.id === parseInt(baseLayerId));
+    return layer ? layer.title : 'Onbekende laag';
+  })();
+
+  $: availableBackgroundLayers = availableLayers.filter(layer => layer.isBackground === true);
+  $: availableFeatureLayers = availableLayers.filter(layer => layer.isBackground !== true);
+
+  $: filteredBaseLayers = baseLayerType === 'background' 
+    ? availableBackgroundLayers.filter(layer => 
+        baseLayerSearchTerm.trim() === '' || 
+        layer.title.toLowerCase().includes(baseLayerSearchTerm.trim().toLowerCase())
+      )
+    : availableFeatureLayers.filter(layer => 
+        baseLayerSearchTerm.trim() === '' || 
+        layer.title.toLowerCase().includes(baseLayerSearchTerm.trim().toLowerCase())
+      );
 
   function removeRequiredLayerFromStep(index: number) {
     currentStep.requiredLayers = currentStep.requiredLayers.filter((_: RequiredLayer, i: number) => i !== index);
@@ -378,12 +415,60 @@
         Base Layer:
         <HelpTooltip tip="De basis laag die standaard wordt getoond in de story." position="right" />
       </label>
-      <select id="base-layer" class="select select-bordered col-span-3" bind:value={baseLayerId}>
-        <option value="">-- Selecteer een laag --</option>
-        {#each availableLayers as layer}
-          <option value={layer.id}>{layer.title}</option>
-        {/each}
-      </select>
+      <div class="col-span-3 relative">
+        <div class="flex gap-2 items-center">
+          <!-- Layer type selector -->
+          <select class="select select-bordered w-32" bind:value={baseLayerType} onchange={() => { baseLayerId = ''; }}>
+            <option value="background">Achtergrond</option>
+            <option value="feature">Feature</option>
+          </select>
+          
+          <!-- Selected layer display / selector button -->
+          <button 
+            type="button" 
+            class="btn btn-outline flex-1 justify-start"
+            onclick={() => { showBaseLayerSelector = !showBaseLayerSelector; }}
+          >
+            {selectedBaseLayerName}
+            <img src="/icons/chevron-down.svg" alt="Open" class="h-4 w-4 ml-auto" />
+          </button>
+        </div>
+
+        <!-- Layer selector dropdown -->
+        {#if showBaseLayerSelector}
+          <div class="absolute top-full left-0 right-0 mt-1 bg-base-100 border border-base-300 rounded-lg shadow-lg z-50 max-h-64 overflow-hidden">
+            <div class="p-2 border-b border-base-300">
+              <input
+                type="text"
+                class="input input-bordered input-sm w-full"
+                placeholder={`Zoek ${baseLayerType === 'background' ? 'achtergrond' : 'feature'} laag...`}
+                bind:value={baseLayerSearchTerm}
+              />
+            </div>
+            <div class="max-h-48 overflow-y-auto">
+              <button 
+                type="button" 
+                class="w-full text-left p-2 hover:bg-base-200 border-b border-base-300"
+                onclick={() => { baseLayerId = ''; showBaseLayerSelector = false; }}
+              >
+                <div class="font-medium text-gray-500">Geen laag geselecteerd</div>
+              </button>
+              {#each filteredBaseLayers as layer}
+                <button 
+                  type="button" 
+                  class="w-full text-left p-2 hover:bg-base-200 border-b border-base-300 {baseLayerId === layer.id.toString() ? 'bg-primary text-primary-content' : ''}"
+                  onclick={() => selectBaseLayer(layer, baseLayerType)}
+                >
+                  <div class="font-medium">{layer.title}</div>
+                </button>
+              {/each}
+              {#if filteredBaseLayers.length === 0}
+                <div class="p-4 text-center text-gray-500">Geen lagen gevonden</div>
+              {/if}
+            </div>
+          </div>
+        {/if}
+      </div>
     </div>
 
     <!-- Chapters and Steps Management -->
@@ -402,7 +487,7 @@
           <div class="relative">
             <button
               type="button"
-              class="btn {activeChapterIndex === chapterIndex ? 'btn-primary' : 'btn-outline btn-neutral'} btn-sm h-10 px-4"
+              class="btn {activeChapterIndex === chapterIndex ? 'btn-secondary' : 'btn-accent-content'} btn-sm h-10 px-4"
               onclick={() => { activeChapterIndex = chapterIndex; activeStepIndex = 0; }}
             >
               <img src="/icons/folder.svg" alt="Hoofdstuk" class="h-4 w-4 mr-2" />
@@ -445,7 +530,7 @@
         <div class="border border-base-300 rounded-lg p-4">
           <div class="flex items-center justify-between mb-4">
             <h5 class="font-semibold">Stappen voor Hoofdstuk {activeChapterIndex + 1}</h5>
-            <button type="button" class="btn btn-secondary btn-sm" onclick={addStep}>
+            <button type="button" class="btn btn-primary btn-sm" onclick={addStep}>
               <img src="/icons/plus.svg" alt="Voeg toe" class="h-4 w-4" />
               Stap Toevoegen
             </button>
@@ -457,7 +542,7 @@
               <div class="relative">
                 <button
                   type="button"
-                  class="btn {activeStepIndex === stepIndex ? 'btn-secondary' : 'btn-outline btn-neutral'} btn-sm h-10 px-4"
+                  class="btn {activeStepIndex === stepIndex ? 'btn-accent' : 'btn-accent-content'} btn-sm h-10 px-4"
                   onclick={() => activeStepIndex = stepIndex}
                 >
                   <img src="/icons/file-text.svg" alt="Stap" class="h-4 w-4 mr-2" />
@@ -480,8 +565,8 @@
           <!-- Step Content -->
           {#if currentStep}
             <div class="mb-4 flex gap-2">
-              <button type="button" class="btn btn-sm {currentStep._activeTab === 0 ? 'btn-primary' : 'btn-outline'}" onclick={() => { currentStep._activeTab = 0; chapters = [...chapters]; }}>Details</button>
-              <button type="button" class="btn btn-sm {currentStep._activeTab === 1 ? 'btn-primary' : 'btn-outline'}" onclick={() => { currentStep._activeTab = 1; chapters = [...chapters]; }}>Benodigde lagen</button>
+              <button type="button" class="btn btn-sm {currentStep._activeTab === 0 ? 'btn-outline' : 'btn-accent-content'}" onclick={() => { currentStep._activeTab = 0; chapters = [...chapters]; }}>Details</button>
+              <button type="button" class="btn btn-sm {currentStep._activeTab === 1 ? 'btn-outline' : 'btn-accent-content'}" onclick={() => { currentStep._activeTab = 1; chapters = [...chapters]; }}>Benodigde lagen</button>
             </div>
             {#if currentStep._activeTab === 0}
               <div class="grid grid-cols-4 gap-4 items-start">
@@ -534,81 +619,154 @@
                   {/each}
                 </select>
 
-                <!-- Stap positie row: label left, PositionSelector button right -->
+                <!-- Camera Position -->
                 <label for="step-position-btn" class="text-right font-semibold">
                   Stap positie:
                   <HelpTooltip tip="Selecteer de camera positie voor deze stap. Dit bepaalt waar de gebruiker naar kijkt." position="right" />
                 </label>
-                <div class="col-span-3 mb-2">
-                  <PositionSelector
-                    title="Selecteer stap positie"
-                    buttonText="Selecteer stap positie op kaart"
-                    initialPosition={currentStep.camera}
-                    on:coordinatesSelected={(e) => {
-                      currentStep.camera = {
-                        ...currentStep.camera,
-                        x: e.detail.x,
-                        y: e.detail.y,
-                        z: e.detail.z,
-                        heading: e.detail.heading,
-                        pitch: e.detail.pitch,
-                        duration: e.detail.duration
-                      };
-                      chapters = [...chapters];
-                    }}
-                  />
-                </div>
+                <div class="col-span-3">
+                  <fieldset>
+                    <button
+                      type="button"
+                      class="m-0 flex w-full cursor-pointer items-center space-x-2 border-0 bg-transparent p-0 text-left font-semibold select-none mb-2"
+                      onclick={() => (stepPositionOpen = !stepPositionOpen)}
+                      aria-expanded={stepPositionOpen}
+                    >
+                      {#if stepPositionOpen}
+                        <img src="/icons/chevron-down.svg" alt="Open" class="h-5 w-5" />
+                      {:else}
+                        <img src="/icons/chevron-right.svg" alt="Closed" class="h-5 w-5" />
+                      {/if}
+                      <span>Stap positie instellingen</span>
+                    </button>
 
-                <!-- X/Y/Z row: empty col left, fields right -->
-                <div></div>
-                <div class="col-span-3 grid grid-cols-3 gap-2 mb-2">
-                  <div>
-                    <label for="step-x" class="block text-sm font-medium mb-1">
-                      X
-                      <HelpTooltip tip="X-coördinaat (longitude) van de camera positie." />
-                    </label>
-                    <input id="step-x" type="number" step="any" class="input input-bordered w-full" bind:value={currentStep.camera.x} />
-                  </div>
-                  <div>
-                    <label for="step-y" class="block text-sm font-medium mb-1">
-                      Y
-                      <HelpTooltip tip="Y-coördinaat (latitude) van de camera positie." />
-                    </label>
-                    <input id="step-y" type="number" step="any" class="input input-bordered w-full" bind:value={currentStep.camera.y} />
-                  </div>
-                  <div>
-                    <label for="step-z" class="block text-sm font-medium mb-1">
-                      Z
-                      <HelpTooltip tip="Z-coördinaat (hoogte) van de camera positie." />
-                    </label>
-                    <input id="step-z" type="number" step="any" class="input input-bordered w-full" bind:value={currentStep.camera.z} />
-                  </div>
-                </div>
+                    <!-- Position Selector Button -->
+                    <div class="mb-4">
+                      <PositionSelector
+                        title="Selecteer stap positie"
+                        buttonText="Selecteer stap positie op kaart"
+                        initialPosition={currentStep.camera}
+                        on:coordinatesSelected={(e: CustomEvent<any>) => {
+                          currentStep.camera = {
+                            ...currentStep.camera,
+                            x: e.detail.x,
+                            y: e.detail.y,
+                            z: e.detail.z,
+                            heading: e.detail.heading,
+                            pitch: e.detail.pitch,
+                            duration: e.detail.duration
+                          };
+                          chapters = [...chapters];
+                        }}
+                      />
+                    </div>
 
-                <!-- Heading/Pitch/Duration row: empty col left, fields right -->
-                <div></div>
-                <div class="col-span-3 grid grid-cols-3 gap-2">
-                  <div>
-                    <label for="step-heading" class="block text-sm font-medium mb-1">
-                      Heading
-                      <HelpTooltip tip="De richting waarin de camera kijkt (in graden)." />
-                    </label>
-                    <input id="step-heading" type="number" step="any" class="input input-bordered w-full" bind:value={currentStep.camera.heading} />
-                  </div>
-                  <div>
-                    <label for="step-pitch" class="block text-sm font-medium mb-1">
-                      Pitch
-                      <HelpTooltip tip="De kantelhoek van de camera (omhoog/omlaag in graden)." />
-                    </label>
-                    <input id="step-pitch" type="number" step="any" class="input input-bordered w-full" bind:value={currentStep.camera.pitch} />
-                  </div>
-                  <div>
-                    <label for="step-duration" class="block text-sm font-medium mb-1">
-                      Duration
-                      <HelpTooltip tip="De duur van de camera animatie in seconden." />
-                    </label>
-                    <input id="step-duration" type="number" step="any" class="input input-bordered w-full" bind:value={currentStep.camera.duration} />
-                  </div>
+                    <!-- Duration field (always visible) -->
+                    {#if !stepPositionOpen}
+                      <div class="mb-4">
+                        <label for="step-duration-collapsed" class="font-medium flex items-center gap-2">
+                          Duration
+                          <HelpTooltip tip="De duur van de camera animatie in seconden." />
+                        </label>
+                        <input
+                          id="step-duration-collapsed"
+                          type="number"
+                          step="any"
+                          bind:value={currentStep.camera.duration}
+                          class="input input-bordered w-full"
+                        />
+                      </div>
+                    {/if}
+
+                    {#if stepPositionOpen}
+                      <div class="grid grid-cols-3 gap-4 mb-4">
+                        <div>
+                          <label for="step-x" class="font-medium flex items-center gap-2">
+                            X
+                            <HelpTooltip tip="X-coördinaat (longitude) van de camera positie." />
+                          </label>
+                          <input
+                            id="step-x"
+                            type="number"
+                            step="any"
+                            bind:value={currentStep.camera.x}
+                            class="input input-bordered w-full"
+                          />
+                        </div>
+
+                        <div>
+                          <label for="step-y" class="font-medium flex items-center gap-2">
+                            Y
+                            <HelpTooltip tip="Y-coördinaat (latitude) van de camera positie." />
+                          </label>
+                          <input
+                            id="step-y"
+                            type="number"
+                            step="any"
+                            bind:value={currentStep.camera.y}
+                            class="input input-bordered w-full"
+                          />
+                        </div>
+
+                        <div>
+                          <label for="step-z" class="font-medium flex items-center gap-2">
+                            Z
+                            <HelpTooltip tip="Z-coördinaat (hoogte) van de camera positie." />
+                          </label>
+                          <input
+                            id="step-z"
+                            type="number"
+                            step="any"
+                            bind:value={currentStep.camera.z}
+                            class="input input-bordered w-full"
+                          />
+                        </div>
+
+                        <div>
+                          <label for="step-heading" class="font-medium flex items-center gap-2">
+                            Heading
+                            <HelpTooltip tip="De richting waarin de camera kijkt (in graden)." />
+                          </label>
+                          <input
+                            id="step-heading"
+                            type="number"
+                            step="any"
+                            bind:value={currentStep.camera.heading}
+                            class="input input-bordered w-full"
+                          />
+                        </div>
+
+                        <div>
+                          <label for="step-pitch" class="font-medium flex items-center gap-2">
+                            Pitch
+                            <HelpTooltip tip="De kantelhoek van de camera (omhoog/omlaag in graden)." />
+                          </label>
+                          <input
+                            id="step-pitch"
+                            type="number"
+                            step="any"
+                            bind:value={currentStep.camera.pitch}
+                            class="input input-bordered w-full"
+                          />
+                        </div>
+
+                        <!-- Duration field (visible when dropdown is open, positioned to the right of pitch) -->
+                        <div>
+                          <label for="step-duration-expanded" class="font-medium flex items-center gap-2">
+                            Duration
+                            <HelpTooltip tip="De duur van de camera animatie in seconden." />
+                          </label>
+                          <input
+                            id="step-duration-expanded"
+                            type="number"
+                            step="any"
+                            bind:value={currentStep.camera.duration}
+                            class="input input-bordered w-full"
+                          />
+                        </div>
+                      </div>
+                    {/if}
+                  </fieldset>
                 </div>
               </div>
             {:else}

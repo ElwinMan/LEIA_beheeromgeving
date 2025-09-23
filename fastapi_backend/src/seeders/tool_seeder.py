@@ -6,6 +6,7 @@ def seed(db: Session):
     tools = [
         Tool(
             name="layerlibrary",
+            description="Catalogus aan lagen die de gebruiker kan toevoegen in de viewer",
             content={
                 "settings": {
                     "connectors": [
@@ -45,9 +46,11 @@ def seed(db: Session):
         ),
         Tool(
             name="layermanager",
+            description="De beheermenu in de viewer om achtergrondlagen of featurelagen te selecteren.",
         ),
         Tool(
             name="featureinfo",
+            description="Feature om informatie te zien van de aangeklikte object",
             content= {
                 "fields": [{
                         "field": "image",
@@ -66,6 +69,7 @@ def seed(db: Session):
         ),
         Tool(
             name="info",
+            description="De info button, waar je de gebruiker extra informatie kan geven.",
             content={
                 "settings": {
                     "title": "Viewer title",
@@ -75,6 +79,7 @@ def seed(db: Session):
         ),
         Tool(
             name="help",
+            description="De help button die je mogelijk bij het openen van de digital twin voor je ziet.",
             content={
                     "settings": {
                         "title": "title",
@@ -85,21 +90,27 @@ def seed(db: Session):
         ),
         Tool(
             name="bookmarks",
+            description="De bookmark functie, waarin je posities op de kaart kan bookmarken",
         ),
         Tool(
             name="cesium",
+            description="Wordt gebruikt voor het inladen van de kaart en terrein.",
         ),
         Tool(
             name="stories",
+            description="De story feature, waarin je posities en benodigde lagen kan selecteren en je verhaal vertellen.",
         ),
         Tool(
-            name="measure"
+            name="measure",
+            description="De Meetlint feature, om afstanden te meten.",
         ),
         Tool(
-            name="search"
+            name="search",
+            description="De zoekbalk feature, waardoor naar steden kan zoeken.",
         ),
         Tool(
             name="geocoder",
+            description="De feature die data ophaalt van steden, zodat je de search functie kan gebruiken.",
             content={
                 "settings": {
                     "name": "locatieserver"
@@ -107,10 +118,12 @@ def seed(db: Session):
             }
         ),
         Tool(
-            name="projects"
+            name="projects",
+            description="De feature, waardoor je een gebied kan intekenen en alleen het gebied ziet."
         ),
         Tool(
             name="flooding",
+            description="De overstroming simulatie feature",
             content={
                 "settings": {
                     "scenariosBaseUrl": "https://virtueel.zeeland.nl/tiles_other/overstroming/",
@@ -137,6 +150,7 @@ def seed(db: Session):
         ),
         Tool(
             name="config_switcher",
+            description="De feature om van configuraties te switchen,",
             content={
                 "settings": {
                     "fullReload": True
@@ -144,10 +158,12 @@ def seed(db: Session):
             }
         ),
         Tool(
-            name="flyCamera"
+            name="flyCamera",
+            description="De feature voor eerste persoonsperspectief door de kaart te lopen of vliegen",
         ),
         Tool(
-            name="modeswitcher"
+            name="modeswitcher",
+            description="De feature om van 2D en 3D te switchen",
         )
     ]
 

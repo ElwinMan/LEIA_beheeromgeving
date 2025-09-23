@@ -51,7 +51,7 @@
   ];
 
   const defaultViewerContent = {
-    logo: "",
+    logo: "https://virtueel.zeeland.nl/global_assets/img/logo.svg",
     thumbnail: "",
     startPosition: {
       x: 3.62121,

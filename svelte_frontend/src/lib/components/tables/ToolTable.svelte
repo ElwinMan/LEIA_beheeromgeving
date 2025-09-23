@@ -157,6 +157,13 @@
               {setSort}
             />
             <SortableTableHeader
+              column="description"
+              label="Beschrijving"
+              {sortColumn}
+              {sortDirection}
+              {setSort}
+            />
+            <SortableTableHeader
               column="last_updated"
               label="Gewijzigd"
               {sortColumn}
@@ -171,6 +178,7 @@
           {#each tools as tool, idx}
             <tr class="hover">
               <td class="text-sm font-bold">{tool.name || '-'}</td>
+              <td class="text-sm">{tool.description || '-'}</td>
               <td class="text-sm text-right"><DateTimeCell value={tool.last_updated} /></td>
               <td class="text-sm text-right">
                 <div class="dropdown dropdown-end">

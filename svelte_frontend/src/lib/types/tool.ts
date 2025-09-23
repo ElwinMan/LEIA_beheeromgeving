@@ -1,6 +1,7 @@
 export interface Tool {
   id: number;
   name: string;
+  description: string;
   content?: any;
   last_updated: string;
 }

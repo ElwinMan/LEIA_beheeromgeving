@@ -2,7 +2,7 @@
   import type { DigitalTwin } from '$lib/types/digitalTwin';
   import { tick } from 'svelte';
   import { portal } from 'svelte-portal';
-  import { fetchDigitalTwinsPaginated } from '$lib/api';
+  import { fetchDigitalTwinsPaginated, digitalTwinExport } from '$lib/api';
   import SortableTableHeader from '$lib/components/tables/SortableTableHeader.svelte';
   import DateTimeCell from "$lib/components/DateTimeCell.svelte";
 
@@ -138,7 +138,7 @@
               {setSort}
             />
             <SortableTableHeader
-              column="private"
+              column="isPrivate"
               label="Lijstweergaven"
               {sortColumn}
               {sortDirection}
@@ -165,7 +165,7 @@
               </td>
               <td class="text-sm">{twin.subtitle || '-'}</td>
               <td class="text-sm">{twin.owner || '-'}</td>
-              <td class="text-sm">{twin.private || '-'}</td>
+              <td class="text-sm">{twin.isPrivate || '-'}</td>
               <td class="text-sm"><DateTimeCell value={twin.last_updated} /></td>
               <td>
                 <div class="dropdown dropdown-end">
@@ -204,6 +204,17 @@
                         >
                           <img src="/icons/settings.svg" alt="Settings" class="h-4 w-4" />
                           Digital Twin Configuratie
+                        </a>
+                      </li>
+                      <li>
+                        <a
+                          href={digitalTwinExport(twin.id)}
+                          class="flex items-center gap-2"
+                          download
+                          onclick={() => openIndex = null}
+                        >
+                          <img src="/icons/download.svg" alt="Download" class="h-4 w-4" />
+                          Download export
                         </a>
                       </li>
                     </ul>

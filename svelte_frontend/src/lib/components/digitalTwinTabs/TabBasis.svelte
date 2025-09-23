@@ -21,6 +21,7 @@
   let errorBanner: InstanceType<typeof AlertBanner> | null = null;
 
   let colorsOpen = false;
+  let startPositionOpen = false;
   let viewerData: DigitalTwinViewerResponse | null = null;
   let digitalTwinData: DigitalTwin | null = null;
   let error: string | null = null;
@@ -275,49 +276,86 @@
   <div class="space-y-6">
     <h2 class="text-2xl font-bold">Basis Instellingen</h2>
     <p class="text-base-content/70">Basis configuratie voor deze digital twin.</p>
+    <div class="card-body space-y-4">
+      <!-- Logo -->
+      <div>
+        <label for="logo-url" class="font-medium flex items-center gap-2">
+          Logo URL
+          <HelpTooltip tip="URL van het logo dat wordt weergegeven in de viewer." />
+        </label>
+        <input 
+        id="logo-url" 
+        type="text" 
+        bind:value={logo} 
+        class="input input-bordered w-full" 
+        placeholder="vb.: https://virtueel.zeeland.nl/global_assets/img/logo.svg"
+        />
+      </div>
 
-    <div class="card bg-base-100 border-base-300 border">
-      <div class="card-body space-y-4">
-        <!-- Logo -->
-        <div>
-          <label for="logo-url" class="font-medium flex items-center gap-2">
-            Logo URL
-            <HelpTooltip tip="URL van het logo dat wordt weergegeven in de viewer." />
-          </label>
-          <input id="logo-url" type="text" bind:value={logo} class="input input-bordered w-full" />
-        </div>
+      <!-- Thumbnail -->
+      <div>
+        <label for="thumbnail-url" class="font-medium flex items-center gap-2">
+          Thumbnail URL
+          <HelpTooltip tip="Href van de thumbnail-afbeelding voor deze digital twin, de href moet in de viewer repository zijn" />
+        </label>
+        <input
+          id="thumbnail-url"
+          type="text"
+          bind:value={thumbnail}
+          class="input input-bordered w-full"
+          placeholder="vb.: /assets/previews/preview-klimaat-bodem.png"
+        />
+      </div>
 
-        <!-- Thumbnail -->
-        <div>
-          <label for="thumbnail-url" class="font-medium flex items-center gap-2">
-            Thumbnail URL
-            <HelpTooltip tip="URL van de thumbnail-afbeelding voor deze digital twin." />
-          </label>
-          <input
-            id="thumbnail-url"
-            type="text"
-            bind:value={thumbnail}
-            class="input input-bordered w-full"
+      <!-- Start Position in 3 columns (defined by grid-cols-3)-->
+      <fieldset>
+        <button
+          type="button"
+          class="m-0 flex w-full cursor-pointer items-center space-x-2 border-0 bg-transparent p-0 text-left font-semibold select-none mb-2"
+          on:click={() => (startPositionOpen = !startPositionOpen)}
+          aria-expanded={startPositionOpen}
+        >
+          {#if startPositionOpen}
+            <img src="/icons/chevron-down.svg" alt="Open" class="h-5 w-5" />
+          {:else}
+            <img src="/icons/chevron-right.svg" alt="Closed" class="h-5 w-5" />
+          {/if}
+          <span>Start positie instellingen
+            <HelpTooltip tip="Geavanceerde start positie en camera instellingen voor de digital twin." />
+          </span>
+        </button>
+
+        <!-- Position Selector Button -->
+        <div class="mb-4">
+          <PositionSelector 
+            title="Selecteer start positie"
+            buttonText="Selecteer start positie op kaart"
+            initialPosition={startPosition}
+            on:coordinatesSelected={(e) => {
+              startPosition = e.detail;
+            }}
           />
         </div>
 
-        <!-- Start Position in 3 columns (defined by grid-cols-3)-->
-        <fieldset>
-          <legend class="font-semibold mb-2">Start positie</legend>
-          
-          <!-- Position Selector Button -->
+        <!-- Duration field (always visible) -->
+        {#if !startPositionOpen}
           <div class="mb-4">
-            <PositionSelector 
-              title="Selecteer start positie"
-              buttonText="Selecteer start positie op kaart"
-              initialPosition={startPosition}
-              on:coordinatesSelected={(e) => {
-                startPosition = e.detail;
-              }}
+            <label for="start-duration" class="font-medium flex items-center gap-2">
+              Duration
+              <HelpTooltip tip="Duur van de overgang naar de startpositie (in seconden)." />
+            </label>
+            <input
+              id="start-duration"
+              type="number"
+              step="any"
+              bind:value={startPosition.duration}
+              class="input input-bordered w-full"
             />
           </div>
+        {/if}
 
-          <div class="grid grid-cols-3 gap-4">
+        {#if startPositionOpen}
+          <div class="grid grid-cols-3 gap-4 mb-4">
             <div>
               <label for="start-x" class="font-medium flex items-center gap-2">
                 X
@@ -388,13 +426,14 @@
               />
             </div>
 
+            <!-- Duration field (visible when dropdown is open, positioned to the right of pitch) -->
             <div>
-              <label for="start-duration" class="font-medium flex items-center gap-2">
+              <label for="start-duration-expanded" class="font-medium flex items-center gap-2">
                 Duration
                 <HelpTooltip tip="Duur van de overgang naar de startpositie (in seconden)." />
               </label>
               <input
-                id="start-duration"
+                id="start-duration-expanded"
                 type="number"
                 step="any"
                 bind:value={startPosition.duration}
@@ -402,109 +441,114 @@
               />
             </div>
           </div>
-        </fieldset>
+        {/if}
+      </fieldset>
 
-        <!-- Tools checkboxes list in 3 column grid (defined by class grid-cols-3) -->
-        <fieldset>
-          <legend class="mb-2 font-semibold">Tools
-            <HelpTooltip tip="Selecteer de tools die je wilt gebruiken voor deze digital twin." />
-          </legend>
-          <div class="space-y-3">
-            <div
-              class="grid max-h-48 grid-cols-3 gap-2 overflow-auto rounded border border-gray-300 p-2"
-            >
-              {#each allTools as tool (tool.id)}
-                <label class="flex cursor-pointer items-center space-x-2 select-none">
-                  <input
-                    type="checkbox"
-                    checked={tool.enabled}
-                    on:change={() => toggleTool(tool.id)}
-                    class="checkbox checkbox-primary"
-                  />
-                  <span>{tool.name}</span>
-                </label>
-              {/each}
-            </div>
-            
-            <!-- Tool Settings with Tabs -->
-            {#if toolsWithSettings.length > 0}
-              <div class="bg-base-50 rounded-lg p-4">
-                <h3 class="font-semibold text-base mb-4">Tool Settings
-                  <HelpTooltip tip="Tool instellingen voor de geselecteerde tool." />
-                </h3>
-
-                <!-- Tool Settings Tabs -->
-                <div class="tabs tabs-border">
-                  {#each toolsWithSettings as tool, index (tool.id)}
-                    <input 
-                      type="radio" 
-                      name="tool_settings_tabs" 
-                      class="tab" 
-                      aria-label={tool.name}
-                      checked={activeToolSettingsTab === tool.id}
-                      on:change={() => {activeToolSettingsTab = tool.id}}
-                    />
-                    <div class="tab-content border-base-300 bg-base-100 p-6">
-                      <ToolSettings 
-                        {tool}
-                        {toolSettingTooltips}
-                        on:toggleSetting={handleToggleSetting}
-                        on:updateTextSetting={handleUpdateTextSetting}
-                        on:updateFeatureInfoFields={handleUpdateFeatureInfoFields}
-                        on:updateConnectors={handleUpdateConnectors}
-                      />
-                    </div>
-                  {/each}
-                </div>
-              </div>
-            {/if}
-          </div>
-        </fieldset>
-
-        <!-- Colors with color pickers in 5 columns grid (defined by class grid-cols-5) -->
-        <fieldset>
-          <button
-            type="button"
-            class="m-0 flex w-full cursor-pointer items-center space-x-2 border-0 bg-transparent p-0 text-left font-semibold select-none"
-            on:click={() => (colorsOpen = !colorsOpen)}
-            aria-expanded={colorsOpen}
+      <!-- Tools checkboxes list in 3 column grid (defined by class grid-cols-3) -->
+      <fieldset>
+        <legend class="mb-2 font-semibold">Tools
+          <HelpTooltip tip="Selecteer de tools die je wilt gebruiken voor deze digital twin." />
+        </legend>
+        <div class="space-y-3">
+          <div
+            class="grid max-h-48 grid-cols-3 gap-2 overflow-auto rounded border border-gray-300 p-2"
           >
-            {#if colorsOpen}
-              <img src="/icons/chevron-down.svg" alt="Open" class="h-5 w-5" />
-            {:else}
-              <img src="/icons/chevron-right.svg" alt="Closed" class="h-5 w-5" />
-            {/if}
-            <span>Colors
-              <HelpTooltip tip="Kleurinstellingen voor de digital twin." />
-            </span>
-          </button>
+            {#each allTools as tool (tool.id)}
+              <label class="flex cursor-pointer items-center space-x-2 select-none">
+                <input
+                  type="checkbox"
+                  checked={tool.enabled}
+                  on:change={() => toggleTool(tool.id)}
+                  class="checkbox checkbox-primary"
+                />
+                <span class="flex items-center gap-1">
+                  {tool.name}
+                  {#if tool.description || tool.content?.description}
+                    <HelpTooltip tip={tool.description || tool.content?.description || ''} position="right" />
+                  {/if}
+                </span>
+              </label>
+            {/each}
+          </div>
+          
+          <!-- Tool Settings with Tabs -->
+          {#if toolsWithSettings.length > 0}
+            <div class="bg-base-50 rounded-lg p-4">
+              <h3 class="font-semibold text-base mb-4">Tool Settings
+                <HelpTooltip tip="Tool instellingen voor de geselecteerde tool." />
+              </h3>
 
-          {#if colorsOpen}
-            <div class="mt-2 grid grid-cols-5 gap-4">
-              {#each Object.entries(colors) as [key, value]}
-                <div>
-                  <label for={'color-' + key} class="truncate font-medium flex items-center gap-2">
-                    {key}
-                  </label>
-                  <input
-                    id={'color-' + key}
-                    type="color"
-                    bind:value={colors[key]}
-                    class="h-8 w-12 rounded border border-gray-300 p-0"
+              <!-- Tool Settings Tabs -->
+              <div class="tabs tabs-border">
+                {#each toolsWithSettings as tool, index (tool.id)}
+                  <input 
+                    type="radio" 
+                    name="tool_settings_tabs" 
+                    class="tab" 
+                    aria-label={tool.name}
+                    checked={activeToolSettingsTab === tool.id}
+                    on:change={() => {activeToolSettingsTab = tool.id}}
                   />
-                  <input
-                    type="text"
-                    bind:value={colors[key]}
-                    class="input input-bordered mt-1 w-full"
-                  />
-                </div>
-              {/each}
+                  <div class="tab-content border-base-300 bg-base-100 p-6">
+                    <ToolSettings 
+                      {tool}
+                      {toolSettingTooltips}
+                      on:toggleSetting={handleToggleSetting}
+                      on:updateTextSetting={handleUpdateTextSetting}
+                      on:updateFeatureInfoFields={handleUpdateFeatureInfoFields}
+                      on:updateConnectors={handleUpdateConnectors}
+                    />
+                  </div>
+                {/each}
+              </div>
             </div>
           {/if}
-        </fieldset>
+        </div>
+      </fieldset>
 
-        <button on:click={handleSubmit} class="btn btn-primary mt-4">Opslaan</button>
-      </div>
+      <!-- Colors with color pickers in 5 columns grid (defined by class grid-cols-5) -->
+      <fieldset>
+        <button
+          type="button"
+          class="m-0 flex w-full cursor-pointer items-center space-x-2 border-0 bg-transparent p-0 text-left font-semibold select-none"
+          on:click={() => (colorsOpen = !colorsOpen)}
+          aria-expanded={colorsOpen}
+        >
+          {#if colorsOpen}
+            <img src="/icons/chevron-down.svg" alt="Open" class="h-5 w-5" />
+          {:else}
+            <img src="/icons/chevron-right.svg" alt="Closed" class="h-5 w-5" />
+          {/if}
+          <span>Colors
+            <HelpTooltip tip="Kleurinstellingen voor de digital twin." />
+          </span>
+        </button>
+
+        {#if colorsOpen}
+          <div class="mt-2 grid grid-cols-5 gap-4">
+            {#each Object.entries(colors) as [key, value]}
+              <div>
+                <label for={'color-' + key} class="truncate font-medium flex items-center gap-2">
+                  {key}
+                </label>
+                <input
+                  id={'color-' + key}
+                  type="color"
+                  bind:value={colors[key]}
+                  class="h-8 w-12 rounded border border-gray-300 p-0"
+                />
+                <input
+                  type="text"
+                  bind:value={colors[key]}
+                  class="input input-bordered mt-1 w-full"
+                />
+              </div>
+            {/each}
+          </div>
+        {/if}
+      </fieldset>
+
+      <button on:click={handleSubmit} class="btn btn-primary mt-4">Opslaan</button>
     </div>
   </div>
 {/if}
