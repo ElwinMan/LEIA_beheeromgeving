@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, tick } from 'svelte';
   import { 
     Viewer,
     Cartographic, 
@@ -26,18 +26,29 @@
   let isVisible = false;
   let viewer: Viewer | null = null;
   let cesiumBaseMap: CesiumBaseMap;
+  let dialogEl: HTMLDialogElement | null = null;
 
   function handleViewerReady(event: CustomEvent) {
     viewer = event.detail.viewer;
   }
 
   function handleClose() {
+    // Close native dialog if open
+    dialogEl?.open && dialogEl.close();
     isVisible = false;
+    // restore body scroll when closing
+    document.body.style.overflow = '';
     dispatch('close');
   }
 
-  function handleOpen() {
+  async function handleOpen() {
     isVisible = true;
+    // prevent background scroll and keep overlay fixed to viewport
+    document.body.style.overflow = 'hidden';
+    // ensure the dialog is in the DOM before opening as a modal (top layer)
+    await tick();
+    await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+    dialogEl?.showModal?.();
   }
 
   function handleSaveCurrentView() {
@@ -49,12 +60,12 @@
       const position = camera.position;
       
       const cartographic = Cartographic.fromCartesian(position, Ellipsoid.WGS84);
-      const x = CesiumMath.toDegrees(cartographic.longitude);
-      const y = CesiumMath.toDegrees(cartographic.latitude);
-      const z = cartographic.height;
+      const x = Number.parseFloat(CesiumMath.toDegrees(cartographic.longitude).toFixed(5));
+      const y = Number.parseFloat(CesiumMath.toDegrees(cartographic.latitude).toFixed(5));
+      const z = Number.parseFloat(cartographic.height.toFixed(5));
 
-      const heading = CesiumMath.toDegrees(camera.heading);
-      const pitch = CesiumMath.toDegrees(camera.pitch);
+      const heading = Number.parseFloat(CesiumMath.toDegrees(camera.heading).toFixed(5));
+      const pitch = Number.parseFloat(CesiumMath.toDegrees(camera.pitch).toFixed(5));
       const currentDuration = initialPosition?.duration ?? 0;
       const duration = currentDuration === 0 ? 2.0 : currentDuration;
 
@@ -75,6 +86,21 @@
   }
 </script>
 
+<style>
+  /* Style the native dialog backdrop */
+  :global(dialog.position-selector)::backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  /* Reset UA defaults for a clean card look */
+  :global(dialog.position-selector) {
+    padding: 0;
+    border: none;
+    /* Center in viewport */
+    inset: 0;
+    margin: auto;
+  }
+</style>
+
 <!-- Button to open position selector -->
 <button 
   type="button"
@@ -88,15 +114,20 @@
   {buttonText}
 </button>
 
-<!-- Modal backdrop -->
+<!-- Modal dialog in top layer (above other dialogs) -->
 {#if isVisible}
-  <div 
-    class="fixed inset-0 bg-black/50 flex justify-center items-center z-[9999]" 
-    on:click={handleClose} 
-    on:keydown 
-    role="presentation"
+  <dialog
+    bind:this={dialogEl}
+    class="position-selector w-[90vw] max-w-4xl h-[80vh] max-h-[600px] rounded-lg shadow-xl bg-white flex flex-col"
+    aria-modal="true"
+    on:cancel|preventDefault={handleClose}
+    on:close={handleClose}
+    on:click={(e) => {
+      // Close when backdrop is clicked (event target is the dialog itself)
+      if (e.target === dialogEl) handleClose();
+    }}
   >
-    <div class="bg-white rounded-lg w-[90%] max-w-4xl h-[80%] max-h-[600px] flex flex-col shadow-xl" on:click|stopPropagation on:keydown role="dialog" tabindex="-1">
+    <div class="flex flex-col h-full" tabindex="-1">
       <!-- Modal header -->
       <div class="flex justify-between items-center p-4 border-b border-gray-200">
         <h2 class="text-xl font-semibold text-gray-800">{title}</h2>
@@ -111,11 +142,13 @@
       </div>
 
       <!-- Cesium container -->
-      <CesiumBaseMap 
-        bind:this={cesiumBaseMap}
-        {initialPosition}
-        on:viewerReady={handleViewerReady}
-      />
+      <div class="flex-1 min-h-0">
+        <CesiumBaseMap 
+          bind:this={cesiumBaseMap}
+          {initialPosition}
+          on:viewerReady={handleViewerReady}
+        />
+      </div>
 
       <!-- Modal footer -->
       <div class="px-4 py-3 border-t border-gray-200 flex flex-col sm:flex-row sm:justify-between items-center gap-2">
@@ -139,5 +172,5 @@
         </button>
       </div>
     </div>
-  </div>
+  </dialog>
 {/if}
