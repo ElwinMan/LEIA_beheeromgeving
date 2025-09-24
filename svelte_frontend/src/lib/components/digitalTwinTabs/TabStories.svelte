@@ -54,6 +54,19 @@
   let originalData: StoryWithAssociation[] = [];
   let isSaving = $state(false);
 
+  // Expose methods and state for parent component
+  export function getHasChanges() {
+    return hasChanges;
+  }
+
+  export function saveTabChanges() {
+    return saveChanges();
+  }
+
+  export function resetTabChanges() {
+    return resetChanges();
+  }
+
   // Delete modal state
   let deleteStoryModalShow = $state(false);
   let storyToDelete: StoryWithAssociation | null = null;
@@ -475,7 +488,6 @@
       hasChanges = false;
       originalData = deepClone(storiesWithDetails);
 
-      await fetchAllData();
       successBanner?.show();
     } catch (error) {
       console.error('Failed to save changes:', error);

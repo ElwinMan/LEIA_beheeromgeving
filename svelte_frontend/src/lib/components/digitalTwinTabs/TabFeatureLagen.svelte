@@ -86,6 +86,19 @@
   };
   let isSaving = $state(false);
 
+  // Export methods for parent component
+  export function getHasChanges() {
+    return hasChanges;
+  }
+
+  export function saveTabChanges() {
+    return saveChanges();
+  }
+
+  export function resetTabChanges() {
+    resetChanges();
+  }
+
   // Drag and drop state
   let draggedItem = $state<{
     type: 'layer' | 'group' | 'catalog-layer';
@@ -801,7 +814,7 @@
 
   // Save changes to the API
   async function saveChanges() {
-    if (!hasChanges) return;
+    if (!hasChanges) return true;
 
     isSaving = true;
     try {
@@ -920,9 +933,11 @@
 
       await fetchAllData();
       successBanner?.show();
+      return true;
     } catch (error) {
       console.error('Failed to save changes:', error);
       errorBanner?.show();
+      return false;
     } finally {
       isSaving = false;
     }

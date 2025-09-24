@@ -48,6 +48,19 @@
   let originalData: BookmarkWithAssociation[] = [];
   let isSaving = $state(false);
 
+  // Export methods for parent component
+  export function getHasChanges() {
+    return hasChanges;
+  }
+
+  export function saveTabChanges() {
+    return saveChanges();
+  }
+
+  export function resetTabChanges() {
+    resetChanges();
+  }
+
   // Delete modal state
   let deleteBookmarkModalShow = $state(false);
   let bookmarkToDelete: BookmarkWithAssociation | null = null;
@@ -293,7 +306,7 @@
 
   // Save changes to the API
   async function saveChanges() {
-    if (!hasChanges) return;
+    if (!hasChanges) return true;
 
     isSaving = true;
     try {
@@ -345,11 +358,13 @@
       
       successBanner?.show();
       setTimeout(() => successBanner?.hide(), 3000);
+      return true;
       
     } catch (err) {
       console.error('Failed to save bookmarks:', err);
       errorBanner?.show();
       setTimeout(() => errorBanner?.hide(), 5000);
+      return false;
     } finally {
       isSaving = false;
     }

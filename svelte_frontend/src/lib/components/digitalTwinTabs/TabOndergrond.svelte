@@ -26,6 +26,20 @@
   let associatedLayerIds = $state<Set<number>>(new Set());
   let hasChanges = $state(false);
   let originalData: LayerWithAssociation[] = [];
+  let originalDefaultLayerId: number | null = null;
+
+  // Export methods for parent component
+  export function getHasChanges() {
+    return hasChanges;
+  }
+
+  export function saveTabChanges() {
+    return saveBackgroundLayers();
+  }
+
+  export function resetTabChanges() {
+    resetChanges();
+  }
 
   // Alert banner refs
   let successBanner: InstanceType<typeof AlertBanner> | null = null;
@@ -99,6 +113,7 @@
         
       // Deep clone for change tracking
       originalData = JSON.parse(JSON.stringify(selectedBackgroundLayers));
+      originalDefaultLayerId = defaultLayerId;
       hasChanges = false;
     } catch (err) {
       error = 'Fout bij laden van ondergrondlagen.';
@@ -298,7 +313,7 @@
   }
 
   async function saveBackgroundLayers() {
-    if (!hasChanges) return;
+    if (!hasChanges) return true;
 
     isSaving = true;
     error = null;
@@ -352,10 +367,12 @@
       
       // Show success banner
       successBanner?.show();
+      return true;
     } catch (err) {
       // Show error banner
       errorBanner?.show();
       console.error('Save error:', err);
+      return false;
     } finally {
       isSaving = false;
     }
@@ -364,6 +381,7 @@
   // Reset changes
   function resetChanges() {
     selectedBackgroundLayers = JSON.parse(JSON.stringify(originalData));
+    defaultLayerId = originalDefaultLayerId;
     hasChanges = false;
   }
 

@@ -15,34 +15,79 @@
   import HelpTooltip from '$lib/components/HelpTooltip.svelte';
   import ToolSettings from '$lib/components/ToolSettings.svelte';
 
-  export let digitalTwinId: string;
+  interface Props {
+    digitalTwinId: string;
+    digitalTwin?: DigitalTwin; // Properly typed, not used by this component
+  }
+
+  let { digitalTwinId }: Props = $props();
 
   let successBanner: InstanceType<typeof AlertBanner> | null = null;
   let errorBanner: InstanceType<typeof AlertBanner> | null = null;
 
-  let colorsOpen = false;
-  let startPositionOpen = false;
-  let viewerData: DigitalTwinViewerResponse | null = null;
-  let digitalTwinData: DigitalTwin | null = null;
-  let error: string | null = null;
+  let colorsOpen = $state(false);
+  let startPositionOpen = $state(false);
+  let viewerData: DigitalTwinViewerResponse | null = $state(null);
+  let digitalTwinData: DigitalTwin | null = $state(null);
+  let error: string | null = $state(null);
 
   // Local editable copies of fields
-  let logo = '';
-  let thumbnail = '';
-  let startPosition = {
+  let logo = $state('');
+  let thumbnail = $state('');
+  let startPosition = $state({
     x: 0,
     y: 0,
     z: 0,
     heading: 0,
     pitch: 0,
     duration: 0
-  };
-  let colors: Record<string, string> = {};
-  let allTools: (Tool & { enabled: boolean; settings?: Record<string, any> })[] = [];
-  let activeToolSettingsTab: number | null = null;
+  });
+  let colors: Record<string, string> = $state({});
+  let allTools: (Tool & { enabled: boolean; settings?: Record<string, any> })[] = $state([]);
+  let activeToolSettingsTab: number | null = $state(null);
+  let hasChanges = $state(false);
+  
+  // Track original state for change detection
+  let originalState = $state({
+    logo: '',
+    thumbnail: '',
+    startPosition: { x: 0, y: 0, z: 0, heading: 0, pitch: 0, duration: 0 },
+    colors: {},
+    tools: []
+  });
+
+  // Export methods for parent component
+  export function getHasChanges() {
+    return hasChanges;
+  }
+
+  export function saveTabChanges() {
+    return handleSubmit();
+  }
+
+  export function resetTabChanges() {
+    logo = originalState.logo;
+    thumbnail = originalState.thumbnail;
+    startPosition = { ...originalState.startPosition };
+    colors = { ...originalState.colors };
+    allTools = JSON.parse(JSON.stringify(originalState.tools));
+    hasChanges = false;
+  }
+
+  // Check for changes
+  $effect(() => {
+    if (originalState.tools.length === 0) return; // Not initialized yet
+    
+    hasChanges = 
+      logo !== originalState.logo ||
+      thumbnail !== originalState.thumbnail ||
+      JSON.stringify(startPosition) !== JSON.stringify(originalState.startPosition) ||
+      JSON.stringify(colors) !== JSON.stringify(originalState.colors) ||
+      JSON.stringify(allTools) !== JSON.stringify(originalState.tools);
+  });
 
   // Calculate tools with settings
-  $: toolsWithSettings = allTools.filter(tool => {
+  let toolsWithSettings = $derived(allTools.filter(tool => {
     if (!tool.enabled) return false;
     
     // Check if tool has configurable settings
@@ -56,16 +101,18 @@
     );
     
     return hasConfigurableSettings || tool.name?.toLowerCase() === 'featureinfo';
-  });
+  }));
 
   // Set active tab when tools with settings change
-  $: if (toolsWithSettings.length > 0) {
-    if (activeToolSettingsTab === null || !toolsWithSettings.some(tool => tool.id === activeToolSettingsTab)) {
-      activeToolSettingsTab = toolsWithSettings[0].id;
+  $effect(() => {
+    if (toolsWithSettings.length > 0) {
+      if (activeToolSettingsTab === null || !toolsWithSettings.some(tool => tool.id === activeToolSettingsTab)) {
+        activeToolSettingsTab = toolsWithSettings[0].id;
+      }
+    } else {
+      activeToolSettingsTab = null;
     }
-  } else {
-    activeToolSettingsTab = null;
-  }
+  });
 
   // Tool setting tooltips lookup
   const toolSettingTooltips: Record<string, string> = {
@@ -137,6 +184,16 @@
           } : undefined
         };
       });
+      
+      // Store original state for change tracking
+      originalState = {
+        logo,
+        thumbnail,
+        startPosition: { ...startPosition },
+        colors: { ...colors },
+        tools: JSON.parse(JSON.stringify(allTools))
+      };
+      hasChanges = false;
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e);
     }
@@ -256,10 +313,22 @@
         colors
       });
 
+      // Update original state after successful save
+      originalState = {
+        logo,
+        thumbnail,
+        startPosition: { ...startPosition },
+        colors: { ...colors },
+        tools: JSON.parse(JSON.stringify(allTools))
+      };
+      hasChanges = false;
+
       successBanner?.show();
+      return true;
     } catch (err) {
       console.error(err);
-      errorBanner?.show;
+      errorBanner?.show();
+      return false;
     }
   }
 </script>
@@ -312,7 +381,7 @@
         <button
           type="button"
           class="m-0 flex w-full cursor-pointer items-center space-x-2 border-0 bg-transparent p-0 text-left font-semibold select-none mb-2"
-          on:click={() => (startPositionOpen = !startPositionOpen)}
+          onclick={() => (startPositionOpen = !startPositionOpen)}
           aria-expanded={startPositionOpen}
         >
           {#if startPositionOpen}
@@ -458,7 +527,7 @@
                 <input
                   type="checkbox"
                   checked={tool.enabled}
-                  on:change={() => toggleTool(tool.id)}
+                  onchange={() => toggleTool(tool.id)}
                   class="checkbox checkbox-primary"
                 />
                 <span class="flex items-center gap-1">
@@ -487,7 +556,7 @@
                     class="tab" 
                     aria-label={tool.name}
                     checked={activeToolSettingsTab === tool.id}
-                    on:change={() => {activeToolSettingsTab = tool.id}}
+                    onchange={() => {activeToolSettingsTab = tool.id}}
                   />
                   <div class="tab-content border-base-300 bg-base-100 p-6">
                     <ToolSettings 
@@ -511,7 +580,7 @@
         <button
           type="button"
           class="m-0 flex w-full cursor-pointer items-center space-x-2 border-0 bg-transparent p-0 text-left font-semibold select-none"
-          on:click={() => (colorsOpen = !colorsOpen)}
+          onclick={() => (colorsOpen = !colorsOpen)}
           aria-expanded={colorsOpen}
         >
           {#if colorsOpen}
@@ -548,7 +617,7 @@
         {/if}
       </fieldset>
 
-      <button on:click={handleSubmit} class="btn btn-primary mt-4">Opslaan</button>
+      <button onclick={handleSubmit} class="btn btn-primary mt-4">Opslaan</button>
     </div>
   </div>
 {/if}

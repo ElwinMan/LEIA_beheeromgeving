@@ -3,24 +3,67 @@
   import type { DigitalTwin } from '$lib/types/digitalTwin';
   import { fetchDigitalTwin, updateDigitalTwin } from '$lib/api';
 
-  export let digitalTwinId: string;
+  interface Props {
+    digitalTwinId: string;
+    digitalTwin?: DigitalTwin; // Optional, not used by this component
+  }
+
+  let { digitalTwinId }: Props = $props();
 
   import AlertBanner from '$lib/components/AlertBanner.svelte';
   import HelpTooltip from '$lib/components/HelpTooltip.svelte';
   let successBanner: InstanceType<typeof AlertBanner> | null = null;
   let errorBanner: InstanceType<typeof AlertBanner> | null = null;
   let requiredBanner: InstanceType<typeof AlertBanner> | null = null;
-  let requiredFieldMessage: string = '';
-  let errorMessage: string = 'Fout bij het opslaan!';
+  let requiredFieldMessage = $state('');
+  let errorMessage = $state('Fout bij het opslaan!');
 
   let digitalTwin: DigitalTwin | null = null;
-  let isReady = false;
+  let isReady = $state(false);
 
-  let title = '';
-  let name = '';
-  let subtitle = '';
-  let owner = '';
-  let isPrivate = false;
+  let title = $state('');
+  let name = $state('');
+  let subtitle = $state('');
+  let owner = $state('');
+  let isPrivate = $state(false);
+  let hasChanges = $state(false);
+  
+  // Track original values for change detection
+  let originalValues = $state({
+    title: '',
+    name: '',
+    subtitle: '',
+    owner: '',
+    isPrivate: false
+  });
+
+  // Export methods for parent component
+  export function getHasChanges() {
+    return hasChanges;
+  }
+
+  export function saveTabChanges() {
+    return handleSubmitInternal();
+  }
+
+  export function resetTabChanges() {
+    title = originalValues.title;
+    name = originalValues.name;
+    subtitle = originalValues.subtitle;
+    owner = originalValues.owner;
+    isPrivate = originalValues.isPrivate;
+    hasChanges = false;
+  }
+
+  // Check for changes
+  $effect(() => {
+    hasChanges = 
+      title !== originalValues.title ||
+      name !== originalValues.name ||
+      subtitle !== originalValues.subtitle ||
+      owner !== originalValues.owner ||
+      isPrivate !== originalValues.isPrivate;
+  });
 
   async function loadDigitalTwin() {
     try {
@@ -31,6 +74,17 @@
         subtitle = digitalTwin.subtitle ?? '';
         owner = digitalTwin.owner ?? '';
         isPrivate = digitalTwin.isPrivate ?? false;
+        
+        // Store original values for change detection
+        originalValues = {
+          title,
+          name,
+          subtitle,
+          owner,
+          isPrivate
+        };
+        
+        hasChanges = false;
         isReady = true;
       } else {
         console.error('DigitalTwin is null');
@@ -55,13 +109,16 @@
 
   async function handleSubmit(event: Event) {
     event.preventDefault();
+    return await handleSubmitInternal();
+  }
 
+  async function handleSubmitInternal() {
     const missingFields = getMissingRequiredFields();
 
     if (missingFields.length > 0) {
       requiredFieldMessage = `Verplichte velden niet ingevuld: ${missingFields.join(', ')}`;
       requiredBanner?.show();
-      return;
+      return false;
     }
 
     try {
@@ -72,7 +129,19 @@
         owner,
         isPrivate: isPrivate
       });
+      
+      // Update original values after successful save
+      originalValues = {
+        title,
+        name,
+        subtitle,
+        owner,
+        isPrivate
+      };
+      hasChanges = false;
+      
       successBanner?.show();
+      return true;
     } catch (err: any) {
       console.error(err);
       // Check for duplicate name error (status 409 or message contains known phrases)
@@ -87,6 +156,7 @@
         errorMessage = 'Fout bij het opslaan!';
       }
       errorBanner?.show();
+      return false;
     }
   }
 </script>
