@@ -14,6 +14,7 @@ cd LEIA_beheeromgeving
 
 ### With docker
 Copy the **.env.example** file as **.env** in the file **LEIA_beheeromgeving/svelte_frontend**
+
 Copy the **.env.docker.example** file in **LEIA_beheeromgeving/fastAPI_backend** as **.env.docker**
 
 in the **.env.docker**:
@@ -56,7 +57,7 @@ API docs: http://localhost:8000/docs
 
 PostgreSQL: http://localhost:5432/
 
-### Run local
+### Run locally (only do this if you want to run it locally instead of using the Docker build)
 Copy the .env.example as .env in svelte_frontend and .env.example in fastAPI_backend as .env
 
 ```sh
