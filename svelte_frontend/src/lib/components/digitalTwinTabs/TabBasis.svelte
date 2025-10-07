@@ -207,6 +207,14 @@
       // Initialize settings if tool is being enabled and has default settings
       if (tool.enabled && tool.content?.settings) {
         tool.settings = { ...tool.content.settings };
+        // Ensure layerlibrary tool has connectors array initialized
+        if (
+          tool.name?.toLowerCase() === 'layerlibrary' &&
+          tool.settings &&
+          !tool.settings.connectors
+        ) {
+          tool.settings.connectors = [];
+        }
       } else if (!tool.enabled) {
         // Clear settings when tool is disabled
         tool.settings = undefined;
@@ -249,7 +257,11 @@
   function handleUpdateConnectors(event: CustomEvent) {
     const { toolId, connectors } = event.detail;
     const tool = allTools.find((t) => t.id === toolId);
-    if (tool && tool.settings) {
+    if (tool) {
+      // Ensure settings object exists
+      if (!tool.settings) {
+        tool.settings = {};
+      }
       tool.settings.connectors = JSON.parse(JSON.stringify(connectors));
       allTools = [...allTools];
     }
