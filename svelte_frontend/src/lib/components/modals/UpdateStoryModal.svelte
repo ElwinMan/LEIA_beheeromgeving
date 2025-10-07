@@ -98,8 +98,8 @@
               pitch: step.camera?.pitch || 0,
               duration: step.camera?.duration || 1.5
             },
-            layers: step.layers ? step.layers.map((layer: any) => layer.id || layer).filter(Boolean) : [],
-            requiredLayers: step.requiredLayers ? step.requiredLayers.map((l: any) => ({
+            layers: step.layers ? step.layers.filter((layer: any) => typeof layer === 'string' || !layer.title).map((layer: any) => layer.id || layer).filter(Boolean) : [],
+            requiredLayers: step.layers ? step.layers.filter((layer: any) => typeof layer === 'object' && layer.title).map((l: any) => ({
               id: l.id,
               title: l.title,
               opacity: l.opacity ?? 100,
@@ -782,7 +782,7 @@
                       placeholder="Zoek laag..."
                       bind:value={catalogSearchTerm}
                     />
-                    {#each availableLayers.filter(layer =>
+                    {#each availableFeatureLayers.filter(layer =>
                       !currentStep.requiredLayers.find(l => l.id === layer.id.toString()) &&
                       (catalogSearchTerm.trim() === '' || layer.title.toLowerCase().includes(catalogSearchTerm.trim().toLowerCase()))
                     ) as layer}
