@@ -72,7 +72,7 @@
 
   function getLayerLibraryConnectors(): any[] {
     if (!tool || !tool.settings) return [];
-    return tool.settings?.connectors ?? [];
+    return tool.settings.connectors || [];
   }
 </script>
 
@@ -217,7 +217,7 @@
 
   <!-- LayerLibrary Connectors UI -->
   {#if tool.name?.toLowerCase() === 'layerlibrary'}
-    {@const layerLibraryConnectors = getLayerLibraryConnectors()}
+    {@const layerLibraryConnectors = tool.settings?.connectors || []}
     <div class="mb-4">
       <h5 class="font-semibold text-sm text-base-content uppercase tracking-wide flex items-center gap-2">
         Connectors
@@ -226,37 +226,213 @@
         </span>
       </h5>
       {#each layerLibraryConnectors as connector, idx (idx)}
-        <div class="border rounded p-3 mb-2 space-y-2">
+        <div class="border rounded p-3 mb-2 space-y-3">
           <div class="flex justify-between items-center">
-            <div class="flex-1">
-              <label class="text-xs font-semibold mb-1 flex items-center gap-2" for={`connector-type-${idx}`}>
-                Type
-                <span class="normal-case">
-                  <HelpTooltip tip="Type van connector. Momenteel wordt voornamelijk 'ckan' ondersteund." />
-                </span>
-              </label>
-              <select 
-                id={`connector-type-${idx}`} 
-                class="select select-bordered select-sm w-full" 
-                value={connector.type || ''}
-                on:change={(e) => {
-                  const newConnectors = [...layerLibraryConnectors];
-                  newConnectors[idx].type = (e.target as HTMLSelectElement).value;
-                  updateLayerLibraryConnectors(newConnectors);
-                }}
-              >
-                <option value="">Selecteer type</option>
-                <option value="ckan">CKAN</option>
-                <option value="geonetwork">geonetwork</option>
-                <option value="custom">Custom</option>
-              </select>
-            </div>
-            <button type="button" class="btn btn-xs btn-error ml-2" title="Remove Connector" on:click={() => {
-              const connectors = layerLibraryConnectors.filter((_, i) => i !== idx);
+            <h6 class="font-semibold text-sm">Connector {idx + 1}</h6>
+            <button type="button" class="btn btn-xs btn-error" title="Remove Connector" on:click={() => {
+              const connectors = layerLibraryConnectors.filter((_: any, i: number) => i !== idx);
               updateLayerLibraryConnectors(connectors);
             }}>Remove</button>
           </div>
-          <!-- Add more connector fields as needed -->
+          
+          <!-- Type Field -->
+          <div>
+            <label class="text-xs font-semibold mb-1 flex items-center gap-2" for={`connector-type-${idx}`}>
+              Type
+              <span class="normal-case">
+                <HelpTooltip tip="Type van connector. Momenteel wordt voornamelijk 'ckan' ondersteund." />
+              </span>
+            </label>
+            <select 
+              id={`connector-type-${idx}`} 
+              class="select select-bordered select-sm w-full" 
+              value={connector.type || ''}
+              on:change={(e) => {
+                const newConnectors = [...layerLibraryConnectors];
+                newConnectors[idx].type = (e.target as HTMLSelectElement).value;
+                updateLayerLibraryConnectors(newConnectors);
+              }}
+            >
+              <option value="">Selecteer type</option>
+              <option value="ckan">CKAN</option>
+              <option value="geonetwork">GeoNetwork</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+
+          <!-- URL Field -->
+          <div>
+            <label class="text-xs font-semibold mb-1 flex items-center gap-2" for={`connector-url-${idx}`}>
+              URL
+              <span class="normal-case">
+                <HelpTooltip tip="Base URL van de data connector." />
+              </span>
+            </label>
+            <input 
+              id={`connector-url-${idx}`}
+              type="text" 
+              class="input input-bordered input-sm w-full" 
+              placeholder="https://data.example.com"
+              value={connector.url || ''}
+              on:input={(e) => {
+                const newConnectors = [...layerLibraryConnectors];
+                newConnectors[idx].url = (e.target as HTMLInputElement).value;
+                updateLayerLibraryConnectors(newConnectors);
+              }}
+            />
+          </div>
+
+          <!-- Organizations Field -->
+          <div>
+            <label class="text-xs font-semibold mb-1 flex items-center gap-2" for={`connector-organizations-${idx}`}>
+              Organizations
+              <span class="normal-case">
+                <HelpTooltip tip="Comma-separated lijst van organisaties om te filteren." />
+              </span>
+            </label>
+            <input 
+              id={`connector-organizations-${idx}`}
+              type="text" 
+              class="input input-bordered input-sm w-full" 
+              placeholder="rijkswaterstaat, pdok"
+              value={Array.isArray(connector.organizations) ? connector.organizations.join(', ') : ''}
+              on:input={(e) => {
+                const newConnectors = [...layerLibraryConnectors];
+                const value = (e.target as HTMLInputElement).value;
+                newConnectors[idx].organizations = value ? value.split(',').map(s => s.trim()).filter(s => s) : [];
+                updateLayerLibraryConnectors(newConnectors);
+              }}
+            />
+          </div>
+
+          <!-- Groups Field -->
+          <div>
+            <label class="text-xs font-semibold mb-1 flex items-center gap-2" for={`connector-groups-${idx}`}>
+              Groups
+              <span class="normal-case">
+                <HelpTooltip tip="Comma-separated lijst van groepen om te filteren." />
+              </span>
+            </label>
+            <input 
+              id={`connector-groups-${idx}`}
+              type="text" 
+              class="input input-bordered input-sm w-full" 
+              placeholder="group1, group2, group3"
+              value={Array.isArray(connector.groups) ? connector.groups.join(', ') : ''}
+              on:input={(e) => {
+                const newConnectors = [...layerLibraryConnectors];
+                const value = (e.target as HTMLInputElement).value;
+                newConnectors[idx].groups = value ? value.split(',').map(s => s.trim()).filter(s => s) : [];
+                updateLayerLibraryConnectors(newConnectors);
+              }}
+            />
+          </div>
+
+          <!-- Packages Field -->
+          <div>
+            <label class="text-xs font-semibold mb-1 flex items-center gap-2" for={`connector-packages-${idx}`}>
+              Packages
+              <span class="normal-case">
+                <HelpTooltip tip="Comma-separated lijst van packages om te filteren." />
+              </span>
+            </label>
+            <input 
+              id={`connector-packages-${idx}`}
+              type="text" 
+              class="input input-bordered input-sm w-full" 
+              placeholder="package1, package2"
+              value={Array.isArray(connector.packages) ? connector.packages.join(', ') : ''}
+              on:input={(e) => {
+                const newConnectors = [...layerLibraryConnectors];
+                const value = (e.target as HTMLInputElement).value;
+                newConnectors[idx].packages = value ? value.split(',').map(s => s.trim()).filter(s => s) : [];
+                updateLayerLibraryConnectors(newConnectors);
+              }}
+            />
+          </div>
+
+          <!-- Special Resources Section -->
+          <div class="border-t pt-3 mt-3">
+            <h6 class="text-xs font-semibold mb-2 text-gray-700 uppercase tracking-wide">Special Resources</h6>
+            
+            <!-- Background Layers Field -->
+            <div class="mb-3">
+              <label class="text-xs font-semibold mb-1 flex items-center gap-2" for={`connector-backgroundlayers-${idx}`}>
+                Background Layers
+                <span class="normal-case">
+                  <HelpTooltip tip="Comma-separated lijst van achtergrond lagen die speciaal behandeld moeten worden." />
+                </span>
+              </label>
+              <input 
+                id={`connector-backgroundlayers-${idx}`}
+                type="text" 
+                class="input input-bordered input-sm w-full" 
+                placeholder="resource_name_1, fd1126fd-c557-47e6-9d95-e60d5897eeb0"
+                value={Array.isArray(connector.specialResources?.backgroundLayers) ? connector.specialResources.backgroundLayers.join(', ') : ''}
+                on:input={(e) => {
+                  const newConnectors = [...layerLibraryConnectors];
+                  const value = (e.target as HTMLInputElement).value;
+                  if (!newConnectors[idx].specialResources) {
+                    newConnectors[idx].specialResources = {};
+                  }
+                  newConnectors[idx].specialResources.backgroundLayers = value ? value.split(',').map(s => s.trim()).filter(s => s) : [];
+                  updateLayerLibraryConnectors(newConnectors);
+                }}
+              />
+            </div>
+
+            <!-- Layers Added On Field -->
+            <div class="mb-3">
+              <label class="text-xs font-semibold mb-1 flex items-center gap-2" for={`connector-layersaddedon-${idx}`}>
+                Layers Added On
+                <span class="normal-case">
+                  <HelpTooltip tip="Comma-separated lijst van lagen die standaard ingeschakeld moeten zijn." />
+                </span>
+              </label>
+              <input 
+                id={`connector-layersaddedon-${idx}`}
+                type="text" 
+                class="input input-bordered input-sm w-full" 
+                placeholder="7f7b7023-225f-4018-ae4a-3381c79c7248"
+                value={Array.isArray(connector.specialResources?.layersAddedOn) ? connector.specialResources.layersAddedOn.join(', ') : ''}
+                on:input={(e) => {
+                  const newConnectors = [...layerLibraryConnectors];
+                  const value = (e.target as HTMLInputElement).value;
+                  if (!newConnectors[idx].specialResources) {
+                    newConnectors[idx].specialResources = {};
+                  }
+                  newConnectors[idx].specialResources.layersAddedOn = value ? value.split(',').map(s => s.trim()).filter(s => s) : [];
+                  updateLayerLibraryConnectors(newConnectors);
+                }}
+              />
+            </div>
+
+            <!-- Layers Added Off Field -->
+            <div class="mb-3">
+              <label class="text-xs font-semibold mb-1 flex items-center gap-2" for={`connector-layersaddedoff-${idx}`}>
+                Layers Added Off
+                <span class="normal-case">
+                  <HelpTooltip tip="Comma-separated lijst van lagen die standaard uitgeschakeld moeten zijn." />
+                </span>
+              </label>
+              <input 
+                id={`connector-layersaddedoff-${idx}`}
+                type="text" 
+                class="input input-bordered input-sm w-full" 
+                placeholder="resource_name_2"
+                value={Array.isArray(connector.specialResources?.layersAddedOff) ? connector.specialResources.layersAddedOff.join(', ') : ''}
+                on:input={(e) => {
+                  const newConnectors = [...layerLibraryConnectors];
+                  const value = (e.target as HTMLInputElement).value;
+                  if (!newConnectors[idx].specialResources) {
+                    newConnectors[idx].specialResources = {};
+                  }
+                  newConnectors[idx].specialResources.layersAddedOff = value ? value.split(',').map(s => s.trim()).filter(s => s) : [];
+                  updateLayerLibraryConnectors(newConnectors);
+                }}
+              />
+            </div>
+          </div>
         </div>
       {/each}
       <button type="button" class="btn btn-xs btn-primary mt-2" on:click={() => {
@@ -265,7 +441,12 @@
           url: '',
           organizations: [],
           groups: [],
-          packages: []
+          packages: [],
+          specialResources: {
+            backgroundLayers: [],
+            layersAddedOn: [],
+            layersAddedOff: []
+          }
         }];
         updateLayerLibraryConnectors(connectors);
       }}>+ Add Connector</button>
