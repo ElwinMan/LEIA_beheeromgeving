@@ -74,6 +74,17 @@
     if (!tool || !tool.settings) return [];
     return tool.settings.connectors || [];
   }
+
+  function updateSpecialResourceField(idx: number, fieldName: string, e: Event) {
+    const newConnectors = [...(tool.settings?.connectors || [])];
+    const value = (e.target as HTMLInputElement).value;
+    if (!newConnectors[idx].specialResources) {
+      newConnectors[idx].specialResources = {};
+    }
+    newConnectors[idx].specialResources[fieldName] = value ? 
+      value.split(',').map(s => s.trim()).filter(s => s) : [];
+    updateLayerLibraryConnectors(newConnectors);
+  }
 </script>
 
 {#if tool}
@@ -369,15 +380,7 @@
                 class="input input-bordered input-sm w-full" 
                 placeholder="resource_name_1, fd1126fd-c557-47e6-9d95-e60d5897eeb0"
                 value={Array.isArray(connector.specialResources?.backgroundLayers) ? connector.specialResources.backgroundLayers.join(', ') : ''}
-                on:input={(e) => {
-                  const newConnectors = [...layerLibraryConnectors];
-                  const value = (e.target as HTMLInputElement).value;
-                  if (!newConnectors[idx].specialResources) {
-                    newConnectors[idx].specialResources = {};
-                  }
-                  newConnectors[idx].specialResources.backgroundLayers = value ? value.split(',').map(s => s.trim()).filter(s => s) : [];
-                  updateLayerLibraryConnectors(newConnectors);
-                }}
+                on:input={(e) => updateSpecialResourceField(idx, 'backgroundLayers', e)}
               />
             </div>
 
@@ -395,15 +398,7 @@
                 class="input input-bordered input-sm w-full" 
                 placeholder="7f7b7023-225f-4018-ae4a-3381c79c7248"
                 value={Array.isArray(connector.specialResources?.layersAddedOn) ? connector.specialResources.layersAddedOn.join(', ') : ''}
-                on:input={(e) => {
-                  const newConnectors = [...layerLibraryConnectors];
-                  const value = (e.target as HTMLInputElement).value;
-                  if (!newConnectors[idx].specialResources) {
-                    newConnectors[idx].specialResources = {};
-                  }
-                  newConnectors[idx].specialResources.layersAddedOn = value ? value.split(',').map(s => s.trim()).filter(s => s) : [];
-                  updateLayerLibraryConnectors(newConnectors);
-                }}
+                on:input={(e) => updateSpecialResourceField(idx, 'layersAddedOn', e)}
               />
             </div>
 
@@ -421,15 +416,7 @@
                 class="input input-bordered input-sm w-full" 
                 placeholder="resource_name_2"
                 value={Array.isArray(connector.specialResources?.layersAddedOff) ? connector.specialResources.layersAddedOff.join(', ') : ''}
-                on:input={(e) => {
-                  const newConnectors = [...layerLibraryConnectors];
-                  const value = (e.target as HTMLInputElement).value;
-                  if (!newConnectors[idx].specialResources) {
-                    newConnectors[idx].specialResources = {};
-                  }
-                  newConnectors[idx].specialResources.layersAddedOff = value ? value.split(',').map(s => s.trim()).filter(s => s) : [];
-                  updateLayerLibraryConnectors(newConnectors);
-                }}
+                on:input={(e) => updateSpecialResourceField(idx, 'layersAddedOff', e)}
               />
             </div>
           </div>
