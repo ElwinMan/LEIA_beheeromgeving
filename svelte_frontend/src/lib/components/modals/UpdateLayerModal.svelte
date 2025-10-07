@@ -16,7 +16,7 @@
   const typeOptions = [
     { value: 'wms', label: 'WMS' },
     { value: 'wmts', label: 'WMTS' },
-    { value: '3DTiles', label: '3DTiles' },
+    { value: '3dtiles', label: '3DTiles' },
     { value: 'geojson', label: 'GeoJSON' },
     { value: 'modelanimation', label: 'Model Animation' }
   ];
@@ -28,8 +28,10 @@
   let imageUrl = '';
   let legendUrl = '';
   let defaultAddToManager = false;
+  let description = '';
   let attribution = '';
   let metadata = '';
+  let disablePopup = false;
   let transparent = false;
   let opacity = 100;
   let enableCameraPosition = false;
@@ -69,7 +71,6 @@
   let defaultTheme = '';
 
   // GeoJSON tab fields
-  let geojsonUrl = '';
   let geojsonStyle = {
     stroke: '#0000ff',
     strokeWidth: 1,
@@ -112,8 +113,10 @@
     imageUrl = layer.content?.imageUrl || '';
     legendUrl = layer.content?.legendUrl || '';
     defaultAddToManager = layer.content?.defaultAddToManager || false;
+    description = layer.content?.description || '';
     attribution = layer.content?.attribution || '';
     metadata = layer.content?.metadata || '';
+    disablePopup = layer.content?.disablePopup || false;
     transparent = layer.content?.transparent || false;
     opacity = layer.content?.opacity ?? 100;
     isBackground = layer.isBackground || false;
@@ -159,14 +162,13 @@
     defaultTheme = layer.content?.tiles3d?.defaultTheme || '';
 
     // GeoJSON
-    geojsonUrl = layer.content?.settings?.url || '';
-    geojsonStyle = layer.content?.settings?.style || {
+    geojsonStyle = layer.content?.geojson?.style || {
       stroke: '#0000ff',
       strokeWidth: 1,
       fill: '#ff0000'
     };
-    geojsonClampToGround = layer.content?.settings?.clampToGround ?? true;
-    geojsonExtrude = layer.content?.settings?.tools?.extrude || {
+    geojsonClampToGround = layer.content?.geojson?.clampToGround ?? true;
+    geojsonExtrude = layer.content?.geojson?.tools?.extrude || {
       slider_min: 0,
       slider_max: 10,
       slider_step: 1,
@@ -210,9 +212,6 @@
     );
 
     // Type-specific required fields
-    if (type === 'geojson') {
-      fields.push({ label: 'GeoJSON URL', value: geojsonUrl });
-    }
     if (type === 'modelanimation') {
       fields.push(
         { label: 'Model URL', value: modelUrl },
@@ -246,7 +245,7 @@
           maximumLevel: wmtsMaximumLevel
         }
       },
-      '3DTiles': {
+      '3dtiles': {
         tiles3d: {
           shadows: tilesShadows,
           tilesetHeight,
@@ -255,8 +254,7 @@
         }
       },
       geojson: {
-        settings: {
-          url: geojsonUrl,
+        geojson: {
           style: geojsonStyle,
           clampToGround: geojsonClampToGround,
           tools: {
@@ -278,8 +276,10 @@
       imageUrl,
       legendUrl,
       defaultAddToManager,
+      description,
       attribution,
       metadata,
+      disablePopup,
       ...(tabContentMap[type] || {})
     };
 
@@ -349,7 +349,7 @@
           on:click={() => (activeTab = 2)}
         >WMTS</button>
       {/if}
-      {#if type === '3DTiles'}
+      {#if type === '3dtiles'}
         <button
           type="button"
           class="tab {activeTab === 3 ? 'tab-active' : ''}"
@@ -425,6 +425,18 @@
         </label>
         <input id="defaultAddToManager" type="checkbox" class="checkbox checkbox-primary col-span-3" bind:checked={defaultAddToManager} />
 
+        <label for="description" class="pr-4 text-right font-semibold">
+          Description:
+          <HelpTooltip tip="Een tekst veld die de laag beschrijft bij het open klappen van het laag." />
+        </label>
+        <textarea
+          id="description"
+          class="textarea textarea-bordered col-span-3 w-full resize-y min-h-[6rem]"
+          rows="4"
+          bind:value={description}
+          placeholder="Beschrijf deze laag..."
+        ></textarea>
+
         <label for="attribution" class="pr-4 text-right font-semibold">
           Attribution:
           <HelpTooltip tip="De attributie voor de laag." />
@@ -436,6 +448,12 @@
           <HelpTooltip tip="De metadata voor de laag." />
         </label>
         <input id="metadata" class="input input-bordered col-span-3 w-full" bind:value={metadata} />
+
+        <label for="disablePopup" class="pr-4 text-right font-semibold">
+          Disable Popup:
+          <HelpTooltip tip="Schakel de feature info popup voor deze laag uit." />
+        </label>
+        <input id="disablePopup" type="checkbox" class="checkbox checkbox-primary col-span-3" bind:checked={disablePopup} />
 
         <label for="transparent" class="pr-4 text-right font-semibold">
           Transparent:
@@ -590,7 +608,7 @@
       </div>
     {/if}
 
-    {#if type === '3DTiles' && activeTab === 3}
+    {#if type === '3dtiles' && activeTab === 3}
       <!-- 3DTiles Tab -->
       <div class="grid grid-cols-4 gap-4 items-center">
         <label for="tilesShadows" class="pr-4 text-right font-semibold">Shadows:</label>
@@ -610,8 +628,6 @@
     {#if type === 'geojson' && activeTab == 4}
       <!-- GeoJSON Tab -->
       <div class="grid grid-cols-4 gap-4 items-center">
-        <label for="geojsonUrl" class="pr-4 text-right font-semibold">GeoJSON URL:</label>
-        <input id="geojsonUrl" class="input input-bordered col-span-3 w-full" bind:value={geojsonUrl} />
 
         <label for="geojsonClampToGround" class="pr-4 text-right font-semibold">Clamp To Ground:</label>
         <input id="geojsonClampToGround" type="checkbox" class="checkbox checkbox-primary col-span-3" bind:checked={geojsonClampToGround} />

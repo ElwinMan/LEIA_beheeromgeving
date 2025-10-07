@@ -62,7 +62,7 @@ def transform_layer(layer, assoc=None):
                 settings[k] = v
 
     elif layer.type == "geojson":
-        geojson_settings = content.get("settings", {})
+        geojson_settings = content.get("geojson", {})
         for k, v in geojson_settings.items():
             if v not in (None, ""):
                 settings[k] = v
@@ -87,8 +87,10 @@ def transform_layer(layer, assoc=None):
         "isBackground": layer.isBackground,
         "defaultAddToManager": content.get("defaultAddToManager", False),
         "defaultOn": assoc.is_default if assoc else True,
+        "description": content.get("description", ""),
         "attribution": content.get("attribution", ""),
         "metadata": content.get("metadata", ""),
+        "disablePopup": assoc_content.get("disablePopup", content.get("disablePopup", False)),
         "transparent": assoc_content.get("transparent", content.get("transparent", False)),
         "opacity": assoc_content.get("opacity", content.get("opacity", 100)),
         "cameraPosition": content.get("cameraPosition", "")
@@ -98,12 +100,17 @@ def transform_layer(layer, assoc=None):
     for k, v in all_keys.items():
         if k in always_include:
             layer_dict[k] = v
+        # Only export disablePopup if it's True
+        elif k == "disablePopup":
+            if v:
+                layer_dict[k] = v
+        # Only export opacity if transparent is true
         elif k == "opacity":
-            # Only export opacity if transparent is true
             if all_keys.get("transparent", False):
                 layer_dict[k] = v
+        # Only export transport if it's True
         elif k == "transparent":
-            if v:
+            if v: 
                 layer_dict[k] = v
         else:
             if v not in (None, ""):

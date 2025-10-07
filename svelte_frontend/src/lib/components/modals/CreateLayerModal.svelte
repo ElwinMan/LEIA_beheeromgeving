@@ -28,8 +28,10 @@
   let imageUrl: string = '';
   let legendUrl: string = '';
   let defaultAddToManager: boolean = false;
+  let description: string = '';
   let attribution: string = '';
   let metadata: string = '';
+  let disablePopup: boolean = false;
   let transparent: boolean = false;
   let opacity: number = 100;
   let enableCameraPosition: boolean = false;
@@ -64,6 +66,7 @@
   let wmtsMaximumLevel: number = 0;
 
   // 3DTiles tab fields
+  let tilesEnableClipping: boolean = false;
   let tilesShadows: boolean = false;
   let tilesetHeight: number = 0;
   let enableHeightControl: boolean = false;
@@ -86,7 +89,6 @@
   };
 
   // GeoJSON tab fields
-  let geojsonUrl: string = '';
   let geojsonStyle = {
     stroke: '#0000ff',
     strokeWidth: 1,
@@ -128,8 +130,10 @@
     imageUrl = '';
     legendUrl = '';
     defaultAddToManager = false;
+    description = '';
     attribution = '';
     metadata = '';
+    disablePopup = false;
     transparent = false;
     opacity = 100;
     enableCameraPosition = false;
@@ -153,6 +157,7 @@
     wmtsTileHeight = 0;
     wmtsMaximumLevel = 0;
 
+    tilesEnableClipping = false;
     tilesShadows = false;
     tilesetHeight = 0;
     enableHeightControl = false;
@@ -164,7 +169,6 @@
       classMapping: {}
     };
 
-    geojsonUrl = '';
     geojsonStyle = {
       stroke: '#0000ff',
       strokeWidth: 1,
@@ -240,6 +244,7 @@
       },
       '3DTiles': {
         tiles3d: {
+          enableClipping: tilesEnableClipping,
           shadows: tilesShadows,
           tilesetHeight,
           enableHeightControl,
@@ -250,8 +255,7 @@
         }
       },
       geojson: {
-        settings: {
-          url: geojsonUrl,
+        geojson: {
           style: geojsonStyle,
           clampToGround: geojsonClampToGround,
           tools: {
@@ -273,8 +277,10 @@
       imageUrl,
       legendUrl,
       defaultAddToManager,
+      description,
       attribution,
       metadata,
+      disablePopup,
       ...(tabContentMap[type] || {})
     };
 
@@ -295,13 +301,10 @@
       if (type === 'wms') featureName = wmsFeatureName;
       else if (type === 'wmts') featureName = wmtsFeatureName;
 
-      // For geojson, use geojsonUrl as main url
-      const url = type === 'geojson' ? geojsonUrl : mainUrl;
-
       const payload = {
         type,
         title,
-        url,
+        url: mainUrl,
         featureName,
         isBackground: isBackgroundPage,
         content,
@@ -326,10 +329,6 @@
       { label: 'URL', value: mainUrl }
     );
 
-    // Type-specific required fields
-    if (type === 'geojson') {
-      fields.push({ label: 'GeoJSON URL', value: geojsonUrl });
-    }
     if (type === 'modelanimation') {
       fields.push(
         { label: 'Model URL', value: modelUrl },
@@ -467,6 +466,18 @@
         </label>
         <input id="defaultAddToManager" type="checkbox" class="checkbox checkbox-primary col-span-3" bind:checked={defaultAddToManager} />
 
+        <label for="description" class="pr-4 text-right font-semibold">
+          Description:
+          <HelpTooltip tip="Een tekst veld die de laag beschrijft bij het open klappen van het laag." />
+        </label>
+        <textarea
+          id="description"
+          class="textarea textarea-bordered col-span-3 w-full resize-y min-h-[6rem]"
+          rows="4"
+          bind:value={description}
+          placeholder="Beschrijf deze laag..."
+        ></textarea>
+
         <label for="attribution" class="pr-4 text-right font-semibold">
           Attribution:
           <HelpTooltip tip="De attributie voor de laag." />
@@ -478,6 +489,12 @@
           <HelpTooltip tip="De metadata voor de laag." />
         </label>
         <input id="metadata" class="input input-bordered col-span-3 w-full" bind:value={metadata} />
+
+        <label for="disablePopup" class="pr-4 text-right font-semibold">
+          Disable Popup:
+          <HelpTooltip tip="Schakel de feature info popup voor deze laag uit." />
+        </label>
+        <input id="disablePopup" type="checkbox" class="checkbox checkbox-primary col-span-3" bind:checked={disablePopup} />
 
         <label for="transparent" class="pr-4 text-right font-semibold">
           Transparent:
@@ -623,6 +640,9 @@
     {#if type === '3DTiles' && activeTab === 3}
       <!-- 3DTiles Tab -->
       <div class="grid grid-cols-4 gap-4 items-center">
+        <label for="tilesEnableClipping" class="pr-4 text-right font-semibold">Enable Clipping:</label>
+        <input id="tilesEnableClipping" type="checkbox" class="checkbox checkbox-primary col-span-3" bind:checked={tilesEnableClipping} />
+
         <label for="tilesShadows" class="pr-4 text-right font-semibold">Shadows:</label>
         <input id="tilesShadows" type="checkbox" class="checkbox checkbox-primary col-span-3" bind:checked={tilesShadows} />
 
@@ -748,8 +768,6 @@
     {#if type === 'geojson' && activeTab == 4}
       <!-- GeoJSON Tab -->
       <div class="grid grid-cols-4 gap-4 items-center">
-        <label for="geojsonUrl" class="pr-4 text-right font-semibold">GeoJSON URL <span class="text-error">*</span>:</label>
-        <input id="geojsonUrl" class="input input-bordered col-span-3 w-full" bind:value={geojsonUrl} />
 
         <label for="geojsonClampToGround" class="pr-4 text-right font-semibold">Clamp To Ground:</label>
         <input id="geojsonClampToGround" type="checkbox" class="checkbox checkbox-primary col-span-3" bind:checked={geojsonClampToGround} />

@@ -8,6 +8,7 @@
     saved: {
       layer: LayerWithAssociation;
       properties: {
+        disablePopup?: boolean;
         transparent?: boolean;
         opacity?: number;
       };
@@ -18,6 +19,7 @@
   let currentLayer: LayerWithAssociation | null = null;
 
   // Form fields
+  let disablePopup = false;
   let transparent = false;
   let opacity = 100;
   let useCustomSettings = false;
@@ -36,14 +38,18 @@
     const layerContent = layer.layerContent || {};
     
     // Determine if we have custom settings
-    useCustomSettings = associationContent.transparent !== undefined || associationContent.opacity !== undefined;
+    useCustomSettings = associationContent.disablePopup !== undefined || 
+                       associationContent.transparent !== undefined || 
+                       associationContent.opacity !== undefined;
     
     if (useCustomSettings) {
       // Use custom settings from association
+      disablePopup = associationContent.disablePopup ?? false;
       transparent = associationContent.transparent ?? false;
       opacity = associationContent.opacity ?? 100;
     } else {
       // Use default settings from layer
+      disablePopup = layerContent.disablePopup ?? false;
       transparent = layerContent.transparent ?? false;
       opacity = layerContent.opacity ?? 100;
     }
@@ -53,6 +59,7 @@
 
   function resetModal() {
     currentLayer = null;
+    disablePopup = false;
     transparent = false;
     opacity = 100;
     useCustomSettings = false;
@@ -67,11 +74,12 @@
     isSaving = true; // Set saving state immediately
 
     try {
-      const properties: { transparent?: boolean; opacity?: number } = {};
+      const properties: { disablePopup?: boolean; transparent?: boolean; opacity?: number } = {};
       
       if (useCustomSettings) {
+        properties.disablePopup = disablePopup;
         properties.transparent = transparent;
-        properties.opacity = Number(opacity); // Ensure it's a number
+        properties.opacity = Number(opacity);
       }
 
       dispatch('saved', {
@@ -104,6 +112,7 @@
     if (!useCustomSettings) {
       // Reset to layer defaults when disabling custom settings
       const layerContent = currentLayer?.layerContent || {};
+      disablePopup = layerContent.disablePopup ?? false;
       transparent = layerContent.transparent ?? false;
       opacity = layerContent.opacity ?? 100;
     }
@@ -153,6 +162,10 @@
           <h4 class="font-semibold mb-2">Huidige Layer Standaarden:</h4>
           <div class="space-y-2 text-sm">
             <div>
+              <span class="font-medium">Disable Popup:</span> 
+              {currentLayer?.layerContent?.disablePopup ? 'Ja' : 'Nee'}
+            </div>
+            <div>
               <span class="font-medium">Transparant:</span> 
               {currentLayer?.layerContent?.transparent ? 'Ja' : 'Nee'}
             </div>
@@ -165,6 +178,20 @@
       {:else}
         <!-- Custom settings form -->
         <div class="space-y-4">
+          <div class="form-control">
+            <label class="label cursor-pointer justify-start gap-3">
+              <input 
+                type="checkbox" 
+                class="checkbox checkbox-primary" 
+                bind:checked={disablePopup}
+              />
+              <div class="flex items-center gap-2">
+                <span class="label-text font-semibold">Disable Popup</span>
+                <HelpTooltip tip="Schakel in om feature info popups voor deze layer uit te schakelen." />
+              </div>
+            </label>
+          </div>
+
           <div class="form-control">
             <label class="label cursor-pointer justify-start gap-3">
               <input 

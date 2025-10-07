@@ -525,7 +525,7 @@
                 </label>
                 <input 
                   id="step-title"
-                  class="input input-bordered col-span-3" 
+                  class="input input-bordered col-span-3 w-full" 
                   bind:value={currentStep.title} 
                   placeholder="Stap titel"
                 />
@@ -537,7 +537,7 @@
                 </label>
                 <textarea 
                   id="step-html"
-                  class="textarea textarea-bordered col-span-3 h-32" 
+                  class="textarea textarea-bordered col-span-3 h-32 w-full" 
                   bind:value={currentStep.html}
                   placeholder="HTML content voor deze stap"
                 ></textarea>
@@ -550,7 +550,7 @@
                 <input 
                   id="step-opacity"
                   type="number" 
-                  class="input input-bordered col-span-3" 
+                  class="input input-bordered col-span-3 w-full" 
                   bind:value={currentStep.globeOpacity}
                   min="0" 
                   max="100"
@@ -561,7 +561,7 @@
                   Terrain:
                   <HelpTooltip tip="De terrain provider die wordt gebruikt voor deze stap." position="right" />
                 </label>
-                <select id="step-terrain" class="select select-bordered col-span-3" bind:value={currentStep.terrain}>
+                <select id="step-terrain" class="select select-bordered col-span-3 w-full" bind:value={currentStep.terrain}>
                   {#each availableTerrainProviders as provider}
                     <option value={provider.title}>{provider.title}</option>
                   {/each}

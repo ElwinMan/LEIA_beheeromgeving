@@ -1029,12 +1029,16 @@
     editLayerPropertiesModalRef.show(layer);
   }
 
-  function handleLayerPropertiesSaved(event: CustomEvent<{ layer: LayerWithAssociation; properties: { transparent?: boolean; opacity?: number } }>) {
+  function handleLayerPropertiesSaved(event: CustomEvent< { 
+    layer: LayerWithAssociation; 
+    properties: { disablePopup?: boolean; transparent?: boolean; opacity?: number } 
+  }>) {
     const { layer, properties } = event.detail;
     
     // Update the layer's content with the custom properties
     const updatedContent = {
       ...layer.content,
+      disablePopup: properties.disablePopup,
       transparent: properties.transparent,
       opacity: properties.opacity
     };
@@ -1172,7 +1176,7 @@
   // Helper function to check if a layer has custom transparency/opacity settings
   function hasCustomSettings(layer: LayerWithAssociation): boolean {
     const content = layer.content || {};
-    return content.transparent !== undefined || content.opacity !== undefined;
+    return content.disablePopup !== undefined || content.transparent !== undefined || content.opacity !== undefined;
   }
 </script>
 
