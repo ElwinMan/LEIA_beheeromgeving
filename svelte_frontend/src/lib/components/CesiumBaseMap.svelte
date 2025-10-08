@@ -3,7 +3,9 @@
   import { 
     Viewer, 
     Cartesian3, 
-    Math as CesiumMath
+    Math as CesiumMath,
+    OpenStreetMapImageryProvider,
+    Ion
   } from 'cesium';
   import 'cesium/Build/Cesium/Widgets/widgets.css';
 
@@ -42,9 +44,14 @@
     if (!cesiumContainer) return;
 
     try {
-      // Set a proper Ion access token or use a different imagery provider
-      // For now, we'll use the default but handle the warning differently
+      // Check if Cesium Ion token is provided in environment variables
+      const cesiumToken = import.meta.env.VITE_CESIUM_ION_TOKEN;
+      const useCesiumIon = cesiumToken && cesiumToken.trim() !== '';
       
+      // Set up Ion token based on availability
+      Ion.defaultAccessToken = useCesiumIon ? cesiumToken : '';
+      
+      // Create viewer with common configuration
       viewer = new Viewer(cesiumContainer, {
         homeButton: false,
         sceneModePicker: false,
@@ -58,6 +65,17 @@
         infoBox: false,
         selectionIndicator: false
       });
+
+      // Replace with OpenStreetMap if no Cesium token is provided
+      if (!useCesiumIon) {
+        viewer.imageryLayers.removeAll();
+        viewer.imageryLayers.addImageryProvider(
+          new OpenStreetMapImageryProvider({
+            url: 'https://tile.openstreetmap.org/',
+            credit: '© OpenStreetMap contributors'
+          })
+        );
+      }
 
       // Set initial camera position
       const hasValidCoordinates = initialPosition && (
@@ -80,14 +98,9 @@
         }
       });
 
-      // Hide the Ion access token warning and other overlays
+      // Handle overlays - keep credits visible
       setTimeout(() => {
-        const ionWarning = viewer?.cesiumWidget.creditContainer?.querySelector('.cesium-widget-credits') as HTMLElement;
-        if (ionWarning) {
-          ionWarning.style.display = 'none';
-        }
-        
-        // Hide any other overlays
+        // Hide error panels for both providers
         const overlays = viewer?.cesiumWidget.container?.querySelectorAll('.cesium-widget-errorPanel');
         overlays?.forEach((overlay) => {
           (overlay as HTMLElement).style.display = 'none';
