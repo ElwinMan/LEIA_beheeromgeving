@@ -117,6 +117,11 @@
       opacity = layerContent.opacity ?? 100;
     }
   }
+
+  function validateOpacity() {
+    if (opacity > 100) opacity = 100;
+    if (opacity < 0) opacity = 0;
+  }
 </script>
 
 <AlertBanner
@@ -221,7 +226,7 @@
               step="1" 
               class="input input-bordered w-full" 
               bind:value={opacity}
-              oninput={() => { if (opacity > 100) opacity = 100; if (opacity < 0) opacity = 0; }}
+              oninput={validateOpacity}
               disabled={!transparent}
               placeholder="0-100"
             />

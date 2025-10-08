@@ -7,6 +7,7 @@
   import PositionSelector from '$lib/components/PositionSelector.svelte';
   import MissingRequiredFields from '$lib/components/MissingRequiredFields.svelte';
   import HelpTooltip from '$lib/components/HelpTooltip.svelte';
+  import EditStoryLayerPropertiesModal from '$lib/components/modals/EditStoryLayerPropertiesModal.svelte';
 
   export let story: Story | null = null;
   let modalRef: HTMLDialogElement;
@@ -58,6 +59,7 @@
 
   let errorBanner: InstanceType<typeof AlertBanner> | null = null;
   let successBanner: InstanceType<typeof AlertBanner> | null = null;
+  let editStoryLayerPropertiesModalRef: InstanceType<typeof EditStoryLayerPropertiesModal>;
 
   onMount(async () => {
     try {
@@ -98,13 +100,26 @@
               pitch: step.camera?.pitch || 0,
               duration: step.camera?.duration || 1.5
             },
-            layers: step.layers ? step.layers.map((layer: any) => layer.id || layer).filter(Boolean) : [],
-            requiredLayers: step.requiredLayers ? step.requiredLayers.map((l: any) => ({
-              id: l.id,
-              title: l.title,
-              opacity: l.opacity ?? 100,
-              style: l.style ?? ''
-            })) : [],
+            layers: step.layers ? step.layers.filter((layer: any) => typeof layer === 'string' || !layer.title).map((layer: any) => layer.id || layer).filter(Boolean) : [],
+            requiredLayers: step.layers ? step.layers.filter((layer: any) => typeof layer === 'object' && layer.title).map((l: any) => {
+              const reqLayer: any = {
+                id: l.id,
+                title: l.title,
+                transparent: l.transparent ?? false
+              };
+              
+              // Only include opacity if transparency is enabled and opacity exists
+              if (l.transparent && l.opacity !== undefined) {
+                reqLayer.opacity = l.opacity;
+              }
+              
+              // Only include style if it has a meaningful value
+              if (l.style && l.style.trim() !== '') {
+                reqLayer.style = l.style;
+              }
+              
+              return reqLayer;
+            }) : [],
             _activeTab: 0
           })) : [createNewStep()]
         }));
@@ -193,8 +208,8 @@
         {
           id: layer.id.toString(),
           title: layer.title,
-          opacity: 100,
-          style: ''
+          transparent: false
+          // opacity and style will only be added when actually used
         }
       ];
       chapters = [...chapters];
@@ -237,33 +252,53 @@
     chapters = [...chapters];
   }
 
-  function updateRequiredLayerOpacityInStep(index: number, value: number) {
-    currentStep.requiredLayers[index].opacity = value;
-    currentStep.requiredLayers = [...currentStep.requiredLayers];
-    chapters = [...chapters];
-  }
-
-  function updateRequiredLayerStyleInStep(index: number, value: string) {
-    currentStep.requiredLayers[index].style = value;
-    currentStep.requiredLayers = [...currentStep.requiredLayers];
-    chapters = [...chapters];
-  }
-
-  function handleLayerChange(layerId: string, checked: boolean) {
-    if (!currentStep) return;
-    if (checked) {
-      currentStep.layers = [...currentStep.layers, layerId];
-    } else {
-      currentStep.layers = currentStep.layers.filter(l => l !== layerId);
-    }
-    chapters = [...chapters];
-  }
-
   function getMissingRequiredFields(): string[] {
     const fields: { label: string; value: any }[] = [
       { label: 'Naam', value: name }
     ];
     return fields.filter(f => !f.value || (typeof f.value === 'string' && !f.value.trim())).map(f => f.label);
+  }
+
+  function handleEditLayerProperties(reqLayer: RequiredLayer, stepIndex: number, chapterIndex: number) {
+    editStoryLayerPropertiesModalRef.show(reqLayer);
+    
+    // Store context for the save handler
+    editStoryLayerPropertiesModalRef.currentContext = { reqLayer, stepIndex, chapterIndex };
+  }
+
+  function handleLayerPropertiesSaved(event: CustomEvent<{ layer: RequiredLayer; properties: { opacity?: number; transparent?: boolean; style?: string } }>) {
+    const { properties } = event.detail;
+    const context = editStoryLayerPropertiesModalRef.currentContext;
+    
+    if (context && context.reqLayer) {
+      // Update the required layer with new properties
+      context.reqLayer.transparent = properties.transparent ?? false;
+      
+      // Only store opacity if transparency is enabled
+      if (properties.transparent) {
+        context.reqLayer.opacity = properties.opacity ?? 100;
+      } else {
+        delete context.reqLayer.opacity;
+      }
+      
+      // Only store style if it has a meaningful value
+      if (properties.style && properties.style.trim() !== '') {
+        context.reqLayer.style = properties.style.trim();
+      } else {
+        delete context.reqLayer.style;
+      }
+      
+      // Trigger reactivity
+      chapters = [...chapters];
+    }
+  }
+
+  // Helper function to check if a required layer has been customized from defaults
+  function hasCustomStoryLayerSettings(reqLayer: RequiredLayer): boolean {
+    // A layer has custom settings if:
+    // - transparency has been enabled
+    // - or has a custom style
+    return !!reqLayer.transparent || (!!reqLayer.style && reqLayer.style.trim() !== '');
   }
 
   async function handleSubmit(event: Event) {
@@ -291,12 +326,25 @@
           const mergedLayers = [
             ...step.layers.map(layerId => ({ id: layerId })),
             ...((step.requiredLayers && step.requiredLayers.length > 0)
-              ? step.requiredLayers.map((l: RequiredLayer) => ({
-                  id: l.id,
-                  title: l.title,
-                  opacity: l.opacity,
-                  style: l.style
-                }))
+              ? step.requiredLayers.map((l: RequiredLayer) => {
+                  const layerObj: any = {
+                    id: l.id,
+                    title: l.title,
+                    transparent: l.transparent
+                  };
+                  
+                  // Only include opacity if transparency is enabled
+                  if (l.transparent && l.opacity !== undefined) {
+                    layerObj.opacity = l.opacity;
+                  }
+                  
+                  // Only include style if it has a meaningful value
+                  if (l.style && l.style.trim() !== '') {
+                    layerObj.style = l.style;
+                  }
+                  
+                  return layerObj;
+                })
               : [])
           ];
           return {
@@ -340,6 +388,11 @@
   $: currentStep = chapters[activeChapterIndex]?.steps[activeStepIndex];
   $: if (currentStep && typeof currentStep._activeTab !== 'number') currentStep._activeTab = 0;
 </script>
+
+<EditStoryLayerPropertiesModal
+  bind:this={editStoryLayerPropertiesModalRef}
+  on:saved={handleLayerPropertiesSaved}
+/>
 
 <AlertBanner
   bind:this={successBanner}
@@ -782,7 +835,7 @@
                       placeholder="Zoek laag..."
                       bind:value={catalogSearchTerm}
                     />
-                    {#each availableLayers.filter(layer =>
+                    {#each availableFeatureLayers.filter(layer =>
                       !currentStep.requiredLayers.find(l => l.id === layer.id.toString()) &&
                       (catalogSearchTerm.trim() === '' || layer.title.toLowerCase().includes(catalogSearchTerm.trim().toLowerCase()))
                     ) as layer}
@@ -803,14 +856,20 @@
                       <div class="text-sm text-gray-500">Geen lagen toegevoegd.</div>
                     {:else}
                       {#each currentStep.requiredLayers as reqLayer, i}
-                        <div class="flex items-center gap-4 mb-2 w-full">
+                        <div class="flex items-center gap-2 mb-2 p-2 border border-base-200 rounded">
                           <span class="flex-1 truncate font-medium">{reqLayer.title}</span>
-                          <label class="text-sm" for={`opacity-step-${activeChapterIndex}-${activeStepIndex}-${i}`}>Opacity:</label>
-                          <input id={`opacity-step-${activeChapterIndex}-${activeStepIndex}-${i}`} type="number" min="0" max="100" class="input input-bordered w-16" bind:value={reqLayer.opacity} oninput={(e: Event) => updateRequiredLayerOpacityInStep(i, +(e.target as HTMLInputElement).value)} />
-                          <label class="text-sm" for={`style-step-${activeChapterIndex}-${activeStepIndex}-${i}`}>Style:</label>
-                          <input id={`style-step-${activeChapterIndex}-${activeStepIndex}-${i}`} type="text" class="input input-bordered w-24" bind:value={reqLayer.style} oninput={(e: Event) => updateRequiredLayerStyleInStep(i, (e.target as HTMLInputElement).value)} />
+                          <button 
+                            type="button" 
+                            class="btn btn-xs"
+                            class:btn-primary={hasCustomStoryLayerSettings(reqLayer)}
+                            class:btn-ghost={!hasCustomStoryLayerSettings(reqLayer)}
+                            onclick={() => handleEditLayerProperties(reqLayer, activeStepIndex, activeChapterIndex)} 
+                            title="Bewerk eigenschappen"
+                          >
+                            <img src="/icons/settings.svg" alt="Bewerk" class="h-3 w-3" />
+                          </button>
                           <button type="button" class="btn btn-xs btn-error" onclick={() => removeRequiredLayerFromStep(i)} title="Verwijder">
-                            x
+                            <img src="/icons/x.svg" alt="Verwijder" class="h-3 w-3" />
                           </button>
                         </div>
                       {/each}

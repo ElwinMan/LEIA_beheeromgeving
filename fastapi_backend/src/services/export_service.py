@@ -337,23 +337,59 @@ def export_digital_twin(db: Session, digital_twin_id: int):
                             story_data["baseLayerId"] = str(story.content["baseLayerId"]) if story.content["baseLayerId"] is not None else ""
                         # Add chapters if they exist
                         if "chapters" in story.content:
-                            chapters_copy = story.content["chapters"]
+                            chapters_copy = copy.deepcopy(story.content["chapters"])
                             chapter_groups = build_chapter_groups(chapters_copy)
                             if chapter_groups:
                                 story_data["chapterGroups"] = chapter_groups
-                            # Remove title and buttonText from chapters before export
+                            
+                            # Process chapters to clean up layer properties and remove title/buttonText
                             for chapter in chapters_copy:
                                 if "title" in chapter:
                                     del chapter["title"]
                                 if "buttonText" in chapter:
                                     del chapter["buttonText"]
+                                
+                                # Process steps within each chapter
+                                if "steps" in chapter and isinstance(chapter["steps"], list):
+                                    for step in chapter["steps"]:
+                                        if "layers" in step and isinstance(step["layers"], list):
+                                            """
+                                            Layer Property Cleaning Strategy:
+                                            - Remove unused/frontend properties to minimize export size
+                                            - Only export 'opacity' when transparency is actually enabled
+                                            - Only export 'style' when custom styling is defined
+                                            - Never export 'transparent' or 'title' fields - they're frontend-only
+                                            - Only preserve 'id' as it's essential for layer identification
+                                            """
+                                            cleaned_layers = []
+                                            for layer in step["layers"]:
+                                                if isinstance(layer, dict):
+                                                    cleaned_layer = {
+                                                        "id": layer.get("id")
+                                                    }
+                                                    
+                                                    # Only include opacity if transparent is true and opacity exists
+                                                    # Note: transparent field itself is never exported, it's only used to determine if opacity should be included
+                                                    if layer.get("transparent") and "opacity" in layer:
+                                                        cleaned_layer["opacity"] = layer["opacity"]
+                                                    
+                                                    # Only include style if it has a meaningful value
+                                                    if layer.get("style") and str(layer["style"]).strip():
+                                                        cleaned_layer["style"] = layer["style"]
+                                                    
+                                                    cleaned_layers.append(cleaned_layer)
+                                                else:
+                                                    # Handle simple layer references (just IDs)
+                                                    cleaned_layers.append(layer)
+                                            
+                                            step["layers"] = cleaned_layers
+                            
                             story_data["chapters"] = chapters_copy
 
                     story_associations.append(story_data)
                 elif not story:
                     # Log missing story for debugging
                     print(f"Warning: Story {assoc.content_id} referenced in association but not found in database")
-
 
     layer_associations_by_id = {
         assoc.layer_id: assoc for assoc in digital_twin.layer_associations

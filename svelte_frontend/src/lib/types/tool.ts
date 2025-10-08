@@ -58,8 +58,15 @@ export interface Story {
 export interface RequiredLayer {
   id: string;
   title: string;
-  opacity: number;
-  style: string;
+  transparent: boolean;
+  opacity?: number;  // Only present when transparency is enabled
+  style?: string;    // Only present when style has a meaningful value
+}
+
+export interface StoryLayerContext {
+  stepIndex: number;
+  chapterIndex: number;
+  reqLayer: RequiredLayer;
 }
 
 export interface StoryStep {
