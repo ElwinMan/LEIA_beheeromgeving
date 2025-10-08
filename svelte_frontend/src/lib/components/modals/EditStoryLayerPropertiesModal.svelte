@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import type { RequiredLayer } from '$lib/types/tool';
+  import type { RequiredLayer, StoryLayerContext } from '$lib/types/tool';
   import HelpTooltip from '$lib/components/HelpTooltip.svelte';
   import AlertBanner from '$lib/components/AlertBanner.svelte';
 
@@ -29,7 +29,7 @@
   let errorBanner: InstanceType<typeof AlertBanner> | null = null;
 
   // Store context for the parent component to use
-  export let currentContext: any = null;
+  export let currentContext: StoryLayerContext | null = null;
 
   export function show(layer: RequiredLayer) {
     currentLayer = layer;
@@ -89,6 +89,11 @@
     resetModal();
   }
 
+  function validateOpacity() {
+    if (opacity > 100) opacity = 100;
+    if (opacity < 0) opacity = 0;
+  }
+
   // Reactive statement to handle opacity when transparent changes
   $: if (!transparent) {
     opacity = 100;
@@ -145,7 +150,7 @@
           step="1" 
           class="input input-bordered w-full" 
           bind:value={opacity}
-          oninput={() => { if (opacity > 100) opacity = 100; if (opacity < 0) opacity = 0; }}
+          oninput={validateOpacity}
           disabled={!transparent}
           placeholder="0-100"
         />

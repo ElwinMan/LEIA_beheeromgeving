@@ -353,14 +353,19 @@ def export_digital_twin(db: Session, digital_twin_id: int):
                                 if "steps" in chapter and isinstance(chapter["steps"], list):
                                     for step in chapter["steps"]:
                                         if "layers" in step and isinstance(step["layers"], list):
-                                            # Clean up layer properties - only include opacity when transparent=true, 
-                                            # Only include style when non-empty
+                                            """
+                                            Layer Property Cleaning Strategy:
+                                            - Remove unused/frontend properties to minimize export size
+                                            - Only export 'opacity' when transparency is actually enabled
+                                            - Only export 'style' when custom styling is defined
+                                            - Never export 'transparent' or 'title' fields - they're frontend-only
+                                            - Only preserve 'id' as it's essential for layer identification
+                                            """
                                             cleaned_layers = []
                                             for layer in step["layers"]:
                                                 if isinstance(layer, dict):
                                                     cleaned_layer = {
-                                                        "id": layer.get("id"),
-                                                        "title": layer.get("title")
+                                                        "id": layer.get("id")
                                                     }
                                                     
                                                     # Only include opacity if transparent is true and opacity exists

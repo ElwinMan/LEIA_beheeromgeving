@@ -63,6 +63,12 @@ export interface RequiredLayer {
   style?: string;    // Only present when style has a meaningful value
 }
 
+export interface StoryLayerContext {
+  stepIndex: number;
+  chapterIndex: number;
+  reqLayer: RequiredLayer;
+}
+
 export interface StoryStep {
   title: string;
   html: string;
