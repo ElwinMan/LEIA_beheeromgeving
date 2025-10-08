@@ -252,18 +252,6 @@
     chapters = [...chapters];
   }
 
-
-
-  // function handleLayerChange(layerId: string, checked: boolean) {
-  //   if (!currentStep) return;
-  //   if (checked) {
-  //     currentStep.layers = [...currentStep.layers, layerId];
-  //   } else {
-  //     currentStep.layers = currentStep.layers.filter(l => l !== layerId);
-  //   }
-  //   chapters = [...chapters];
-  // }
-
   function getMissingRequiredFields(): string[] {
     const fields: { label: string; value: any }[] = [
       { label: 'Naam', value: name }
@@ -310,7 +298,7 @@
     // A layer has custom settings if:
     // - transparency has been enabled
     // - or has a custom style
-    return reqLayer.transparent || (reqLayer.style && reqLayer.style.trim() !== '');
+    return !!reqLayer.transparent || (!!reqLayer.style && reqLayer.style.trim() !== '');
   }
 
   async function handleSubmit(event: Event) {
