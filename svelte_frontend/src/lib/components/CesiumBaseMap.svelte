@@ -48,8 +48,10 @@
       const cesiumToken = import.meta.env.VITE_CESIUM_ION_TOKEN;
       const useCesiumIon = cesiumToken && cesiumToken.trim() !== '';
       
-      // Set up Ion token based on availability
-      Ion.defaultAccessToken = useCesiumIon ? cesiumToken : '';
+      // Set up Ion token only when a valid one is available
+      if (useCesiumIon) {
+        Ion.defaultAccessToken = cesiumToken;
+      }
       
       // Create viewer with common configuration
       viewer = new Viewer(cesiumContainer, {

@@ -188,8 +188,8 @@ def export_digital_twin(db: Session, digital_twin_id: int):
 
     viewer = viewer_repo.get_viewer_by_digital_twin_id(db, digital_twin_id)
 
-    group_ids = list(set(assoc.group_id for assoc in digital_twin.layer_associations if assoc.group_id))
-    groups = group_repo.get_groups_by_ids(db, group_ids) if group_ids else []
+    # Get ALL groups for this digital twin (not just ones with layers)
+    groups = group_repo.get_groups_by_digital_twin_id(db, digital_twin_id)
 
     tool_ids = [assoc.tool_id for assoc in digital_twin.tool_associations]
     tools = tool_repo.get_tools_by_ids(db, tool_ids)
@@ -697,6 +697,14 @@ def export_digital_twin(db: Session, digital_twin_id: int):
         for group in children:
             group_dict = GroupResponse.model_validate(group).model_dump()
             group_dict.pop('sort_order', None)
+            # Convert IDs to strings and rename parent_id to parentId
+            group_dict['id'] = str(group_dict['id'])
+            if group_dict.get('parent_id') is not None:
+                group_dict['parentId'] = str(group_dict['parent_id'])
+            else:
+                group_dict['parentId'] = ""
+            # Remove the snake_case version
+            group_dict.pop('parent_id', None)
             result.append(group_dict)
             # Recursively add children
             result.extend(export_group_hierarchy(groups, group.id))

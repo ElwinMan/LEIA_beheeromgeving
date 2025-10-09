@@ -9,7 +9,7 @@ The application is used to manage JSON config files for LEIA digital twins.
 - Git
 - Docker Desktop
 
-local usage
+Local usage
 - npm (Node Package Manager)
 - Python 3.x
 

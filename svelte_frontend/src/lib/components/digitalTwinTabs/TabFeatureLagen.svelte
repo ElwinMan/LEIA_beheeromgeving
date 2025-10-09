@@ -1436,7 +1436,7 @@
                         title="Bewerk laageigenschappen"
                         aria-label="Bewerk laageigenschappen"
                       >
-                        <img src="/icons/square-pen.svg" alt="Edit" class="w-4 h-4" />
+                        <img src="/icons/settings.svg" alt="Edit" class="w-4 h-4" />
                       </button>
                       <button
                         class="btn btn-ghost btn-xs"
@@ -1708,7 +1708,7 @@
                   title="Bewerk laageigenschappen"
                   aria-label="Bewerk laageigenschappen"
                 >
-                  <img src="/icons/square-pen.svg" alt="Edit" class="w-4 h-4" />
+                  <img src="/icons/settings.svg" alt="Edit" class="w-4 h-4" />
                 </button>
                 <button
                   class="btn btn-ghost btn-xs"
